@@ -14,8 +14,115 @@
     <link rel="icon" href="%BASE_URL%icon.svg" />
     <title>Mi dinero · Tus finanzas personales</title>
   </head>
-  <body>
+  <body style="margin: 0; background: #f5f7f4; color: #243d32">
+    <section
+      id="startup-shell"
+      style="
+        max-width: 480px;
+        margin: 12vh auto;
+        padding: 24px;
+        font:
+          16px/1.6 -apple-system,
+          sans-serif;
+      "
+    >
+      <h1>Mi dinero</h1>
+      <p id="startup-loading" role="status">Abriendo tus finanzas…</p>
+      <div id="startup-error" role="alert" hidden>
+        <h2>No se pudo abrir la aplicación</h2>
+        <p>
+          Revisa tu conexión y vuelve a cargar. Tus datos guardados no se han
+          eliminado.
+        </p>
+        <pre
+          id="startup-detail"
+          style="
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-size: 12px;
+          "
+        ></pre>
+        <button
+          id="startup-reload"
+          style="
+            padding: 12px 18px;
+            background: #23583d;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            font: inherit;
+          "
+        >
+          Volver a cargar
+        </button>
+      </div>
+      <noscript
+        >Activa JavaScript para abrir Mi dinero. Tus datos permanecen en este
+        dispositivo.</noscript
+      >
+    </section>
     <div id="root"></div>
+    <script>
+      (function () {
+        var ready = false;
+        var shell = document.getElementById("startup-shell");
+        var loading = document.getElementById("startup-loading");
+        var error = document.getElementById("startup-error");
+        var detail = document.getElementById("startup-detail");
+        function fail(message) {
+          shell.hidden = false;
+          loading.hidden = true;
+          error.hidden = false;
+          detail.textContent = String(
+            message || "Error de inicio sin detalles.",
+          );
+        }
+        var timeout = setTimeout(function () {
+          if (!ready)
+            fail(
+              "El inicio está tardando demasiado. Comprueba la conexión o vuelve a cargar.",
+            );
+        }, 15000);
+        window.__miDineroStartup = {
+          fail: function (message) {
+            clearTimeout(timeout);
+            fail(message);
+          },
+          ready: function () {
+            ready = true;
+            clearTimeout(timeout);
+            shell.hidden = true;
+          },
+        };
+        window.addEventListener(
+          "error",
+          function (event) {
+            if (ready) return;
+            var target = event.target;
+            if (
+              target &&
+              (target.tagName === "SCRIPT" || target.tagName === "LINK")
+            ) {
+              fail(
+                "No se pudo cargar un recurso: " + (target.src || target.href),
+              );
+            } else {
+              fail(event.message);
+            }
+          },
+          true,
+        );
+        window.addEventListener("unhandledrejection", function (event) {
+          if (!ready)
+            fail((event.reason && event.reason.message) || event.reason);
+        });
+        document
+          .getElementById("startup-reload")
+          .addEventListener("click", function () {
+            location.reload();
+          });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

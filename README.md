@@ -56,3 +56,17 @@ En el repositorio, selecciona **Settings → Pages → Build and deployment → 
 La ruta base, el identificador, inicio y alcance del manifest, los iconos y el fallback de navegación están configurados para `/mi-dinero-pwa/`. Para validar localmente esa misma ruta, usa `npm run build` y `npm run preview`, y visita la ruta `/mi-dinero-pwa/` del servidor local.
 
 Publicar no migra ni borra IndexedDB. Los datos están asociados al origen del navegador; los registros creados en localhost u otro dominio no aparecerán automáticamente en GitHub Pages. Puedes trasladarlos mediante exportación e importación JSON.
+
+## Diagnóstico del arranque y verificación pública
+
+La página incluye una pantalla de carga y error independiente del bundle de React. Si falla la descarga del JavaScript, la evaluación de un módulo o el render inicial, muestra el motivo y un botón para volver a cargar. Si el inicio tarda más de 15 segundos, muestra un aviso; una carga posterior correcta lo oculta. No borra IndexedDB ni las cachés. Los fallos de registro PWA se registran en consola y no bloquean el arranque de React. En los inicios con conexión se solicita comprobar si hay un service worker nuevo, manteniendo el modo de actualización con aviso.
+
+```sh
+npm run test:pages
+```
+
+Esta comprobación abre **la URL pública real** `https://trazka.github.io/mi-dinero-pwa/` con un perfil iPhone en Chromium y un contexto limpio. Exige HTTP correcto, tipos MIME de JavaScript/CSS correctos, ausencia de errores de ejecución, encabezado y botón de la interfaz visibles, IndexedDB inicializado y service worker con alcance `/mi-dinero-pwa/`. Guarda `test-results/pages-live.png`. Se puede pasar otra URL como argumento para comprobar el propio verificador; eso no verifica el despliegue público.
+
+El workflow ejecuta esta comprobación **después** de publicar y adjunta la captura en el artefacto `github-pages-interface`, incluso si falla la comprobación. Una compilación aprobada ya no es la única señal de salud: debe aprobar también el job `verify-published`. La prueba sigue sin sustituir una revisión en Safari/Brave de un iPhone físico.
+
+Para diagnosticar una pantalla vacía, conserva el texto exacto del error visible y consulta el artefacto del último despliegue. Una sesión privada nueva también reproduce problemas de recursos o ejecución sin depender de una instalación anterior. No borres los datos del sitio como paso de diagnóstico; contienen tus movimientos.

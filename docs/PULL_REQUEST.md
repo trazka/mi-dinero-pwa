@@ -1,31 +1,22 @@
-# Publicación automática de Mi dinero en GitHub Pages
+# Mostrar errores de arranque y verificar la interfaz publicada de Mi dinero
 
-Prepara la PWA para `https://trazka.github.io/mi-dinero-pwa/` y publica automáticamente al actualizar `main`.
+Un fallo de carga o renderizado podía dejar vacío el contenedor de React sin una explicación visible. Esta PR añade una pantalla de carga/error en HTML, independiente del bundle, y captura fallos de recursos, módulos y renderizado. Ofrece recargar sin borrar datos.
 
-- Configura `/mi-dinero-pwa/` como ruta base de Vite y como identificador, inicio y alcance del manifiesto PWA.
-- Ajusta iconos, registro y fallback de navegación del service worker a esa ruta, limitando el fallback al proyecto.
-- Añade un workflow con instalación desde lockfile, pruebas, compilación, prueba offline, carga de `dist` y despliegue mediante las acciones oficiales de GitHub Pages. El permiso de publicación se limita al job de despliegue y las publicaciones se serializan.
-- Actualiza las pruebas de navegador para visitar la ruta real y verificar manifest, iconos, alcance y URL del service worker.
-- Documenta el requisito de seleccionar **Settings → Pages → Source: GitHub Actions**.
+El arranque de App se importa de manera controlada y React tiene un límite de errores. El registro PWA se carga por separado para que sus fallos no impidan renderizar. Se comprueba la existencia de actualizaciones del service worker al iniciar con conexión, sin desregistrarlo ni borrar cachés o IndexedDB. Se conserva `/mi-dinero-pwa/` como base y alcance.
+
+Añade `npm run test:pages` y un job posterior al despliegue que abre `https://trazka.github.io/mi-dinero-pwa/`, valida HTTP, MIME de recursos, errores de ejecución, interfaz visible, disponibilidad de IndexedDB y alcance del service worker, y adjunta una captura. Es una comprobación del sitio publicado, adicional a las pruebas locales.
+
+## Diagnóstico y límites
+
+En `main`, la compilación local servida en `/mi-dinero-pwa/` mostraba la interfaz, cargaba JavaScript/CSS con HTTP 200 y tipos correctos, y no emitía errores de ejecución en Chromium de escritorio y con perfil iPhone. El fallo de IndexedDB se captura y muestra un aviso dentro de la interfaz; la prueba nueva confirma que no produce una pantalla vacía.
+
+**La causa de la pantalla negra del sitio público no está confirmada.** El proxy de este entorno bloquea `trazka.github.io`: curl devuelve 403 y la prueba de navegador pública devuelve `ERR_TUNNEL_CONNECTION_FAILED`, sin recibir recursos. Esta PR corrige la falta de diagnóstico visible y añade validación pública; no afirma que la incidencia específica de iPhone esté resuelta. El job público y la comprobación en el dispositivo tras integrar la PR deben confirmar que aparece la interfaz o proporcionar el error preciso.
 
 ## Validación
 
-- `npm test`: 10 pruebas aprobadas.
-- `npm run build`: TypeScript, Vite y generación del service worker correctos.
-- `npm run test:e2e`: 4 pruebas con perfil iPhone 13 en Chromium; incluye operaciones financieras, persistencia, respaldo, filtros, uso sin internet y metadatos PWA bajo `/mi-dinero-pwa/`.
-- `git diff --check`: correcto.
-- `src/`, las dependencias y el lockfile permanecen sin cambios respecto a `main`: no se modifica la lógica de ingresos, gastos, deudas ni IndexedDB.
-
-El despliegue remoto se verificará cuando esta PR se integre en `main` y Pages esté habilitado. Esta rama no publica la aplicación. La instalación en Safari físico requiere una comprobación manual tras el despliegue. IndexedDB sigue asociado al origen: los datos existentes de localhost u otro dominio se trasladan con un respaldo JSON si se necesitan en GitHub Pages.
-
-## Corrección de la prueba offline del PR #2
-
-La recarga se ejecutaba al terminar `click()`, sin esperar a que el guardado asíncrono terminase. `changeData` ya espera `tx.done` y la aplicación solo entonces actualiza el saldo y cierra el formulario. Una recarga anterior puede cancelar la operación; no es un error del cálculo ni de la lectura posterior de IndexedDB.
-
-La causa se reprodujo manteniendo ocupada la base mediante una transacción real: recargar inmediatamente después del clic dejó `data/main` vacío y el saldo en $0; esperar al cierre del formulario conservó un movimiento de gasto por $50 y mostró -$50 tras recargar.
-
-La prueba conserva todas las verificaciones anteriores y ahora espera la confirmación real de guardado (cierre del formulario), comprueba -$50 antes de recargar, inspecciona directamente IndexedDB y exige que el conjunto de datos sea idéntico después de recargar. Se ejecuta tanto normalmente como con IndexedDB ocupado, comprobando también el estado «Guardando…» mientras la escritura está bloqueada. No se añaden pausas fijas, reintentos de la prueba ni excepciones a las aserciones. No se cambia código de la aplicación ni cálculos financieros.
-
-Validación de la corrección: 10 pruebas unitarias, 5 pruebas de navegador y compilación de producción correctas.
-
-La comprobación adicional de estabilidad (`npx playwright test --grep 'PWA almacena' --repeat-each=10`) completó 20/20 ejecuciones aprobadas: diez con almacenamiento normal y diez con la escritura bloqueada temporalmente por una transacción real.
+- `npm test`: 10/10 pruebas aprobadas.
+- `npm run build`: TypeScript, Vite y precaché correctos.
+- `npm run test:e2e`: 10/10 pruebas aprobadas, incluidas las cinco existentes.
+- Las cinco pruebas nuevas verifican fallos de descarga, evaluación de módulos, renderizado React e IndexedDB no disponible, además de un fallo del módulo de registro PWA que no impide abrir React. Los tres fallos de arranque conservan datos preexistentes y, al restaurar los recursos y recargar, recuperan el saldo de -$50.
+- Verificador público ejecutado contra la URL real: bloqueado por el proxy, no aprobado.
+- `src/App.tsx` y `src/data.ts` permanecen sin cambios: no se alteran cálculos, funciones financieras ni almacenamiento.
