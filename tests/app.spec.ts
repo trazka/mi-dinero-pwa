@@ -1,8 +1,33 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import type { Data } from "../src/data";
+
+async function storedData(page: Page): Promise<Data | null> {
+  return page.evaluate(
+    () =>
+      new Promise<Data | null>((resolve, reject) => {
+        const open = indexedDB.open("mi-dinero");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("data", "readonly");
+          const get = tx.objectStore("data").get("main");
+          tx.oncomplete = () => {
+            db.close();
+            resolve(get.result ?? null);
+          };
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      }),
+  );
+}
+
 test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.getByRole("button", { name: "Nuevo movimiento" }).click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("income");
@@ -88,36 +113,94 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     ),
   ).toBe(true);
 });
-test("PWA almacena recursos y funciona completamente sin internet", async ({
-  page,
-  context,
-}) => {
-  await page.goto("/");
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
+for (const busyStorage of [false, true]) {
+  test(`PWA almacena recursos y funciona completamente sin internet${busyStorage ? " con IndexedDB ocupado" : ""}`, async ({
+    page,
+    context,
+  }) => {
+    await page.goto("./");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await expect
+      .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
+      .toBe(true);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.getByRole("button", { name: "Nuevo movimiento" }).click();
+    await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
+    await page
+      .getByLabel("Establecimiento o concepto")
+      .fill("Gasto sin conexión");
+    if (busyStorage) {
+      // Keep a real transaction ahead of the save. No application code is mocked:
+      // the write must wait for this transaction to finish before it can commit.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            const open = indexedDB.open("mi-dinero");
+            open.onerror = () => reject(open.error);
+            open.onsuccess = () => {
+              const db = open.result;
+              const tx = db.transaction("data", "readwrite");
+              const store = tx.objectStore("data");
+              let held = true;
+              (
+                window as typeof window & {
+                  releaseTestTransaction?: () => void;
+                }
+              ).releaseTestTransaction = () => {
+                held = false;
+              };
+              const pump = () => {
+                const get = store.get("main");
+                get.onsuccess = () => {
+                  if (held) pump();
+                };
+              };
+              tx.oncomplete = () => db.close();
+              tx.onabort = () => db.close();
+              pump();
+              resolve();
+            };
+          }),
+      );
+    }
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    if (busyStorage) {
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Guardando…", exact: true }),
+      ).toBeDisabled();
+      await page.evaluate(() =>
+        (window as typeof window & { releaseTestTransaction?: () => void })
+          .releaseTestTransaction!(),
+      );
+    }
+    // click() only waits for the event, not for IndexedDB. The app closes the
+    // dialog only after changeData has awaited the transaction's completion.
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.locator(".balance-number")).toContainText("-$50.00");
+    const beforeReload = await storedData(page);
+    expect(beforeReload?.movements).toHaveLength(1);
+    expect(beforeReload?.movements[0]).toMatchObject({
+      type: "expense",
+      amount: 50,
+      merchant: "Gasto sin conexión",
+    });
+    await page.reload();
+    await expect(page.locator(".balance-number")).toContainText("-$50.00");
+    await expect(
+      page.getByText("Gasto sin conexión", { exact: true }),
+    ).toBeVisible();
+    expect(await storedData(page)).toEqual(beforeReload);
+    await page.screenshot({
+      path: `test-results/iphone-offline${busyStorage ? "-busy-idb" : ""}.png`,
+      fullPage: true,
+    });
   });
-  await expect
-    .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
-    .toBe(true);
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByRole("button", { name: "Nuevo movimiento" }).click();
-  await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
-  await page
-    .getByLabel("Establecimiento o concepto")
-    .fill("Gasto sin conexión");
-  await page.getByRole("button", { name: "Guardar", exact: true }).click();
-  await page.reload();
-  await expect(page.locator(".balance-number")).toContainText("-$50.00");
-  await expect(
-    page.getByText("Gasto sin conexión", { exact: true }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: "test-results/iphone-offline.png",
-    fullPage: true,
-  });
-});
+}
 
 test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
   page,
@@ -154,20 +237,17 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
       notes: "",
     },
   ];
-  await page.goto("/");
+  await page.goto("./");
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
   page.once("dialog", (d) => d.accept());
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "respaldo.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),
-    });
-  await expect(page.getByRole("status")).toContainText("Datos guardados");
+  await page.locator("input[type=file]").setInputFiles({
+    name: "respaldo.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),
+  });
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
@@ -190,4 +270,48 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
     .getByLabel("Establecimiento", { exact: true })
     .fill("sin coincidencia");
   await expect(page.locator("tbody tr")).toHaveCount(0);
+});
+
+test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async ({
+  page,
+  context,
+}) => {
+  await page.goto("./");
+  const manifestURL = await page
+    .locator('link[rel="manifest"]')
+    .getAttribute("href");
+  expect(manifestURL).toBe("/mi-dinero-pwa/manifest.webmanifest");
+  const response = await page.request.get(manifestURL!);
+  expect(response.ok()).toBe(true);
+  const manifest = await response.json();
+  expect(manifest.id).toBe("/mi-dinero-pwa/");
+  expect(manifest.start_url).toBe("/mi-dinero-pwa/");
+  expect(manifest.scope).toBe("/mi-dinero-pwa/");
+  for (const icon of manifest.icons) {
+    expect(icon.src).toMatch(/^\/mi-dinero-pwa\//);
+    const image = await page.request.get(icon.src);
+    expect(image.ok()).toBe(true);
+    expect(image.headers()["content-type"]).toContain("image/png");
+  }
+  const registration = await page.evaluate(async () => {
+    const sw = await navigator.serviceWorker.ready;
+    return {
+      scope: new URL(sw.scope).pathname,
+      script: new URL(sw.active!.scriptURL).pathname,
+    };
+  });
+  expect(registration).toEqual({
+    scope: "/mi-dinero-pwa/",
+    script: "/mi-dinero-pwa/sw.js",
+  });
+  expect(
+    await page.locator('link[rel="apple-touch-icon"]').getAttribute("href"),
+  ).toBe("/mi-dinero-pwa/apple-touch-icon.png");
+  await expect
+    .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
+    .toBe(true);
+  await context.setOffline(true);
+  await page.goto("./ruta-de-prueba");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/mi-dinero-pwa/ruta-de-prueba");
 });
