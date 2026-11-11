@@ -1,0 +1,193 @@
+import { test, expect } from "@playwright/test";
+test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Nuevo movimiento" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Tipo", { exact: true }).selectOption("income");
+  await dialog.getByLabel("Importe (MXN)", { exact: true }).fill("5000");
+  await dialog
+    .getByLabel("Establecimiento o concepto")
+    .fill("Ingreso de prueba");
+  await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$5,000.00");
+  await page.getByRole("button", { name: "Nuevo movimiento" }).click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Importe (MXN)", { exact: true }).fill("125.50");
+  await dialog
+    .getByLabel("Establecimiento o concepto")
+    .fill("Tienda de prueba");
+  await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$4,874.50");
+  await page.getByRole("button", { name: "Editar Tienda de prueba" }).click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Importe (MXN)", { exact: true })
+    .fill("100");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$4,900.00");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Deudas", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Nueva deuda" }).click();
+  dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Acreedor", { exact: true })
+    .fill("Acreedor de prueba");
+  await dialog.getByLabel("Importe original (MXN)").fill("1000");
+  await dialog.getByLabel("Saldo pendiente actual (MXN)").fill("800");
+  await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await page.getByRole("button", { name: "Registrar abono" }).click();
+  await page.getByLabel("Importe del abono (MXN)").fill("200");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator(".debt-number")).toHaveText("$600.00");
+  await page.reload();
+  await expect(page.locator(".balance-number")).toContainText("$4,700.00");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Movimientos", exact: true })
+    .click();
+  await expect(page.locator(".movement")).toHaveCount(3);
+  await page.getByLabel("Establecimiento", { exact: true }).fill("Tienda");
+  await expect(page.locator(".movement")).toHaveCount(1);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Eliminar Tienda de prueba" }).click();
+  await expect(page.locator(".movement")).toHaveCount(0);
+  await page.getByLabel("Establecimiento", { exact: true }).fill("");
+  await expect(page.locator(".movement")).toHaveCount(2);
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Reportes", exact: true })
+    .click();
+  await page.getByLabel("Agrupar por").selectOption("daily");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody")).toContainText("$200.00");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Respaldos", exact: true })
+    .click();
+  const promise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar respaldo JSON" }).click();
+  const download = await promise;
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  page.once("dialog", (d) => d.accept());
+  await page.locator("input[type=file]").setInputFiles(path!);
+  await expect(page.getByRole("status")).toContainText("Datos guardados");
+  await page.locator("input[type=file]").setInputFiles({
+    name: "invalid.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"version":2}'),
+  });
+  await expect(page.getByRole("alert")).toContainText("respaldo no es válido");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+test("PWA almacena recursos y funciona completamente sin internet", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await expect
+    .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
+    .toBe(true);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: "Nuevo movimiento" }).click();
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
+  await page
+    .getByLabel("Establecimiento o concepto")
+    .fill("Gasto sin conexión");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await page.reload();
+  await expect(page.locator(".balance-number")).toContainText("-$50.00");
+  await expect(
+    page.getByText("Gasto sin conexión", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/iphone-offline.png",
+    fullPage: true,
+  });
+});
+
+test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
+  page,
+}) => {
+  const movements = [
+    {
+      id: "a",
+      type: "income",
+      date: "2026-10-31",
+      merchant: "Concepto ficticio",
+      category: "Otros",
+      amount: 100,
+      method: "Efectivo",
+      notes: "",
+    },
+    {
+      id: "b",
+      type: "expense",
+      date: "2026-11-01",
+      merchant: "Tienda ficticia",
+      category: "Alimentación",
+      amount: 20,
+      method: "Efectivo",
+      notes: "",
+    },
+    {
+      id: "c",
+      type: "expense",
+      date: "2026-11-02",
+      merchant: "Tienda ficticia",
+      category: "Transporte",
+      amount: 30,
+      method: "Efectivo",
+      notes: "",
+    },
+  ];
+  await page.goto("/");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Respaldos", exact: true })
+    .click();
+  page.once("dialog", (d) => d.accept());
+  await page
+    .locator("input[type=file]")
+    .setInputFiles({
+      name: "respaldo.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),
+    });
+  await expect(page.getByRole("status")).toContainText("Datos guardados");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Reportes", exact: true })
+    .click();
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await page.getByLabel("Agrupar por").selectOption("weekly");
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator("tbody tr").last()).toContainText("$80.00");
+  await page.getByLabel("Agrupar por").selectOption("daily");
+  await expect(page.locator("tbody tr")).toHaveCount(3);
+  await page.getByLabel("Desde", { exact: true }).fill("2026-11-01");
+  await page.getByLabel("Hasta", { exact: true }).fill("2026-11-02");
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await page
+    .getByLabel("Categoría", { exact: true })
+    .selectOption("Alimentación");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody")).toContainText("$20.00");
+  await page
+    .getByLabel("Establecimiento", { exact: true })
+    .fill("sin coincidencia");
+  await expect(page.locator("tbody tr")).toHaveCount(0);
+});
