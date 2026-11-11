@@ -3,7 +3,7 @@ export default defineConfig({
   testDir: "tests",
   workers: 1,
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: "http://localhost:4173/mi-dinero-pwa/",
     ...devices["iPhone 13"],
     defaultBrowserType: "chromium",
     launchOptions: {
@@ -16,7 +16,7 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run preview -- --port 4173",
-    url: "http://localhost:4173",
+    url: "http://localhost:4173/mi-dinero-pwa/",
     reuseExistingServer: !process.env.CI,
   },
 });

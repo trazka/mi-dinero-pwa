@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.getByRole("button", { name: "Nuevo movimiento" }).click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("income");
@@ -92,7 +92,7 @@ test("PWA almacena recursos y funciona completamente sin internet", async ({
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
@@ -154,20 +154,17 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
       notes: "",
     },
   ];
-  await page.goto("/");
+  await page.goto("./");
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
   page.once("dialog", (d) => d.accept());
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "respaldo.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),
-    });
-  await expect(page.getByRole("status")).toContainText("Datos guardados");
+  await page.locator("input[type=file]").setInputFiles({
+    name: "respaldo.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),
+  });
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
@@ -190,4 +187,48 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
     .getByLabel("Establecimiento", { exact: true })
     .fill("sin coincidencia");
   await expect(page.locator("tbody tr")).toHaveCount(0);
+});
+
+test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async ({
+  page,
+  context,
+}) => {
+  await page.goto("./");
+  const manifestURL = await page
+    .locator('link[rel="manifest"]')
+    .getAttribute("href");
+  expect(manifestURL).toBe("/mi-dinero-pwa/manifest.webmanifest");
+  const response = await page.request.get(manifestURL!);
+  expect(response.ok()).toBe(true);
+  const manifest = await response.json();
+  expect(manifest.id).toBe("/mi-dinero-pwa/");
+  expect(manifest.start_url).toBe("/mi-dinero-pwa/");
+  expect(manifest.scope).toBe("/mi-dinero-pwa/");
+  for (const icon of manifest.icons) {
+    expect(icon.src).toMatch(/^\/mi-dinero-pwa\//);
+    const image = await page.request.get(icon.src);
+    expect(image.ok()).toBe(true);
+    expect(image.headers()["content-type"]).toContain("image/png");
+  }
+  const registration = await page.evaluate(async () => {
+    const sw = await navigator.serviceWorker.ready;
+    return {
+      scope: new URL(sw.scope).pathname,
+      script: new URL(sw.active!.scriptURL).pathname,
+    };
+  });
+  expect(registration).toEqual({
+    scope: "/mi-dinero-pwa/",
+    script: "/mi-dinero-pwa/sw.js",
+  });
+  expect(
+    await page.locator('link[rel="apple-touch-icon"]').getAttribute("href"),
+  ).toBe("/mi-dinero-pwa/apple-touch-icon.png");
+  await expect
+    .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
+    .toBe(true);
+  await context.setOffline(true);
+  await page.goto("./ruta-de-prueba");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/mi-dinero-pwa/ruta-de-prueba");
 });

@@ -1,26 +1,19 @@
-# Primera versión funcional de Mi dinero PWA
+# Publicación automática de Mi dinero en GitHub Pages
 
-Implementa una aplicación local de finanzas personales para iPhone con React, TypeScript, Vite, IndexedDB y vite-plugin-pwa. Incluye inicio, movimientos editables, deudas con abonos vinculados, reportes filtrados y respaldos JSON/CSV. La interfaz está en español y utiliza MXN.
+Prepara la PWA para `https://trazka.github.io/mi-dinero-pwa/` y publica automáticamente al actualizar `main`.
 
-Cada abono genera un único gasto en una transacción atómica. Al revertir el abono se elimina su gasto asociado y se restituye el saldo. La importación valida los vínculos e identificadores antes de reemplazar los datos.
-
-Incluye manifest, iconos de iPhone, funcionamiento offline, instrucciones para agregar desde Safari y CI. No publica la aplicación ni incorpora datos bancarios reales.
+- Configura `/mi-dinero-pwa/` como ruta base de Vite y como identificador, inicio y alcance del manifiesto PWA.
+- Ajusta iconos, registro y fallback de navegación del service worker a esa ruta, limitando el fallback al proyecto.
+- Añade un workflow con instalación desde lockfile, pruebas, compilación, prueba offline, carga de `dist` y despliegue mediante las acciones oficiales de GitHub Pages. El permiso de publicación se limita al job de despliegue y las publicaciones se serializan.
+- Actualiza las pruebas de navegador para visitar la ruta real y verificar manifest, iconos, alcance y URL del service worker.
+- Documenta el requisito de seleccionar **Settings → Pages → Source: GitHub Actions**.
 
 ## Validación
 
-- Compilación TypeScript y Vite de producción.
-- 10 pruebas unitarias y de persistencia IndexedDB.
-- Pruebas de navegador con tamaño de iPhone: movimientos, edición/eliminación, deudas, filtros, reportes, exportación/importación y persistencia; recarga y registro sin conexión mediante el service worker real.
-- Revisión manual pendiente de instalación en un dispositivo físico con Safari/iOS.
-
-## Revisión
-
-Los datos permanecen en el dispositivo; no hay servidor ni sincronización. Los respaldos no están cifrados. Las deudas existentes no generan movimientos hasta registrar nuevos abonos. Los abonos usan transferencia como método de pago.
-
-## Resultados de esta validación
-
-- `npm test`: 10/10 pruebas aprobadas.
-- `npm run build`: compilación TypeScript/Vite y generación del service worker correctas.
-- `npm run test:e2e`: 3/3 pruebas aprobadas en Chromium con perfil iPhone 13, incluido funcionamiento sin internet.
-- `npm audit --omit=dev`: sin vulnerabilidades en dependencias de ejecución. La auditoría completa conserva 6 avisos transitivos de herramientas de compilación (2 bajos y 4 moderados, cadena Workbox); `npm audit fix` no los resolvió sin cambios adicionales de compatibilidad.
+- `npm test`: 10 pruebas aprobadas.
+- `npm run build`: TypeScript, Vite y generación del service worker correctos.
+- `npm run test:e2e`: 4 pruebas con perfil iPhone 13 en Chromium; incluye operaciones financieras, persistencia, respaldo, filtros, uso sin internet y metadatos PWA bajo `/mi-dinero-pwa/`.
 - `git diff --check`: correcto.
+- `src/`, las dependencias y el lockfile permanecen sin cambios respecto a `main`: no se modifica la lógica de ingresos, gastos, deudas ni IndexedDB.
+
+El despliegue remoto se verificará cuando esta PR se integre en `main` y Pages esté habilitado. Esta rama no publica la aplicación. La instalación en Safari físico requiere una comprobación manual tras el despliegue. IndexedDB sigue asociado al origen: los datos existentes de localhost u otro dominio se trasladan con un respaldo JSON si se necesitan en GitHub Pages.
