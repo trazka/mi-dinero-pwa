@@ -45,3 +45,24 @@ jobs:
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
+
+  verify-published:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Comprobar interfaz publicada en GitHub Pages
+        run: npm run test:pages
+        env:
+          PLAYWRIGHT_USE_BUNDLED_BROWSER: "1"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: github-pages-interface
+          path: test-results/pages-live.png
