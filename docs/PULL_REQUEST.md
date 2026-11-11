@@ -17,3 +17,15 @@ Prepara la PWA para `https://trazka.github.io/mi-dinero-pwa/` y publica automát
 - `src/`, las dependencias y el lockfile permanecen sin cambios respecto a `main`: no se modifica la lógica de ingresos, gastos, deudas ni IndexedDB.
 
 El despliegue remoto se verificará cuando esta PR se integre en `main` y Pages esté habilitado. Esta rama no publica la aplicación. La instalación en Safari físico requiere una comprobación manual tras el despliegue. IndexedDB sigue asociado al origen: los datos existentes de localhost u otro dominio se trasladan con un respaldo JSON si se necesitan en GitHub Pages.
+
+## Corrección de la prueba offline del PR #2
+
+La recarga se ejecutaba al terminar `click()`, sin esperar a que el guardado asíncrono terminase. `changeData` ya espera `tx.done` y la aplicación solo entonces actualiza el saldo y cierra el formulario. Una recarga anterior puede cancelar la operación; no es un error del cálculo ni de la lectura posterior de IndexedDB.
+
+La causa se reprodujo manteniendo ocupada la base mediante una transacción real: recargar inmediatamente después del clic dejó `data/main` vacío y el saldo en $0; esperar al cierre del formulario conservó un movimiento de gasto por $50 y mostró -$50 tras recargar.
+
+La prueba conserva todas las verificaciones anteriores y ahora espera la confirmación real de guardado (cierre del formulario), comprueba -$50 antes de recargar, inspecciona directamente IndexedDB y exige que el conjunto de datos sea idéntico después de recargar. Se ejecuta tanto normalmente como con IndexedDB ocupado, comprobando también el estado «Guardando…» mientras la escritura está bloqueada. No se añaden pausas fijas, reintentos de la prueba ni excepciones a las aserciones. No se cambia código de la aplicación ni cálculos financieros.
+
+Validación de la corrección: 10 pruebas unitarias, 5 pruebas de navegador y compilación de producción correctas.
+
+La comprobación adicional de estabilidad (`npx playwright test --grep 'PWA almacena' --repeat-each=10`) completó 20/20 ejecuciones aprobadas: diez con almacenamiento normal y diez con la escritura bloqueada temporalmente por una transacción real.

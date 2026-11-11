@@ -1,4 +1,29 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import type { Data } from "../src/data";
+
+async function storedData(page: Page): Promise<Data | null> {
+  return page.evaluate(
+    () =>
+      new Promise<Data | null>((resolve, reject) => {
+        const open = indexedDB.open("mi-dinero");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("data", "readonly");
+          const get = tx.objectStore("data").get("main");
+          tx.oncomplete = () => {
+            db.close();
+            resolve(get.result ?? null);
+          };
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      }),
+  );
+}
+
 test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone", async ({
   page,
 }) => {
@@ -88,36 +113,94 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     ),
   ).toBe(true);
 });
-test("PWA almacena recursos y funciona completamente sin internet", async ({
-  page,
-  context,
-}) => {
-  await page.goto("./");
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
+for (const busyStorage of [false, true]) {
+  test(`PWA almacena recursos y funciona completamente sin internet${busyStorage ? " con IndexedDB ocupado" : ""}`, async ({
+    page,
+    context,
+  }) => {
+    await page.goto("./");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await expect
+      .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
+      .toBe(true);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.getByRole("button", { name: "Nuevo movimiento" }).click();
+    await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
+    await page
+      .getByLabel("Establecimiento o concepto")
+      .fill("Gasto sin conexión");
+    if (busyStorage) {
+      // Keep a real transaction ahead of the save. No application code is mocked:
+      // the write must wait for this transaction to finish before it can commit.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            const open = indexedDB.open("mi-dinero");
+            open.onerror = () => reject(open.error);
+            open.onsuccess = () => {
+              const db = open.result;
+              const tx = db.transaction("data", "readwrite");
+              const store = tx.objectStore("data");
+              let held = true;
+              (
+                window as typeof window & {
+                  releaseTestTransaction?: () => void;
+                }
+              ).releaseTestTransaction = () => {
+                held = false;
+              };
+              const pump = () => {
+                const get = store.get("main");
+                get.onsuccess = () => {
+                  if (held) pump();
+                };
+              };
+              tx.oncomplete = () => db.close();
+              tx.onabort = () => db.close();
+              pump();
+              resolve();
+            };
+          }),
+      );
+    }
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    if (busyStorage) {
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Guardando…", exact: true }),
+      ).toBeDisabled();
+      await page.evaluate(() =>
+        (window as typeof window & { releaseTestTransaction?: () => void })
+          .releaseTestTransaction!(),
+      );
+    }
+    // click() only waits for the event, not for IndexedDB. The app closes the
+    // dialog only after changeData has awaited the transaction's completion.
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.locator(".balance-number")).toContainText("-$50.00");
+    const beforeReload = await storedData(page);
+    expect(beforeReload?.movements).toHaveLength(1);
+    expect(beforeReload?.movements[0]).toMatchObject({
+      type: "expense",
+      amount: 50,
+      merchant: "Gasto sin conexión",
+    });
+    await page.reload();
+    await expect(page.locator(".balance-number")).toContainText("-$50.00");
+    await expect(
+      page.getByText("Gasto sin conexión", { exact: true }),
+    ).toBeVisible();
+    expect(await storedData(page)).toEqual(beforeReload);
+    await page.screenshot({
+      path: `test-results/iphone-offline${busyStorage ? "-busy-idb" : ""}.png`,
+      fullPage: true,
+    });
   });
-  await expect
-    .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
-    .toBe(true);
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByRole("button", { name: "Nuevo movimiento" }).click();
-  await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
-  await page
-    .getByLabel("Establecimiento o concepto")
-    .fill("Gasto sin conexión");
-  await page.getByRole("button", { name: "Guardar", exact: true }).click();
-  await page.reload();
-  await expect(page.locator(".balance-number")).toContainText("-$50.00");
-  await expect(
-    page.getByText("Gasto sin conexión", { exact: true }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: "test-results/iphone-offline.png",
-    fullPage: true,
-  });
-});
+}
 
 test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
   page,
