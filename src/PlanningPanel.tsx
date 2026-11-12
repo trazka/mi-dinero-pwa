@@ -1,3 +1,4 @@
+import ConceptInput from "./ConceptInput";
 import MoneyInput from "./MoneyInput";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import DatePicker from "./DatePicker";
@@ -145,12 +146,14 @@ export function BudgetPanel({
 }
 export function RecurringPanel({
   data,
+  suggestions,
   mutate,
   busy,
   categories,
   onEditing,
 }: {
   data: Data;
+  suggestions: string[];
   mutate: Mutate;
   busy: boolean;
   categories: string[];
@@ -285,9 +288,9 @@ export function RecurringPanel({
           <h3>{draft ? "Editar recurrente" : "Nuevo recurrente"}</h3>
           <label>
             Concepto recurrente
-            <input
+            <ConceptInput
+              suggestions={suggestions}
               name="merchant"
-              list="merchant-suggestions"
               autoComplete="off"
               aria-label="Concepto recurrente"
               maxLength={120}

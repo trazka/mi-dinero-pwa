@@ -56,7 +56,7 @@ test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", asy
   ).toBeHidden();
   await expect(
     page.getByRole("button", { name: "Nuevo apartado", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   const download = page.waitForEvent("download");
@@ -202,4 +202,27 @@ test("sin bloqueo permite crear la primera meta desde una aportación", async ({
   await expect(
     page.getByRole("heading", { name: "Ahorros ocultos", exact: true }),
   ).toBeVisible();
+});
+
+test("Apartados permite aportar directamente sin desbloquear", async ({
+  page,
+}) => {
+  await seed(page);
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Apartados", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Agregar dinero", exact: true })
+    .click();
+  await expect(page.getByLabel("Tipo", { exact: true })).toHaveValue("saving");
+  await expect(
+    page.getByLabel("Apartado de ahorro", { exact: true }),
+  ).toHaveValue("saving");
+  await expect(
+    page.getByRole("heading", {
+      name: "Mi dinero está bloqueado",
+      exact: true,
+    }),
+  ).toHaveCount(0);
 });

@@ -2355,3 +2355,49 @@ li {
     font-weight: 650;
   }
 }
+
+/* Keep the primary add action compact and clear of navigation and keyboards. */
+.page-heading > .section-add {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+:root[data-field-focused] .page-heading > .section-add {
+  display: none;
+}
+.concept-input {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+.concept-input > input {
+  width: 100%;
+}
+.concept-options {
+  position: relative;
+  z-index: 5;
+  list-style: none;
+  padding: 4px;
+  margin: 6px 0 0;
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--native-line);
+  border-radius: 12px;
+  background: var(--native-surface);
+}
+.concept-options > li {
+  padding: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.concept-options > li:hover,
+.concept-options > li[aria-selected="true"] {
+  background: var(--native-active);
+}
