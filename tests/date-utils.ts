@@ -6,11 +6,22 @@ export async function chooseDate(page: Page, label: string, date: string) {
     exact: true,
   });
   await calendar
-    .getByLabel("Año", { exact: true })
-    .selectOption(date.slice(0, 4));
+    .getByRole("button", { name: "Cambiar año", exact: true })
+    .click();
   await calendar
-    .getByLabel("Mes", { exact: true })
-    .selectOption(String(Number(date.slice(5, 7)) - 1));
+    .getByRole("button", { name: date.slice(0, 4), exact: true })
+    .click();
+  await calendar
+    .getByRole("button", { name: "Cambiar mes", exact: true })
+    .click();
+  await calendar
+    .getByRole("button", {
+      name: new Date(date + "T12:00:00").toLocaleDateString("es-MX", {
+        month: "long",
+      }),
+      exact: true,
+    })
+    .click();
   await calendar.locator(`button[data-date="${date}"]`).click();
   await expect(calendar).toHaveCount(0);
 }

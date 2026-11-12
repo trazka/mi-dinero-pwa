@@ -4,6 +4,7 @@ import "./style.css";
 
 declare global {
   interface Window {
+    __miDineroUpdate?: () => Promise<void>;
     __miDineroStartup?: { fail(message: string): void; ready(): void };
   }
 }
@@ -57,11 +58,12 @@ import("./App")
 // every online launch, without unregistering it or touching caches or IndexedDB.
 import("virtual:pwa-register")
   .then(({ registerSW }) => {
-    registerSW({
+    const applyUpdate = registerSW({
       onOfflineReady() {
         window.dispatchEvent(new Event("offline-ready"));
       },
       onNeedRefresh() {
+        window.__miDineroUpdate = () => applyUpdate(true);
         window.dispatchEvent(new Event("update-ready"));
       },
       onRegisteredSW(_url, registration) {

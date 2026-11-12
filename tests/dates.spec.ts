@@ -60,11 +60,14 @@ test("fechas de deuda y abono se seleccionan sin confirmación y filtros respeta
     name: "Seleccionar fecha",
     exact: true,
   });
-  await calendar.getByLabel("Año", { exact: true }).selectOption("2027");
-  await calendar.getByLabel("Mes", { exact: true }).selectOption("0");
+  await calendar.getByRole("button", { name: "Cambiar año" }).click();
+  await calendar.getByRole("button", { name: "2027", exact: true }).click();
+  await calendar.getByRole("button", { name: "Cambiar mes" }).click();
+  await calendar.getByRole("button", { name: "enero", exact: true }).click();
   await expect(
     calendar.locator('button[data-date="2027-01-31"]'),
   ).toBeDisabled();
+  await expect(calendar.locator("select, input[type=date]")).toHaveCount(0);
   await calendar.getByRole("button", { name: "Mes siguiente" }).click();
   await calendar.locator('button[data-date="2027-02-01"]').click();
   await expect(calendar).toHaveCount(0);

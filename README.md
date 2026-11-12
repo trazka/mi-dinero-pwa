@@ -72,3 +72,5 @@ El workflow ejecuta esta comprobación **después** de publicar y adjunta la cap
 Para diagnosticar una pantalla vacía, conserva el texto exacto del error visible y consulta el artefacto del último despliegue. Una sesión privada nueva también reproduce problemas de recursos o ejecución sin depender de una instalación anterior. No borres los datos del sitio como paso de diagnóstico; contienen tus movimientos.
 
 Los campos de fecha usan un calendario en español: al tocar el día, se aplica la selección y se cierra automáticamente, sin palomita adicional. En los formularios, el botón Guardar sigue siendo necesario para guardar el registro completo; los filtros se aplican al seleccionar la fecha.
+
+El mes y el año también se seleccionan dentro del calendario con botones, sin abrir selectores nativos de iPhone. Si hay una versión pendiente, el aviso **Actualizar aplicación** permite aplicarla; guarda o cierra los formularios antes de pulsarlo. La actualización no borra IndexedDB ni los respaldos.
