@@ -83,3 +83,54 @@ test("menú lateral horizontal no muestra tarjetas decorativas recortadas", asyn
   await page.setViewportSize({ width: 1200, height: 900 });
   await expect(page.locator(".sidebar-note")).toBeVisible();
 });
+
+test("deslizamientos táctiles reales recorren todas las secciones en ambos sentidos", async ({
+  page,
+  context,
+}) => {
+  await page.goto("./");
+  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  const cdp = await context.newCDPSession(page);
+  async function swipe(direction: "left" | "right") {
+    const x = direction === "left" ? 300 : 90;
+    const dx = direction === "left" ? -180 : 180;
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y: 120 }],
+    });
+    for (let step = 1; step <= 6; step++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: x + (dx * step) / 6, y: 120 + (35 * step) / 6 }],
+      });
+    }
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  }
+  await swipe("right");
+  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  for (const name of [
+    "Movimientos",
+    "Deudas",
+    "Apartados",
+    "Reportes",
+    "Respaldos",
+  ]) {
+    await swipe("left");
+    await expect(page.locator(".page h1")).toHaveText(name);
+  }
+  await swipe("left");
+  await expect(page.locator(".page h1")).toHaveText("Respaldos");
+  for (const name of [
+    "Reportes",
+    "Apartados",
+    "Deudas",
+    "Movimientos",
+    "Tu resumen",
+  ]) {
+    await swipe("right");
+    await expect(page.locator(".page h1")).toHaveText(name);
+  }
+});

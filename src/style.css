@@ -2181,3 +2181,15 @@ li {
 .savings-panel .planning-actions button {
   white-space: normal;
 }
+
+/* Let the app handle horizontal gestures while native vertical scroll and zoom remain available. */
+.page {
+  touch-action: pan-y pinch-zoom;
+}
+.page :is(.table-scroll, input, textarea, select, [role="slider"]) {
+  touch-action: auto;
+}
+
+.page:has(.table-scroll) {
+  touch-action: auto;
+}

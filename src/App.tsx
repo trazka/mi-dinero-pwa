@@ -700,7 +700,9 @@ export default function App() {
             if (
               e.touches.length !== 1 ||
               (swipe.current &&
-                Math.abs(e.touches[0].clientY - swipe.current.y) > 30)
+                Math.abs(e.touches[0].clientY - swipe.current.y) > 20 &&
+                Math.abs(e.touches[0].clientY - swipe.current.y) >
+                  Math.abs(e.touches[0].clientX - swipe.current.x))
             )
               swipe.current = null;
           }}
@@ -712,9 +714,9 @@ export default function App() {
             const dx = e.changedTouches[0].clientX - start.x;
             const dy = e.changedTouches[0].clientY - start.y;
             if (
-              Date.now() - start.time > 700 ||
-              Math.abs(dx) < 70 ||
-              Math.abs(dx) < Math.abs(dy) * 2
+              Date.now() - start.time > 1200 ||
+              Math.abs(dx) < 60 ||
+              Math.abs(dx) < Math.abs(dy) * 1.5
             )
               return;
             const next =

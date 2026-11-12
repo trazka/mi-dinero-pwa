@@ -131,3 +131,5 @@ Cada apartado tiene progreso e historial de aportaciones y retiros. Puedes cambi
 Los apartados se guardan en IndexedDB y se incluyen en el JSON; importar sigue reemplazando todo el conjunto. Los respaldos anteriores sin apartados se admiten. El CSV mantiene su propósito de exportar movimientos financieros; las reservas se conservan en JSON. No hay aportaciones automáticas, intereses ni conexión bancaria.
 
 En horizontal con poca altura, el menú lateral oculta su tarjeta informativa y pie decorativo para evitar que aparezcan recortados; los accesos a las secciones siguen disponibles.
+
+Para cambiar de sección, desliza horizontalmente sobre el contenido: a la izquierda avanzas y a la derecha vuelves. El recorrido es Inicio → Movimientos → Deudas → Apartados → Reportes → Respaldos, sin saltar del último al primero. Se tolera una pequeña desviación vertical del dedo; los desplazamientos verticales, las tablas horizontales y los formularios abiertos conservan su función.
