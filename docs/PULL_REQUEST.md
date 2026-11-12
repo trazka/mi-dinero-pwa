@@ -22,8 +22,20 @@ Los formularios de planificación abiertos bloquean la aplicación de una actual
 
 - `npm test`: 34 pruebas de datos y persistencia, incluidas doce nuevas de edición, corte, presupuestos, recurrentes, concurrencia, búsquedas y respaldos.
 - `npm run build`: TypeScript, Vite y precaché.
-- `npm run test:e2e`: 24 pruebas de navegador con perfil iPhone, incluidas las anteriores y cuatro nuevas para los siete flujos y la recarga PWA.
+- `npm run test:e2e`: 25 pruebas de navegador con perfil iPhone, incluidas las anteriores y cinco nuevas para los siete flujos y la recarga PWA.
 - Prueba nueva de recurrentes/cortes cubre meses cortos y años bisiestos; los presupuestos excluyen ingresos y compras TDC e incluyen abonos en su mes.
 - Flujos nuevos de navegador comprueban edición con historial, abono directo, búsquedas y filtros, confirmación/cancelación de recurrentes, presupuestos excedidos, exportación/restauración y compras recurrentes TDC sin gasto anticipado.
 
 La publicación y verificación de la URL pública ocurrirán al integrar la PR. La comprobación final en Safari físico queda tras publicar.
+
+## Corrección de la validación de respaldos
+
+La prueba de tarjeta podía seleccionar un archivo en cuanto estaba descargado, aunque la marca de exportación aún se estaba escribiendo. El control real permanecía deshabilitado por `busy`, pero `setInputFiles` puede disparar el cambio de forma programática aun así. La importación se omitía al encontrar la mutación ocupada. Se reprodujo bloqueando una transacción real: el archivo ya existía, el selector seguía deshabilitado y un respaldo con importe distinto no se importaba.
+
+Las pruebas ahora esperan que el selector esté habilitado, igual que un usuario real. Se conservan todas las aserciones de importación, deuda, gasto y persistencia. Una prueba nueva retiene la transacción de exportación, verifica que la importación espere, restaura datos con un importe distinto y comprueba directamente IndexedDB y el saldo después de recargar.
+
+También se reprodujo un aviso offline tardío que reemplazaba «Datos guardados». Se cambia únicamente su prioridad: el aviso de preparación offline no sustituye el resultado visible de una operación. La prueba fuerza ese evento para comprobarlo. No se cambian cálculos ni se descartan pruebas.
+
+Resultados tras la corrección: compilación correcta, **34/34 pruebas unitarias** y **25/25 pruebas de navegador** aprobadas.
+
+Comprobación adicional de estabilidad: `npx playwright test tests/credit.spec.ts tests/backup-race.spec.ts --repeat-each=5` completó **10/10 ejecuciones aprobadas**, sin ampliar tiempos de espera ni activar reintentos.

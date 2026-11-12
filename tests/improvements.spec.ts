@@ -1,3 +1,4 @@
+import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
 const base = {
   version: 2,
@@ -25,7 +26,7 @@ async function seed(page: import("@playwright/test").Page, data: unknown) {
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
   page.once("dialog", (d) => d.accept());
-  await page.locator("input[type=file]").setInputFiles({
+  await setBackupFile(page, {
     name: "fixture.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(data)),
@@ -164,7 +165,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await page.reload();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   page.once("dialog", (d) => d.accept());
-  await page.locator("input[type=file]").setInputFiles(path!);
+  await setBackupFile(page, path!);
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".planning-item")).toHaveCount(2);

@@ -187,7 +187,10 @@ export default function App() {
           "No se pudo abrir el almacenamiento. Permite el almacenamiento local y vuelve a cargar.",
         ),
       );
-    const offline = () => setNotice("Aplicación lista para usar sin internet.");
+    const offline = () =>
+      setNotice(
+        (current) => current || "Aplicación lista para usar sin internet.",
+      );
     const update = () => setUpdateAvailable(true);
     if (window.__miDineroUpdate) setUpdateAvailable(true);
     window.addEventListener("offline-ready", offline);
