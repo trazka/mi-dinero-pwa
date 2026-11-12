@@ -1,4 +1,4 @@
-import { useId, useState, type InputHTMLAttributes } from "react";
+import { useId, useRef, useState, type InputHTMLAttributes } from "react";
 
 const normalized = (value: string) =>
   value
@@ -17,6 +17,7 @@ export default function ConceptInput({
   onValueChange?: (value: string) => void;
 }) {
   const listId = useId();
+  const press = useRef<{ id: number; x: number; y: number } | null>(null);
   const [text, setText] = useState(String(defaultValue ?? ""));
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -93,7 +94,26 @@ export default function ConceptInput({
               id={`${listId}-${index}`}
               role="option"
               aria-selected={index === active}
-              onPointerDown={(e) => e.preventDefault()}
+              onPointerDown={(e) => {
+                // Keep the input focused. Safari may suppress the compatibility
+                // click after this, so select explicitly on pointer release.
+                e.preventDefault();
+                press.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+              }}
+              onPointerCancel={() => {
+                press.current = null;
+              }}
+              onPointerUp={(e) => {
+                const start = press.current;
+                press.current = null;
+                if (
+                  start?.id === e.pointerId &&
+                  Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10
+                ) {
+                  e.preventDefault();
+                  choose(item);
+                }
+              }}
               onClick={() => choose(item)}
             >
               {item}
