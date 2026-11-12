@@ -295,6 +295,14 @@ test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async
     expect(image.ok()).toBe(true);
     expect(image.headers()["content-type"]).toContain("image/png");
   }
+  const currentApple = await page.request.get(
+    "/mi-dinero-pwa/apple-touch-icon-v3.png",
+  );
+  for (const legacy of ["apple-touch-icon.png", "apple-touch-icon-v2.png"]) {
+    const oldURL = await page.request.get(`/mi-dinero-pwa/${legacy}`);
+    expect(oldURL.ok()).toBe(true);
+    expect(await oldURL.body()).toEqual(await currentApple.body());
+  }
   const registration = await page.evaluate(async () => {
     const sw = await navigator.serviceWorker.ready;
     return {

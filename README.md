@@ -109,3 +109,7 @@ En iPhone, el marco de la aplicación ocupa la altura disponible: encabezado y p
 - **Buscar movimientos:** busca por concepto, categoría, notas o importe (también con símbolo $ y comas), sin distinguir acentos. Combina con filtros por método, tarjeta/deuda, fechas, categoría y establecimiento; «Limpiar filtros» restablece todos. Los filtros de deuda incluyen sus compras y abonos. El CSV de Movimientos respeta la búsqueda y los filtros.
 
 Las siete mejoras funcionan localmente y sin conexión una vez preparada la PWA. Los recordatorios son avisos dentro de la app: no se solicitan permisos de notificaciones ni se envían mensajes externos. Los formularios de planificación abiertos bloquean el botón de actualización para evitar perder lo que estás escribiendo.
+
+El símbolo dentro del encabezado es la billetera en verde/menta (`icon-v2.svg`). El icono de lanzamiento en la pantalla de inicio es la M verde intensa sobre negro (PNG v3). Son recursos independientes. Actualizar la interfaz no garantiza que iOS sustituya el icono de lanzamiento de una instalación existente; conserva un respaldo JSON antes de intentar reemplazar el acceso.
+
+Las rutas PNG de iconos de lanzamiento anteriores también sirven la M intensa; el SVG de billetera usado dentro de la app es independiente y se conserva. Esto facilita las actualizaciones si iOS vuelve a descargar un icono antiguo, pero no obliga al sistema a renovar su copia guardada.

@@ -1,5 +1,5 @@
 import { chromium } from "@playwright/test";
-import { readFile, writeFile } from "node:fs/promises";
+import { copyFile, readFile, writeFile } from "node:fs/promises";
 const source =
   "data:image/png;base64," +
   (
@@ -37,4 +37,21 @@ try {
   }
 } finally {
   await browser.close();
+}
+
+// Preserve legacy launcher URLs, serving the current M to clients that refresh them.
+for (const [source, destinations] of [
+  ["icon-v3-192.png", ["icon-192.png", "icon-v2-192.png"]],
+  ["icon-v3-512.png", ["icon-512.png", "icon-v2-512.png"]],
+  [
+    "apple-touch-icon-v3.png",
+    ["apple-touch-icon.png", "apple-touch-icon-v2.png"],
+  ],
+]) {
+  for (const destination of destinations) {
+    await copyFile(
+      new URL("../public/" + source, import.meta.url),
+      new URL("../public/" + destination, import.meta.url),
+    );
+  }
 }
