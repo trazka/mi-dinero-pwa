@@ -115,3 +115,9 @@ El símbolo dentro del encabezado es la billetera en verde/menta (`icon-v2.svg`)
 Las rutas PNG de iconos de lanzamiento anteriores también sirven la nueva billetera con M; el SVG de billetera usado dentro de la app es independiente y se conserva. Esto facilita las actualizaciones si iOS vuelve a descargar un icono antiguo, pero no obliga al sistema a renovar su copia guardada.
 
 El icono de lanzamiento v5 combina la M con el contorno de una billetera en verde intenso sobre fondo negro uniforme. La billetera del encabezado no cambia.
+
+## Bloqueo opcional
+
+En **Respaldos → Seguridad**, activa el bloqueo del dispositivo. Requiere HTTPS, un autenticador de plataforma compatible y una llave de acceso. iPhone puede solicitar Face ID o el código del dispositivo; la app no controla esa elección. La activación comprueba la llave y exige guardar un código de recuperación fuera de la app. El código permite abrirla si no está disponible la llave.
+
+La app se bloquea al abrirla y al ocultarse, manteniendo los formularios sin guardar en memoria mientras la sesión siga abierta. Puedes bloquear manualmente o desactivarlo desde Seguridad. La comprobación de firmas se hace localmente, sin servidor; la configuración está en una base de seguridad separada y no forma parte del respaldo financiero. El bloqueo es una protección de interfaz, no un cifrado de los datos locales o JSON. No borres los datos del sitio ni desinstales la app para solucionar problemas de acceso. Verifica Face ID y el modo avión en el iPhone real después de publicar: las pruebas con autenticador virtual no sustituyen esa comprobación.
