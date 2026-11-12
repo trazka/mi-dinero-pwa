@@ -3,7 +3,7 @@ import { copyFile, readFile, writeFile } from "node:fs/promises";
 const source =
   "data:image/png;base64," +
   (
-    await readFile(new URL("../assets/icon-v3-master.png", import.meta.url))
+    await readFile(new URL("../assets/icon-v4-master.png", import.meta.url))
   ).toString("base64");
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_USE_BUNDLED_BROWSER
@@ -13,9 +13,9 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage();
   for (const [filename, size] of [
-    ["icon-v3-192.png", 192],
-    ["icon-v3-512.png", 512],
-    ["apple-touch-icon-v3.png", 180],
+    ["icon-v4-192.png", 192],
+    ["icon-v4-512.png", 512],
+    ["apple-touch-icon-v4.png", 180],
   ]) {
     const encoded = await page.evaluate(
       async ({ source, size }) => {
@@ -41,11 +41,15 @@ try {
 
 // Preserve legacy launcher URLs, serving the current M to clients that refresh them.
 for (const [source, destinations] of [
-  ["icon-v3-192.png", ["icon-192.png", "icon-v2-192.png"]],
-  ["icon-v3-512.png", ["icon-512.png", "icon-v2-512.png"]],
+  ["icon-v4-192.png", ["icon-192.png", "icon-v2-192.png", "icon-v3-192.png"]],
+  ["icon-v4-512.png", ["icon-512.png", "icon-v2-512.png", "icon-v3-512.png"]],
   [
-    "apple-touch-icon-v3.png",
-    ["apple-touch-icon.png", "apple-touch-icon-v2.png"],
+    "apple-touch-icon-v4.png",
+    [
+      "apple-touch-icon.png",
+      "apple-touch-icon-v2.png",
+      "apple-touch-icon-v3.png",
+    ],
   ],
 ]) {
   for (const destination of destinations) {

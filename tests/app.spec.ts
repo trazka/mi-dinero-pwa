@@ -296,9 +296,13 @@ test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async
     expect(image.headers()["content-type"]).toContain("image/png");
   }
   const currentApple = await page.request.get(
-    "/mi-dinero-pwa/apple-touch-icon-v3.png",
+    "/mi-dinero-pwa/apple-touch-icon-v4.png",
   );
-  for (const legacy of ["apple-touch-icon.png", "apple-touch-icon-v2.png"]) {
+  for (const legacy of [
+    "apple-touch-icon.png",
+    "apple-touch-icon-v2.png",
+    "apple-touch-icon-v3.png",
+  ]) {
     const oldURL = await page.request.get(`/mi-dinero-pwa/${legacy}`);
     expect(oldURL.ok()).toBe(true);
     expect(await oldURL.body()).toEqual(await currentApple.body());
@@ -316,7 +320,7 @@ test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async
   });
   expect(
     await page.locator('link[rel="apple-touch-icon"]').getAttribute("href"),
-  ).toBe("/mi-dinero-pwa/apple-touch-icon-v3.png");
+  ).toBe("/mi-dinero-pwa/apple-touch-icon-v4.png");
   await expect
     .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
     .toBe(true);
