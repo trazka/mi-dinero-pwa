@@ -11,6 +11,8 @@ export type Movement = {
   paymentId?: string;
   creditDebtId?: string;
   creditPaymentDebtId?: string;
+  recurringId?: string;
+  recurringDate?: string;
 };
 export type Payment = {
   id: string;
@@ -26,9 +28,32 @@ export type Debt = {
   due: string;
   payments: Payment[];
   kind?: "credit";
+  cutDay?: number;
+  paymentDay?: number;
+  notes?: string;
   charges?: { movementId: string; amount: number }[];
 };
-export type Data = { version: 2; movements: Movement[]; debts: Debt[] };
+export type Budget = { month: string; category: string; limit: number };
+export type Recurring = {
+  id: string;
+  merchant: string;
+  category: string;
+  amount: number;
+  method: string;
+  nextDate: string;
+  frequency: "weekly" | "monthly" | "yearly";
+  active: boolean;
+  anchorDay: number;
+  creditDebtId?: string;
+};
+export type Data = {
+  version: 2;
+  movements: Movement[];
+  debts: Debt[];
+  budgets?: Budget[];
+  recurrents?: Recurring[];
+  lastBackupAt?: string;
+};
 export const empty = (): Data => ({ version: 2, movements: [], debts: [] });
 export const money = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
@@ -126,6 +151,10 @@ export function saveMovement(data: Data, movement: Movement): Data {
       "Selecciona la deuda o tarjeta a la que corresponde la compra.",
     );
   const m = { ...movement };
+  if (old?.recurringId) {
+    m.recurringId = old.recurringId;
+    m.recurringDate = old.recurringDate;
+  }
   if (!linked || !m.creditDebtId) delete m.creditDebtId;
   const next: Data = {
     ...data,
@@ -219,6 +248,16 @@ export function validateBackup(input: unknown): Data {
     )
       return fail();
     unique(debt.id);
+    if (debt.notes !== undefined && !str(debt.notes)) return fail();
+    if (
+      [debt.cutDay, debt.paymentDay].some(
+        (day) =>
+          day !== undefined && (!Number.isInteger(day) || day < 1 || day > 31),
+      )
+    )
+      return fail();
+    if ((debt.cutDay === undefined) !== (debt.paymentDay === undefined))
+      return fail();
     if (debt.kind !== undefined && debt.kind !== "credit") return fail();
     if (
       debt.charges !== undefined &&
@@ -279,6 +318,72 @@ export function validateBackup(input: unknown): Data {
         return fail();
     }
   }
+  const occurrences = new Set<string>();
+  for (const m of d.movements) {
+    if ((m.recurringId === undefined) !== (m.recurringDate === undefined))
+      return fail();
+    if (m.recurringId !== undefined) {
+      const key = m.recurringId + ":" + m.recurringDate;
+      if (
+        !str(m.recurringId) ||
+        !m.recurringId ||
+        !validDate(m.recurringDate) ||
+        occurrences.has(key)
+      )
+        return fail();
+      occurrences.add(key);
+    }
+  }
+  if (d.budgets !== undefined && !Array.isArray(d.budgets)) return fail();
+  const budgetKeys = new Set<string>();
+  for (const b of d.budgets ?? []) {
+    if (
+      !b ||
+      typeof b.month !== "string" ||
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(b.month) ||
+      !str(b.category) ||
+      !cents(b.limit)
+    )
+      return fail();
+    const key = b.month + ":" + b.category;
+    if (budgetKeys.has(key)) return fail();
+    budgetKeys.add(key);
+  }
+  if (d.recurrents !== undefined && !Array.isArray(d.recurrents)) return fail();
+  for (const r of d.recurrents ?? []) {
+    if (
+      !r ||
+      !str(r.merchant) ||
+      !r.merchant.trim() ||
+      !str(r.category) ||
+      !str(r.method) ||
+      !cents(r.amount) ||
+      !validDate(r.nextDate) ||
+      !["weekly", "monthly", "yearly"].includes(r.frequency) ||
+      typeof r.active !== "boolean" ||
+      !Number.isInteger(r.anchorDay) ||
+      r.anchorDay < 1 ||
+      r.anchorDay > 31
+    )
+      return fail();
+    unique(r.id);
+    if (
+      r.method === "Tarjeta de crédito" &&
+      !d.debts.some((debt) => debt.id === r.creditDebtId)
+    )
+      return fail();
+    if (
+      r.creditDebtId !== undefined &&
+      (!str(r.creditDebtId) || r.method !== "Tarjeta de crédito")
+    )
+      return fail();
+  }
+  if (
+    d.lastBackupAt !== undefined &&
+    (typeof d.lastBackupAt !== "string" ||
+      !Number.isFinite(Date.parse(d.lastBackupAt)))
+  )
+    return fail();
   return { ...structuredClone(d), version: 2 };
 }
 const db = () =>

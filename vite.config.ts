@@ -36,6 +36,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: [`${base}sw-claims.js`],
         clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,png,svg,ico,woff2}"],
         navigateFallback: `${base}index.html`,

@@ -53,12 +53,25 @@ import("./App")
     );
   });
 
+// This also runs when an earlier registration is still completing across a reload.
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker.ready
+    .then((registration) => {
+      if (!navigator.serviceWorker.controller)
+        registration.active?.postMessage({ type: "MI_DINERO_CLAIM" });
+    })
+    .catch((error) =>
+      console.warn("No se pudo activar el modo sin conexión", error),
+    );
+}
+
 // A registration failure must never prevent React from starting. In prompt mode
 // an existing worker stays active until its clients close; check for updates on
 // every online launch, without unregistering it or touching caches or IndexedDB.
 import("virtual:pwa-register")
   .then(({ registerSW }) => {
     const applyUpdate = registerSW({
+      immediate: true,
       onOfflineReady() {
         window.dispatchEvent(new Event("offline-ready"));
       },
