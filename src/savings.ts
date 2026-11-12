@@ -1,4 +1,11 @@
-import { cents, expenseAmount, today, type Data, type Saving } from "./data";
+import {
+  cents,
+  expenseAmount,
+  today,
+  validDate,
+  type Data,
+  type Saving,
+} from "./data";
 export const savedAmount = (saving: Saving) =>
   saving.entries.reduce(
     (sum, e) =>
@@ -46,9 +53,15 @@ export function moveSaving(
   id: string,
   type: "deposit" | "withdrawal",
   amount: number,
+  date: string = today(),
 ): Data {
   const saving = data.savings?.find((s) => s.id === id);
-  if (!saving || !["deposit", "withdrawal"].includes(type) || !cents(amount))
+  if (
+    !saving ||
+    !["deposit", "withdrawal"].includes(type) ||
+    !cents(amount) ||
+    !validDate(date)
+  )
     throw Error("Introduce un importe válido.");
   if (type === "deposit" && amount > freeAmount(data))
     throw Error("El importe supera el dinero libre para apartar.");
@@ -62,7 +75,7 @@ export function moveSaving(
             ...s,
             entries: [
               ...s.entries,
-              { id: crypto.randomUUID(), type, amount, date: today() },
+              { id: crypto.randomUUID(), type, amount, date },
             ],
           }
         : s,

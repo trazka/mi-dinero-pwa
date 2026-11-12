@@ -89,3 +89,89 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await expect(page.getByText(/Retiro · \$100.00/)).toBeVisible();
   await page.screenshot({ path: "test-results/apartados-iphone.png" });
 });
+
+test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", async ({
+  page,
+}) => {
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  page.once("dialog", (d) => d.accept());
+  await setBackupFile(page, {
+    name: "saving.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        version: 2,
+        debts: [],
+        movements: [
+          {
+            id: "income",
+            type: "income",
+            date: "2026-11-01",
+            merchant: "Ingreso de prueba",
+            category: "Sueldo",
+            amount: 1000,
+            method: "Efectivo",
+            notes: "",
+          },
+        ],
+        savings: [
+          { id: "goal", name: "Vacaciones", target: 2000, entries: [] },
+        ],
+      }),
+    ),
+  });
+  await expect(page.getByRole("status")).toContainText("Datos guardados");
+  await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("saving");
+  await expect(
+    page.getByLabel("Apartado de ahorro", { exact: true }),
+  ).toHaveValue("goal");
+  await expect(
+    page.getByLabel("Establecimiento o concepto", { exact: true }),
+  ).toHaveCount(0);
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("1200");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "dinero libre",
+  );
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("250");
+  await page.getByLabel("Fecha", { exact: true }).click();
+  await page.getByRole("button", { name: "Hoy", exact: true }).click();
+  const selectedDate = await page.locator('input[name="date"]').inputValue();
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".movement")).toHaveCount(1);
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await expect(page.getByLabel("Progreso de Vacaciones")).toHaveAttribute(
+    "value",
+    "250",
+  );
+  await page.getByText("Historial de Vacaciones", { exact: true }).click();
+  await expect(
+    page.getByText(`${selectedDate} · Aportación · $250.00`, { exact: true }),
+  ).toBeVisible();
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$1,000.00");
+  await expect(page.locator(".savings-summary")).toContainText("$750.00");
+});
+
+test("Nuevo movimiento permite crear un apartado cuando no hay metas", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("saving");
+  await page
+    .getByRole("button", { name: "Crear apartado", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await expect(page.getByLabel("Nombre del apartado")).toBeVisible();
+});

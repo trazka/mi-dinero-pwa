@@ -135,3 +135,5 @@ En horizontal con poca altura, el menú lateral oculta su tarjeta informativa y 
 Para cambiar de sección, desliza horizontalmente sobre el contenido: a la izquierda avanzas y a la derecha vuelves. El recorrido es Inicio → Movimientos → Deudas → Apartados → Reportes → Respaldos, sin saltar del último al primero. Se tolera una pequeña desviación vertical del dedo; los desplazamientos verticales, las tablas horizontales y los formularios abiertos conservan su función.
 
 En horizontal, el botón de panel situado a la izquierda de «Mi dinero» permite **Ocultar menú lateral** y **Mostrar menú lateral**. Al ocultarlo, el contenido ocupa el ancho disponible y conserva la sección actual. En vertical se mantiene la navegación inferior; el botón de panel solo aparece donde existe menú lateral.
+
+También puedes aportar desde **Nuevo movimiento → Tipo → Apartado**: selecciona tu meta, importe y fecha. Si solo tienes un apartado queda seleccionado. Esta operación solo reserva saldo y aparece en el historial de la meta; no genera un gasto en Movimientos. Si aún no hay metas, **Crear apartado** abre el formulario correspondiente.

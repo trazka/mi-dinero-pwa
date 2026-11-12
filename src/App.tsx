@@ -1,5 +1,5 @@
 import SavingsPanel from "./SavingsPanel";
-import { freeAmount, reservedAmount } from "./savings";
+import { freeAmount, reservedAmount, moveSaving } from "./savings";
 import { SecurityPanel } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -125,7 +125,7 @@ export default function App() {
   const [savingCreating, setSavingCreating] = useState(false);
   const [planningEditing, setPlanningEditing] = useState(false);
   const [movementType, setMovementType] = useState<
-    Movement["type"] | "credit" | "payment"
+    Movement["type"] | "credit" | "payment" | "saving"
   >("expense");
   const [movementMethod, setMovementMethod] = useState("Efectivo");
   const [debtKind, setDebtKind] = useState("normal");
@@ -332,6 +332,12 @@ export default function App() {
       num = (n: string) => Number(get(n));
     if (!modal) return;
     if (modal.kind === "movement") {
+      if (movementType === "saving") {
+        void mutate((d) =>
+          moveSaving(d, get("savingId"), "deposit", num("amount"), get("date")),
+        );
+        return;
+      }
       if (movementType === "payment") {
         void mutate((d) =>
           payDebt(d, get("debtId"), num("amount"), get("date")),
@@ -1436,7 +1442,7 @@ export default function App() {
                       onChange={(e) =>
                         setMovementType(
                           e.target.value as
-                            Movement["type"] | "credit" | "payment",
+                            Movement["type"] | "credit" | "payment" | "saving",
                         )
                       }
                     >
@@ -1444,7 +1450,10 @@ export default function App() {
                       <option value="income">Ingreso</option>
                       <option value="credit">Compra con TDC</option>
                       {!modal.movement && (
-                        <option value="payment">Abono a deuda</option>
+                        <>
+                          <option value="payment">Abono a deuda</option>
+                          <option value="saving">Apartado</option>
+                        </>
                       )}
                     </select>
                   </Field>
@@ -1470,7 +1479,51 @@ export default function App() {
                       />
                     </Field>
                   </div>
-                  {movementType === "payment" ? (
+                  {movementType === "saving" ? (
+                    <>
+                      <Field label="Apartado de ahorro">
+                        <select
+                          name="savingId"
+                          required
+                          defaultValue={
+                            data.savings?.length === 1 ? data.savings[0].id : ""
+                          }
+                        >
+                          <option value="" disabled>
+                            Selecciona un apartado
+                          </option>
+                          {(data.savings ?? []).map((saving) => (
+                            <option key={saving.id} value={saving.id}>
+                              {saving.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <p className="helper">
+                        Reserva dinero para tu meta sin generar un gasto ni
+                        cambiar tus ingresos. Libre para apartar:{" "}
+                        {money(freeAmount(data))}.
+                      </p>
+                      {!data.savings?.length && (
+                        <>
+                          <p className="helper">
+                            Primero crea una meta de ahorro en Apartados.
+                          </p>
+                          <button
+                            type="button"
+                            className="button secondary"
+                            onClick={() => {
+                              setModal(null);
+                              setTab("Apartados");
+                              setSavingCreating(true);
+                            }}
+                          >
+                            Crear apartado
+                          </button>
+                        </>
+                      )}
+                    </>
+                  ) : movementType === "payment" ? (
                     <>
                       <Field label="Deuda a abonar">
                         <select name="debtId" required defaultValue="">
