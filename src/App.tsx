@@ -179,6 +179,34 @@ export default function App() {
       previous?.focus();
     };
   }, [modal, busy]);
+  useEffect(() => {
+    const mobile = matchMedia("(max-width: 800px)");
+    let frame = 0;
+    const resize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty(
+          "--app-height",
+          `${window.visualViewport?.height ?? window.innerHeight}px`,
+        );
+      });
+    };
+    const resetDocument = () => {
+      resize();
+      if (mobile.matches) window.scrollTo(0, 0);
+    };
+    resize();
+    mobile.addEventListener("change", resetDocument);
+    window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(frame);
+      mobile.removeEventListener("change", resetDocument);
+      window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
+      document.documentElement.style.removeProperty("--app-height");
+    };
+  }, []);
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [category, setCategory] = useState(""),

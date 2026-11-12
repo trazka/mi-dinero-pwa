@@ -75,3 +75,29 @@ test("la vista de escritorio conserva su desplazamiento normal", async ({
     .toBeGreaterThan(0);
   await expect(page.locator(".sidebar")).toBeInViewport();
 });
+
+test("rotar con desplazamiento de escritorio restaura encabezado y altura vertical", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await expect(page.locator(".topbar")).toBeVisible();
+  for (let rotation = 0; rotation < 2; rotation++) {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await expect(page.locator(".topbar")).toBeInViewport();
+    const app = await page.locator(".app").boundingBox();
+    const nav = await page.locator(".mobile-nav").boundingBox();
+    expect(app!.y).toBe(0);
+    expect(app!.height).toBe(844);
+    expect(nav!.y + nav!.height).toBe(844);
+    await page.locator(".page").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await expect(page.locator(".topbar")).toBeInViewport();
+  }
+});

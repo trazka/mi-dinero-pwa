@@ -6,4 +6,6 @@ El botón con «+» queda flotante: crea deudas en Deudas y movimientos en Inici
 
 No cambia el almacenamiento, los cálculos financieros ni el bloqueo existente; no incorpora autenticación automática.
 
-Validación: 34 pruebas unitarias aprobadas y compilación TypeScript/Vite/PWA correcta. Las 30 pruebas de navegador preexistentes aprobaron, incluidas finanzas, respaldos, modo offline y bloqueo. Las 3 pruebas nuevas aprobaron tras corregir la construcción del evento táctil y el selector de encabezado en la prueba. Captura de iPhone revisada. Safari/iPhone físico sigue requiriendo comprobación manual del autocompletado y los gestos.
+También preselecciona la única TDC en gastos recurrentes, conservando la tarjeta de los registros editados. El marco móvil sigue la altura visual disponible y restablece el desplazamiento del documento al regresar de horizontal a vertical, evitando el encabezado oculto y el espacio inferior.
+
+Validación: 34 pruebas unitarias y 34 pruebas de navegador aprobadas; compilación TypeScript/Vite/PWA correcta. Incluye finanzas, respaldos, modo offline, bloqueo, selección de la única TDC sin intervención manual y dos rotaciones consecutivas tras desplazar la vista horizontal. Captura de iPhone revisada. Safari/iPhone físico sigue requiriendo comprobación manual del autocompletado, los gestos y la rotación.

@@ -346,7 +346,12 @@ export function RecurringPanel({
                 name="creditDebtId"
                 aria-label="Tarjeta recurrente"
                 required
-                defaultValue={draft?.creditDebtId ?? ""}
+                defaultValue={
+                  draft?.creditDebtId ??
+                  (data.debts.filter((d) => d.kind === "credit").length === 1
+                    ? data.debts.find((d) => d.kind === "credit")!.id
+                    : "")
+                }
               >
                 <option value="" disabled>
                   Selecciona una tarjeta
