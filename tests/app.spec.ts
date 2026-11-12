@@ -84,13 +84,16 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   await expect(page.locator(".movement")).toHaveCount(0);
   await page.getByLabel("Establecimiento", { exact: true }).fill("");
   await expect(page.locator(".movement")).toHaveCount(2);
+  await page.getByRole("button", { name: "Listo", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
+  await page.getByLabel("Agrupar por").focus();
   await page.getByLabel("Agrupar por").selectOption("daily");
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await expect(page.locator("tbody")).toContainText("$200.00");
+  await page.getByRole("button", { name: "Listo", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Respaldos", exact: true })

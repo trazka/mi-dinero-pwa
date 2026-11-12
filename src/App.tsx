@@ -134,7 +134,8 @@ export default function App() {
     <div className="savings-privacy">
       <button
         type="button"
-        className="button secondary"
+        className="savings-eye"
+        title={canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
         aria-label={canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
         aria-pressed={canSeeSavings}
         onClick={() =>
@@ -145,26 +146,7 @@ export default function App() {
         disabled={!security.config}
       >
         {canSeeSavings ? <EyeOff size={18} /> : <Eye size={18} />}
-        {canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
       </button>
-      {!security.config && (
-        <>
-          <p>Activa el bloqueo en Seguridad para poder mostrar tus ahorros.</p>
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => {
-              setModal(null);
-              setTab("Respaldos");
-            }}
-          >
-            Configurar bloqueo
-          </button>
-        </>
-      )}
-      {!!security.config && !canSeeSavings && (
-        <p>Los ahorros están ocultos. Mostrar requiere desbloqueo manual.</p>
-      )}
     </div>
   );
 
@@ -268,6 +250,7 @@ export default function App() {
         }
         fullHeight = Math.max(fullHeight, window.innerHeight, height);
         const keyboardOpen = editing && fullHeight - height > 120;
+        document.documentElement.toggleAttribute("data-field-focused", editing);
         document.documentElement.toggleAttribute(
           "data-input-active",
           keyboardOpen,
@@ -334,6 +317,7 @@ export default function App() {
       document.removeEventListener("focusin", resize);
       document.removeEventListener("focusout", resize);
       document.documentElement.removeAttribute("data-input-active");
+      document.documentElement.removeAttribute("data-field-focused");
       document.documentElement.style.removeProperty("--app-top");
       document.documentElement.style.removeProperty("--app-height");
     };
@@ -455,10 +439,6 @@ export default function App() {
     if (!modal) return;
     if (modal.kind === "movement") {
       if (movementType === "saving") {
-        if (!canSeeSavings) {
-          setError("Muestra tus ahorros con el bloqueo para poder aportar.");
-          return;
-        }
         void mutate((d) =>
           moveSaving(d, get("savingId"), "deposit", num("amount"), get("date")),
         );
@@ -916,7 +896,7 @@ export default function App() {
                   !loaded ||
                   !!modal ||
                   planningEditing ||
-                  (tab === "Apartados" && !canSeeSavings)
+                  (tab === "Apartados" && !canSeeSavings && !savingCreating)
                 }
                 onClick={() => {
                   setError("");
@@ -1302,15 +1282,19 @@ export default function App() {
           {tab === "Apartados" && (
             <>
               {savingsPrivacy}
-              {!canSeeSavings && (
+              {!canSeeSavings && !savingCreating && (
                 <section className="panel savings-hidden">
                   <h2>Ahorros ocultos</h2>
                   <p>••••</p>
                 </section>
               )}
-              <div hidden={!canSeeSavings} inert={!canSeeSavings}>
+              <div
+                hidden={!canSeeSavings && !savingCreating}
+                inert={!canSeeSavings && !savingCreating}
+              >
                 <SavingsPanel
                   data={data}
+                  showDetails={canSeeSavings}
                   mutate={mutate}
                   busy={busy}
                   creating={savingCreating}
@@ -1639,8 +1623,7 @@ export default function App() {
                   </div>
                   {movementType === "saving" ? (
                     <>
-                      {savingsPrivacy}
-                      <div hidden={!canSeeSavings} inert={!canSeeSavings}>
+                      <div>
                         <Field label="Apartado de ahorro">
                           <select
                             name="savingId"
@@ -1662,9 +1645,8 @@ export default function App() {
                           </select>
                         </Field>
                         <p className="helper">
-                          Reserva dinero para tu meta sin generar un gasto ni
-                          cambiar tus ingresos. Libre para apartar:{" "}
-                          {money(freeAmount(data))}.
+                          El dinero sigue en tu cuenta; solo lo reservas para
+                          esta meta.
                         </p>
                         {!data.savings?.length && (
                           <>
@@ -1984,16 +1966,7 @@ export default function App() {
                 >
                   Cancelar
                 </button>
-                <button
-                  className="button"
-                  disabled={
-                    busy ||
-                    !loaded ||
-                    (modal.kind === "movement" &&
-                      movementType === "saving" &&
-                      !canSeeSavings)
-                  }
-                >
+                <button className="button" disabled={busy || !loaded}>
                   {busy ? "Guardando…" : "Guardar"}
                 </button>
               </div>

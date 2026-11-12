@@ -57,9 +57,7 @@ test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", asy
   await expect(
     page.getByRole("button", { name: "Nuevo apartado", exact: true }),
   ).toBeDisabled();
-  await page
-    .getByRole("button", { name: "Configurar bloqueo", exact: true })
-    .click();
+  await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   const download = page.waitForEvent("download");
   await page
@@ -144,4 +142,64 @@ test("el ojo exige verificación manual y vuelve a ocultar al salir", async ({
   ).toBeVisible();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await expect(page.locator(".savings-summary")).toContainText("••••");
+});
+
+test("aportar muestra nombres sin desbloquear ni revelar los saldos", async ({
+  page,
+}) => {
+  await seed(page);
+  await expect(page.locator(".savings-eye")).toHaveText("");
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("saving");
+  await expect(
+    page.getByLabel("Apartado de ahorro", { exact: true }),
+  ).toHaveValue("saving");
+  await expect(
+    page.getByLabel("Apartado de ahorro").locator("option:checked"),
+  ).toHaveText("Meta confidencial");
+  await expect(page.getByRole("dialog")).not.toContainText("$350.00");
+  await expect(page.getByRole("dialog")).not.toContainText("$650.00");
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".savings-summary")).toContainText("••••");
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Respaldos", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
+    .click();
+  const path = await (await download).path();
+  const { readFile } = await import("node:fs/promises");
+  const backup = JSON.parse(await readFile(path!, "utf8"));
+  expect(
+    backup.savings[0].entries.map((e: { amount: number }) => e.amount),
+  ).toEqual([350, 50]);
+  expect(backup.movements).toEqual(fixture.movements);
+});
+
+test("sin bloqueo permite crear la primera meta desde una aportación", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("saving");
+  await page
+    .getByRole("button", { name: "Crear apartado", exact: true })
+    .click();
+  await expect(page.locator(".report-totals")).toBeHidden();
+  await page.getByLabel("Nombre del apartado").fill("Vacaciones");
+  await page.getByLabel("Meta de ahorro (MXN)").fill("500");
+  await page
+    .getByRole("button", { name: "Guardar apartado", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Ahorros ocultos", exact: true }),
+  ).toBeVisible();
 });

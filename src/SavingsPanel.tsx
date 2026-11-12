@@ -12,6 +12,7 @@ import {
 import type { Mutate } from "./PlanningPanel";
 export default function SavingsPanel({
   data,
+  showDetails = true,
   mutate,
   busy,
   creating,
@@ -19,6 +20,7 @@ export default function SavingsPanel({
   onEditing,
 }: {
   data: Data;
+  showDetails?: boolean;
   mutate: Mutate;
   busy: boolean;
   creating: boolean;
@@ -66,21 +68,22 @@ export default function SavingsPanel({
     <section className="panel full-panel savings-panel">
       <h2>Tu ahorro, por objetivos</h2>
       <p>
-        Los apartados reservan parte de tu saldo. Aportar o retirar no genera
-        ingresos ni gastos; el dinero permanece en tus cuentas. Al gastarlo,
-        retíralo del apartado y registra el gasto una sola vez.
+        Reserva dinero para una meta. Aportar lo aparta; retirar lo deja libre.
+        Tu dinero sigue en tus cuentas.
       </p>
-      <div className="report-totals">
-        <div>
-          <span>Total apartado</span>
-          <strong>{money(reservedAmount(data))}</strong>
+      {showDetails && (
+        <div className="report-totals">
+          <div>
+            <span>Total apartado</span>
+            <strong>{money(reservedAmount(data))}</strong>
+          </div>
+          <div>
+            <span>Libre para apartar</span>
+            <strong>{money(freeAmount(data))}</strong>
+          </div>
         </div>
-        <div>
-          <span>Libre para apartar</span>
-          <strong>{money(freeAmount(data))}</strong>
-        </div>
-      </div>
-      {freeAmount(data) < 0 && (
+      )}
+      {showDetails && freeAmount(data) < 0 && (
         <p role="status">
           Tus gastos han reducido el dinero libre por debajo de lo apartado.
           Revisa tus apartados y libera fondos si corresponde.
@@ -152,61 +155,64 @@ export default function SavingsPanel({
           tu meta.
         </p>
       )}
-      {(data.savings ?? []).map((s) => (
-        <article className="planning-section" key={s.id}>
-          <h3>{s.name}</h3>
-          <p>
-            {money(savedAmount(s))} de {money(s.target)}
-          </p>
-          <progress
-            aria-label={`Progreso de ${s.name}`}
-            max={s.target}
-            value={Math.min(s.target, savedAmount(s))}
-          />
-          <div className="planning-actions">
-            <button
-              className="button secondary"
-              disabled={busy || open}
-              onClick={() => setOperation({ id: s.id, type: "deposit" })}
-            >
-              Aportar a {s.name}
-            </button>
-            <button
-              className="button secondary"
-              disabled={busy || open || savedAmount(s) === 0}
-              onClick={() => setOperation({ id: s.id, type: "withdrawal" })}
-            >
-              Retirar de {s.name}
-            </button>
-            <button disabled={busy || open} onClick={() => setEditing(s)}>
-              Editar {s.name}
-            </button>
-            <button
-              disabled={busy || open || savedAmount(s) !== 0}
-              onClick={() => {
-                if (confirm(`¿Eliminar el apartado ${s.name} y su historial?`))
-                  void mutate((d) => removeSaving(d, s.id));
-              }}
-            >
-              Eliminar {s.name}
-            </button>
-          </div>
-          <details>
-            <summary>Historial de {s.name}</summary>
-            {s.entries.length ? (
-              s.entries.map((entry) => (
-                <p key={entry.id}>
-                  {entry.date} ·{" "}
-                  {entry.type === "deposit" ? "Aportación" : "Retiro"} ·{" "}
-                  {money(entry.amount)}
-                </p>
-              ))
-            ) : (
-              <p>Sin aportaciones todavía.</p>
-            )}
-          </details>
-        </article>
-      ))}
+      {showDetails &&
+        (data.savings ?? []).map((s) => (
+          <article className="planning-section" key={s.id}>
+            <h3>{s.name}</h3>
+            <p>
+              {money(savedAmount(s))} de {money(s.target)}
+            </p>
+            <progress
+              aria-label={`Progreso de ${s.name}`}
+              max={s.target}
+              value={Math.min(s.target, savedAmount(s))}
+            />
+            <div className="planning-actions">
+              <button
+                className="button secondary"
+                disabled={busy || open}
+                onClick={() => setOperation({ id: s.id, type: "deposit" })}
+              >
+                Aportar a {s.name}
+              </button>
+              <button
+                className="button secondary"
+                disabled={busy || open || savedAmount(s) === 0}
+                onClick={() => setOperation({ id: s.id, type: "withdrawal" })}
+              >
+                Retirar de {s.name}
+              </button>
+              <button disabled={busy || open} onClick={() => setEditing(s)}>
+                Editar {s.name}
+              </button>
+              <button
+                disabled={busy || open || savedAmount(s) !== 0}
+                onClick={() => {
+                  if (
+                    confirm(`¿Eliminar el apartado ${s.name} y su historial?`)
+                  )
+                    void mutate((d) => removeSaving(d, s.id));
+                }}
+              >
+                Eliminar {s.name}
+              </button>
+            </div>
+            <details>
+              <summary>Historial de {s.name}</summary>
+              {s.entries.length ? (
+                s.entries.map((entry) => (
+                  <p key={entry.id}>
+                    {entry.date} ·{" "}
+                    {entry.type === "deposit" ? "Aportación" : "Retiro"} ·{" "}
+                    {money(entry.amount)}
+                  </p>
+                ))
+              ) : (
+                <p>Sin aportaciones todavía.</p>
+              )}
+            </details>
+          </article>
+        ))}
     </section>
   );
 }
