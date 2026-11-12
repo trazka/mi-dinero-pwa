@@ -118,3 +118,46 @@ test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", a
   await expect(page.locator(".topbar")).toHaveCSS("height", "89px");
   await expect(page.locator(".sidebar-note")).toBeVisible();
 });
+
+test("el menú horizontal se oculta y se muestra sin perder sección ni navegación vertical", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("./");
+  await page
+    .locator(".sidebar")
+    .getByRole("button", { name: "Apartados", exact: true })
+    .click();
+  const toggle = page.locator(".sidebar-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const before = await page.locator("main").boundingBox();
+  await page
+    .getByRole("button", { name: "Ocultar menú lateral", exact: true })
+    .click();
+  await expect(page.locator(".sidebar")).toBeHidden();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  const after = await page.locator("main").boundingBox();
+  expect(after!.x).toBe(0);
+  expect(after!.width).toBeGreaterThan(before!.width);
+  await toggle.press("Enter");
+  await expect(page.locator(".sidebar")).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page
+    .getByRole("button", { name: "Ocultar menú lateral", exact: true })
+    .click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(toggle).toBeHidden();
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Movimientos", exact: true })
+    .click();
+  await expect(page.locator(".page h1")).toHaveText("Movimientos");
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(
+    page.getByRole("button", { name: "Mostrar menú lateral", exact: true }),
+  ).toBeVisible();
+  await toggle.click();
+  await expect(page.locator(".sidebar")).toBeVisible();
+  await expect(page.locator(".page h1")).toHaveText("Movimientos");
+});

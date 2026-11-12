@@ -2251,3 +2251,25 @@ li {
     font-size: 12px;
   }
 }
+
+.sidebar-toggle {
+  display: none;
+}
+@media (min-width: 801px) and (orientation: landscape) {
+  .sidebar-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--native-line);
+    border-radius: 12px;
+    background: var(--native-surface);
+  }
+  .sidebar-collapsed .sidebar {
+    display: none;
+  }
+  .sidebar-collapsed > main {
+    margin-left: 0;
+  }
+}
