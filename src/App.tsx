@@ -600,7 +600,7 @@ export default function App() {
         <header className="topbar">
           <div className="app-identity">
             <img
-              src={`${import.meta.env.BASE_URL}icon-v2.svg`}
+              src={`${import.meta.env.BASE_URL}icon-v3-192.png`}
               alt=""
               width="32"
               height="32"
