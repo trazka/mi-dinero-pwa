@@ -2419,3 +2419,16 @@ li {
   margin: 0;
   flex: 0 0 auto;
 }
+
+.stat-link {
+  text-align: left;
+  width: 100%;
+  transition: border-color 150ms;
+}
+.stat-link:hover {
+  border-color: #76a979;
+}
+.filtered-total {
+  margin: 0 0 18px;
+  line-height: 1.5;
+}

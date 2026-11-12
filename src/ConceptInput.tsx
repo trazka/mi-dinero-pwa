@@ -1,20 +1,18 @@
 import { useId, useRef, useState, type InputHTMLAttributes } from "react";
 
-const normalized = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("es");
+import { normalizeConcept } from "./concepts";
 
 export default function ConceptInput({
   suggestions,
   value,
   defaultValue,
   onValueChange,
+  onSelectSuggestion,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
   suggestions: string[];
   onValueChange?: (value: string) => void;
+  onSelectSuggestion?: (value: string) => void;
 }) {
   const listId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -24,12 +22,13 @@ export default function ConceptInput({
   const [active, setActive] = useState(-1);
   const current = value === undefined ? text : String(value);
   const matches = [...new Set(suggestions)].filter((item) =>
-    normalized(item).includes(normalized(current)),
+    normalizeConcept(item).includes(normalizeConcept(current)),
   );
   const expanded = open && matches.length > 0;
   function choose(next: string) {
     setText(next);
     onValueChange?.(next);
+    onSelectSuggestion?.(next);
     setOpen(false);
     setActive(-1);
   }

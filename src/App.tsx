@@ -1,3 +1,4 @@
+import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
 import { moveSaving } from "./savings";
@@ -160,6 +161,9 @@ export default function App() {
   const [movementType, setMovementType] = useState<
     Movement["type"] | "credit" | "payment" | "saving"
   >("expense");
+  const [movementCategory, setMovementCategory] = useState<string>(
+    categories[0],
+  );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
   const [debtKind, setDebtKind] = useState("normal");
   useEffect(() => {
@@ -170,6 +174,7 @@ export default function App() {
           : (modal.movement?.type ?? modal.initialType ?? "expense"),
       );
       setMovementMethod(modal.movement?.method ?? "Efectivo");
+      setMovementCategory(modal.movement?.category ?? categories[0]);
     }
     if (modal?.kind === "debt") setDebtKind(modal.debt?.kind ?? "normal");
   }, [modal]);
@@ -319,6 +324,9 @@ export default function App() {
       document.documentElement.style.removeProperty("--app-height");
     };
   }, []);
+  const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">(
+    "all",
+  );
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [category, setCategory] = useState(""),
@@ -327,6 +335,21 @@ export default function App() {
   const [search, setSearch] = useState(""),
     [methodFilter, setMethodFilter] = useState(""),
     [debtFilter, setDebtFilter] = useState("");
+  function clearFilters() {
+    setTypeFilter("all");
+    setSearch("");
+    setMethodFilter("");
+    setDebtFilter("");
+    setFrom("");
+    setTo("");
+    setCategory("");
+    setMerchant("");
+  }
+  function showMovements(type: "all" | "income" | "expense") {
+    clearFilters();
+    setTypeFilter(type);
+    setTab("Movimientos");
+  }
   useEffect(() => {
     readData()
       .then((d) => {
@@ -420,6 +443,10 @@ export default function App() {
     .sort((a, b) => b.date.localeCompare(a.date));
   const filtered = newestFirst.filter(
     (m) =>
+      (typeFilter === "all" ||
+        (typeFilter === "income"
+          ? m.type === "income"
+          : expenseAmount(m) > 0)) &&
       (!from || m.date >= from) &&
       (!to || m.date <= to) &&
       (!category || m.category === category) &&
@@ -627,6 +654,18 @@ export default function App() {
   }
   const filters = (
     <div className="filters">
+      <Field label="Tipo de movimiento">
+        <select
+          value={typeFilter}
+          onChange={(e) =>
+            setTypeFilter(e.target.value as "all" | "income" | "expense")
+          }
+        >
+          <option value="all">Todos los movimientos</option>
+          <option value="income">Solo ingresos</option>
+          <option value="expense">Solo egresos</option>
+        </select>
+      </Field>
       <Field label="Buscar movimientos">
         <input
           value={search}
@@ -667,18 +706,7 @@ export default function App() {
           ))}
         </select>
       </Field>
-      <button
-        className="text-button"
-        onClick={() => {
-          setSearch("");
-          setMethodFilter("");
-          setDebtFilter("");
-          setFrom("");
-          setTo("");
-          setCategory("");
-          setMerchant("");
-        }}
-      >
+      <button className="text-button" onClick={clearFilters}>
         Limpiar filtros
       </button>
       <Field label="Desde">
@@ -1002,22 +1030,32 @@ export default function App() {
                   </p>
                   <div className="balance-decoration" />
                 </div>
-                <div className="stat">
+                <button
+                  type="button"
+                  className="stat stat-link"
+                  aria-label="Ver ingresos"
+                  onClick={() => showMovements("income")}
+                >
                   <span className="stat-icon income">
                     <ArrowDownLeft size={20} />
                   </span>
                   <span>Ingresos</span>
                   <strong>{money(incomes)}</strong>
-                  <small>Total registrado</small>
-                </div>
-                <div className="stat">
+                  <small>Total registrado · Ver listado</small>
+                </button>
+                <button
+                  type="button"
+                  className="stat stat-link"
+                  aria-label="Ver egresos"
+                  onClick={() => showMovements("expense")}
+                >
                   <span className="stat-icon expense">
                     <ArrowUpRight size={20} />
                   </span>
                   <span>Egresos</span>
                   <strong>{money(expenses)}</strong>
-                  <small>Pagos y abonos realizados</small>
-                </div>
+                  <small>Pagos y abonos · Ver listado</small>
+                </button>
               </section>
               <section className="dashboard-grid">
                 <div className="panel">
@@ -1028,7 +1066,7 @@ export default function App() {
                     </div>
                     <button
                       className="text-button"
-                      onClick={() => setTab("Movimientos")}
+                      onClick={() => showMovements("all")}
                     >
                       Ver todos <ChevronRight size={16} />
                     </button>
@@ -1085,13 +1123,20 @@ export default function App() {
               />
               {filters}
               <div className="panel-heading">
-                <h2>{filtered.length} movimientos</h2>
+                <h2>
+                  {filtered.length}{" "}
+                  {typeFilter === "income"
+                    ? "ingresos"
+                    : typeFilter === "expense"
+                      ? "egresos"
+                      : "movimientos"}
+                </h2>
                 <button
                   className="text-button"
                   onClick={() =>
                     download(
                       csv(filtered),
-                      `movimientos-${today()}.csv`,
+                      `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "egresos" : "movimientos"}-${today()}.csv`,
                       "text/csv;charset=utf-8",
                     )
                   }
@@ -1099,6 +1144,23 @@ export default function App() {
                   Exportar CSV <Download size={16} />
                 </button>
               </div>
+              {typeFilter !== "all" && (
+                <p className="filtered-total">
+                  Total de {typeFilter === "income" ? "ingresos" : "egresos"}:{" "}
+                  <strong>
+                    {money(
+                      filtered.reduce(
+                        (total, m) =>
+                          total +
+                          (typeFilter === "income"
+                            ? m.amount
+                            : expenseAmount(m)),
+                        0,
+                      ),
+                    )}
+                  </strong>
+                </p>
+              )}
               {movementList(filtered)}
             </section>
           )}
@@ -1684,6 +1746,10 @@ export default function App() {
                       <Field label="Establecimiento o concepto">
                         <ConceptInput
                           suggestions={merchantOptions}
+                          onSelectSuggestion={(concept) => {
+                            const category = categoryForConcept(data, concept);
+                            if (category) setMovementCategory(category);
+                          }}
                           name="merchant"
                           autoComplete="off"
                           required
@@ -1696,13 +1762,15 @@ export default function App() {
                         <Field label="Categoría">
                           <select
                             name="category"
-                            defaultValue={
-                              modal.movement?.category ?? categories[0]
+                            value={movementCategory}
+                            onChange={(e) =>
+                              setMovementCategory(e.target.value)
                             }
                           >
                             {[
                               ...new Set([
                                 ...categories,
+                                movementCategory,
                                 ...(modal.movement
                                   ? [modal.movement.category]
                                   : []),
