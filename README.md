@@ -124,7 +124,7 @@ La app se bloquea al abrirla y al ocultarse, manteniendo los formularios sin gua
 
 ## Apartados para ahorro
 
-En **Apartados → Nuevo apartado**, crea una meta con nombre e importe objetivo. **Aportar** reserva dinero de tu saldo libre; **Retirar** lo libera. Son reservas manuales: no mueven dinero entre bancos ni generan ingresos o gastos. El saldo principal conserva su cálculo de ingresos menos gastos pagados; Inicio muestra además el total apartado y el saldo libre después de reservarlo.
+En **Apartados → Nuevo apartado**, crea una meta con nombre e importe objetivo. **Aportar** reserva dinero de tu saldo libre; **Retirar** lo libera. Son reservas manuales: no mueven dinero entre bancos ni generan ingresos o gastos. El saldo principal conserva su cálculo de ingresos menos gastos pagados; Apartados muestra el total reservado y el saldo libre después de reservarlo.
 
 Cada apartado tiene progreso e historial de aportaciones y retiros. Puedes cambiar su nombre/meta sin perder el historial y eliminarlo solo cuando su saldo sea cero. No se permite aportar más del saldo libre ni retirar más de lo reservado. Si después registras gastos que superan el dinero libre, la app muestra el saldo libre negativo y pide revisar las reservas: no altera ni rechaza tus movimientos financieros. Para gastar dinero reservado, retíralo del apartado y registra el gasto una sola vez.
 
