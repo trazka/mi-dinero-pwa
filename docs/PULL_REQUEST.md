@@ -1,13 +1,15 @@
-# Restaurar la billetera en el encabezado y conservar la M de lanzamiento
+# Fondo negro uniforme para el icono de lanzamiento
 
-Corrige la interpretación del cambio anterior: la billetera en verde/menta vuelve al encabezado dentro de Mi dinero. La M y el punto en verde intenso sobre negro permanecen exclusivamente como iconos de lanzamiento PWA/Apple y favicon.
+Quita el recuadro interior gris, degradados, borde y reflejos del icono de lanzamiento. El diseño queda con la M y el punto verdes sobre un único fondo negro intenso. La billetera del encabezado y los colores de la interfaz permanecen intactos.
 
-Se reutiliza `icon-v2.svg` para el encabezado y se conservan los PNG `icon-v3-*` y `apple-touch-icon-v3.png` en el manifiesto y HTML. Las rutas PNG de lanzamiento anteriores (versiones 1 y 2) ahora sirven la misma M intensa, para que un cliente que vuelva a consultarlas reciba el diseño nuevo; el SVG de la billetera se mantiene intacto. No se cambia la identidad instalada, ruta base, tema, datos ni cálculos. La prueba de interfaz comprueba explícitamente que ambas referencias sean diferentes para evitar otra sustitución accidental.
+Añade un maestro v4 y genera PNG de 180, 192 y 512 px. Manifest, icono Apple y favicon usan nombres v4 para renovar recursos. Las rutas PNG anteriores también sirven el nuevo diseño cuando un cliente las vuelve a consultar. La identidad y el alcance de la PWA no cambian.
 
 ## Validación
 
-- `npm run build`: TypeScript, Vite y PWA.
-- `npm test`: 34 pruebas de datos/persistencia.
-- `npm run test:e2e`: 25 pruebas de navegador, incluida billetera en encabezado, M v3 en icono Apple e igualdad del contenido servido por las dos rutas antiguas de Apple y la actual.
+- Compilación TypeScript, Vite y PWA.
+- 34 pruebas unitarias y de persistencia.
+- 25 pruebas de navegador, con iconos y funcionamiento offline.
+- Comprobación de que el encabezado mantiene la billetera y el lanzamiento utiliza los PNG v4.
+- Revisión visual de la imagen editada para confirmar que desapareció el panel gris interior.
 
-La captura del usuario muestra la nueva M intensa dentro de la app y la antigua M tenue en la pantalla de inicio: los recursos de la app se actualizaron pero el icono de lanzamiento instalado en iOS sigue siendo anterior. No se promete que cambiar recursos web fuerce a iOS a renovar el icono ya instalado. Se debe exportar un respaldo JSON antes de intentar reemplazar el acceso y no borrar datos ni desinstalar para forzar una caché.
+No se modifican funciones financieras ni IndexedDB. La renovación del icono ya instalado sigue dependiendo de iOS y no se fuerza borrando datos o desinstalando.
