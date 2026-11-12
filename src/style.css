@@ -1213,3 +1213,32 @@ li {
 .filters:has(.date-calendar) {
   grid-template-columns: 1fr;
 }
+
+.date-toolbar .date-heading {
+  flex: 1;
+  border: 1px solid #dfe5d9;
+  border-radius: 7px;
+  font-size: 14px;
+}
+.date-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 10px 0;
+  overscroll-behavior: contain;
+}
+.date-options button {
+  min-height: 44px;
+  padding: 6px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.date-options button:hover {
+  background: #edf3e9;
+}
+.date-options button[aria-pressed="true"] {
+  background: #23583d;
+  color: #fff;
+}

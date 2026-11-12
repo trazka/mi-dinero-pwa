@@ -97,6 +97,10 @@ export default function App() {
     [tab, setTab] = useState<Tab>("Inicio"),
     [modal, setModal] = useState<Modal>(null),
     [busy, setBusy] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(
+    !!window.__miDineroUpdate,
+  );
+  const [updating, setUpdating] = useState(false);
   const modalRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!modal) return;
@@ -152,10 +156,8 @@ export default function App() {
         ),
       );
     const offline = () => setNotice("Aplicación lista para usar sin internet.");
-    const update = () =>
-      setNotice(
-        "Hay una nueva versión. Cierra y vuelve a abrir la aplicación para actualizar.",
-      );
+    const update = () => setUpdateAvailable(true);
+    if (window.__miDineroUpdate) setUpdateAvailable(true);
     window.addEventListener("offline-ready", offline);
     window.addEventListener("update-ready", update);
     return () => {
@@ -479,6 +481,35 @@ export default function App() {
           {error && (
             <div className="alert" role="alert">
               {error}
+            </div>
+          )}
+          {updateAvailable && (
+            <div className="notice" role="status">
+              <span>
+                Hay una nueva versión disponible.
+                {modal
+                  ? " Guarda o cierra el formulario antes de actualizar."
+                  : ""}
+              </span>
+              <button
+                className="button secondary"
+                disabled={!!modal || busy || updating || !loaded}
+                onClick={async () => {
+                  if (!window.__miDineroUpdate) return;
+                  setUpdating(true);
+                  try {
+                    await window.__miDineroUpdate();
+                  } catch {
+                    setError(
+                      "No se pudo actualizar. Revisa la conexión e inténtalo de nuevo.",
+                    );
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+              >
+                {updating ? "Actualizando…" : "Actualizar aplicación"}
+              </button>
             </div>
           )}
           {notice && (

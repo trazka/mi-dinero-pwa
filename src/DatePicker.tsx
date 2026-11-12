@@ -30,6 +30,7 @@ export default function DatePicker({
   const [internal, setInternal] = useState(defaultValue);
   const selected = value ?? internal;
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"days" | "months" | "years">("days");
   const [month, setMonth] = useState(() =>
     localDate(selected || today()).getMonth(),
   );
@@ -46,6 +47,12 @@ export default function DatePicker({
     document.addEventListener("pointerdown", outside);
     return () => document.removeEventListener("pointerdown", outside);
   }, [open]);
+  useEffect(() => {
+    if (view === "years")
+      container.current
+        ?.querySelector<HTMLElement>(".date-options [aria-pressed=true]")
+        ?.scrollIntoView({ block: "nearest" });
+  }, [view]);
   const close = () => {
     setOpen(false);
     trigger.current?.focus();
@@ -99,6 +106,7 @@ export default function DatePicker({
         aria-controls={open ? `${id}-calendar` : undefined}
         onClick={() => {
           if (!open) {
+            setView("days");
             const date = localDate(selected || today());
             setMonth(date.getMonth());
             setYear(date.getFullYear());
@@ -132,26 +140,24 @@ export default function DatePicker({
             >
               <ChevronLeft size={19} />
             </button>
-            <select
-              aria-label="Mes"
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
+            <button
+              type="button"
+              className="date-heading"
+              aria-label="Cambiar mes"
+              aria-expanded={view === "months"}
+              onClick={() => setView(view === "months" ? "days" : "months")}
             >
-              {months.map((name, index) => (
-                <option value={index} key={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Año"
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              {months[month]}
+            </button>
+            <button
+              type="button"
+              className="date-heading"
+              aria-label="Cambiar año"
+              aria-expanded={view === "years"}
+              onClick={() => setView(view === "years" ? "days" : "years")}
             >
-              {years.map((y) => (
-                <option key={y}>{y}</option>
-              ))}
-            </select>
+              {year}
+            </button>
             <button
               type="button"
               aria-label="Mes siguiente"
@@ -167,37 +173,75 @@ export default function DatePicker({
               <X size={18} />
             </button>
           </div>
-          <div className="date-weekdays" aria-hidden="true">
-            {["L", "M", "M", "J", "V", "S", "D"].map((day, index) => (
-              <span key={index}>{day}</span>
-            ))}
-          </div>
-          <div className="date-days">
-            {Array.from({ length: offset }, (_, index) => (
-              <span key={`empty-${index}`} />
-            ))}
-            {Array.from({ length: last.getDate() }, (_, index) => {
-              const date = isoDate(year, month, index + 1);
-              return (
-                <button
-                  type="button"
-                  key={date}
-                  data-date={date}
-                  disabled={!!min && date < min}
-                  aria-label={localDate(date).toLocaleDateString("es-MX", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                  aria-pressed={date === selected}
-                  aria-current={date === today() ? "date" : undefined}
-                  onClick={() => choose(date)}
-                >
-                  {index + 1}
-                </button>
-              );
-            })}
-          </div>
+          {view !== "days" ? (
+            <div
+              className="date-options"
+              role="group"
+              aria-label={view === "months" ? "Elegir mes" : "Elegir año"}
+            >
+              {view === "months"
+                ? months.map((name, index) => (
+                    <button
+                      type="button"
+                      key={name}
+                      aria-pressed={index === month}
+                      onClick={() => {
+                        setMonth(index);
+                        setView("days");
+                      }}
+                    >
+                      {name}
+                    </button>
+                  ))
+                : years.map((y) => (
+                    <button
+                      type="button"
+                      key={y}
+                      aria-pressed={y === year}
+                      onClick={() => {
+                        setYear(y);
+                        setView("days");
+                      }}
+                    >
+                      {y}
+                    </button>
+                  ))}
+            </div>
+          ) : (
+            <>
+              <div className="date-weekdays" aria-hidden="true">
+                {["L", "M", "M", "J", "V", "S", "D"].map((day, index) => (
+                  <span key={index}>{day}</span>
+                ))}
+              </div>
+              <div className="date-days">
+                {Array.from({ length: offset }, (_, index) => (
+                  <span key={`empty-${index}`} />
+                ))}
+                {Array.from({ length: last.getDate() }, (_, index) => {
+                  const date = isoDate(year, month, index + 1);
+                  return (
+                    <button
+                      type="button"
+                      key={date}
+                      data-date={date}
+                      disabled={!!min && date < min}
+                      aria-label={localDate(date).toLocaleDateString("es-MX", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                      aria-pressed={date === selected}
+                      aria-current={date === today() ? "date" : undefined}
+                      onClick={() => choose(date)}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
           <div className="date-footer">
             <button
               type="button"

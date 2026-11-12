@@ -1,15 +1,18 @@
-# Seleccionar fechas con un toque, sin confirmación adicional
+# Quitar confirmaciones nativas del calendario y permitir aplicar actualizaciones
 
-Al tocar un día, la fecha se aplica y el calendario se cierra automáticamente. Sustituye el selector nativo de iPhone, que podía exigir pulsar una palomita, por un calendario de la aplicación en español. Se aplica a movimientos, vencimientos, abonos y filtros.
+El calendario de la aplicación ya seleccionaba el día y se cerraba con un toque, pero sus listas de mes y año seguían siendo `<select>` nativos de iPhone, capaces de mostrar una palomita. Ahora los meses y años también se eligen mediante botones dentro del calendario, sin controles de fecha ni selectores nativos. Los días conservan selección y cierre inmediatos.
 
-Permite cambiar mes y año, seleccionar Hoy, limpiar los filtros, cerrar con Escape o tocar fuera. Seleccionar una fecha no guarda el movimiento: el formulario conserva su botón Guardar. Se mantienen los valores ISO `YYYY-MM-DD`, las fechas locales y los límites de los filtros. No modifica los cálculos ni IndexedDB y no añade dependencias.
+Además, en modo PWA `prompt` una versión anterior puede seguir activa mientras haya clientes abiertos. El aviso anterior solo pedía cerrar la aplicación y no invocaba la función de actualización del plugin. Esta PR añade **Actualizar aplicación**, que aplica el service worker pendiente. Se bloquea mientras hay un formulario abierto o un guardado en curso, y muestra un error recuperable si no puede actualizar. El aviso se conserva aunque llegue antes de montar React. No se borran datos ni cachés ni se cambian los cálculos.
+
+La descripción del usuario (palomita desde que abre el calendario) es compatible con el selector anterior, pero no se ha inspeccionado su sesión: no se atribuye con certeza su pantalla a una versión almacenada.
 
 ## Validación
 
 - `npm test`: 10 pruebas aprobadas.
-- `npm run build`: TypeScript, Vite y generación PWA correctos.
-- `npm run test:e2e`: 12 pruebas aprobadas con perfil iPhone en Chromium.
-- Las pruebas nuevas comprueban selección y cierre sin confirmación, fecha bisiesta, persistencia al recargar, edición de fecha, vencimiento, fecha de abono, fechas mínimas y limpieza de filtros. Los reportes existentes prueban ahora la selección mediante el nuevo calendario.
-- Revisión visual con ancho de iPhone y comprobación de ausencia de desbordamiento horizontal.
+- `npm run build`: correcto.
+- `npm run test:e2e`: 14 pruebas aprobadas.
+- Las pruebas de fechas ahora eligen mes y año mediante botones y verifican que no haya `select` ni `input[type=date]` dentro del calendario, además de conservar fecha, cierre automático, mínimos y persistencia.
+- Dos pruebas de la interfaz de actualización comprueban aviso anterior/posterior al montaje, invocación del callback, bloqueo con formulario abierto y recuperación de errores. Usan un callback de actualización controlado, no simulan una publicación real.
+- `src/data.ts` permanece intacto. No hay migración ni eliminación de IndexedDB.
 
-Los cambios están preparados para integrar en `main`; la publicación la realizará el workflow habitual tras la integración. La interacción en Safari de un iPhone físico queda para comprobación tras publicar.
+Tras integrar, el workflow habitual publica y verifica la interfaz pública. Falta comprobar en el iPhone que recibe la nueva versión y que ya no muestra la palomita.
