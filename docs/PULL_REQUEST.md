@@ -1,7 +1,7 @@
-# Icono de lanzamiento: billetera con M
+# Unificar campos de captura y filtros
 
-Aplica el diseño aprobado de una M dentro de una billetera, en verde intenso sobre negro uniforme. Genera PNG de 180, 192 y 512 px desde el maestro v5 y actualiza el manifiesto, favicon y apple-touch-icon. Las rutas PNG anteriores sirven también el nuevo diseño.
+Los desplegables nativos de iOS tenían distinta altura y espaciado que los campos de texto y los botones de fecha. Unifica los controles a 48 px de alto, letra de 16 px, espaciado y esquinas consistentes. Los selectores mantienen su comportamiento nativo con una flecha visual uniforme. No se modifican cálculos financieros ni almacenamiento.
 
-Conserva la billetera del encabezado, la identidad de la PWA, las funciones financieras e IndexedDB. iOS puede mantener el icono ya instalado en caché; no se borran datos ni se fuerza una reinstalación.
+Verificación visual y de dimensiones en Movimientos y Reportes, temas claro y oscuro, desde la ruta /mi-dinero-pwa/.
 
-Validación: 34 pruebas unitarias y 25 pruebas de navegador aprobadas; compilación de producción correcta. Verificadas las rutas de iconos y el funcionamiento offline bajo /mi-dinero-pwa/.
+Resultados: 34 pruebas unitarias y 25 de navegador aprobadas; compilación correcta. Mediciones en emulación iPhone: altura de 48 px y letra de 16 px para texto, desplegables y fechas en ambos temas.
