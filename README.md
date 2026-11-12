@@ -87,3 +87,9 @@ El saldo disponible representa ingresos menos gastos pagados. Las compras vincul
 Al editar, eliminar o cambiar de tarjeta una compra, su cargo se ajusta en la misma transacción. Si eso dejaría el saldo negativo porque ya hubo abonos, se rechaza el cambio: primero revierte los abonos correspondientes. El CSV incluye los vínculos y una columna **Gasto contabilizado MXN**, con cero para las compras vinculadas y el importe pagado para los abonos.
 
 El formato de respaldo es ahora versión 2. Se admiten respaldos anteriores de versión 1 y se preservan movimientos, deudas y abonos. No se recrea la base de IndexedDB: la lectura adapta el formato en memoria y la siguiente escritura guarda la versión 2. Las versiones anteriores de la aplicación pueden rechazar respaldos nuevos.
+
+## Apariencia e icono
+
+En la esquina superior derecha, pulsa **Apariencia** (icono de monitor, sol o luna) y elige **Claro**, **Oscuro** o **Automático**. Automático sigue el modo del iPhone y responde a sus cambios sin recargar. La preferencia se conserva localmente, funciona sin conexión y se aplica antes de iniciar React. Si el navegador no permite guardar preferencias, puedes cambiar el modo durante la sesión. Esta preferencia visual no modifica ni forma parte del respaldo financiero de IndexedDB.
+
+El icono de cartera en verde esmeralda/menta se genera desde `public/icon-v2.svg` en tamaños 192, 512 y 180 px (Apple). Para regenerar los PNG, ejecuta `node scripts/generate-icons.mjs` con Chromium instalado según las instrucciones de pruebas. El manifiesto conserva su identidad y ruta y usa archivos de icono con nombres nuevos para renovar la caché. iOS puede conservar el icono de una instalación existente aunque la interfaz esté actualizada; no desinstales ni borres datos para forzar el cambio. Antes de cualquier reinstalación conserva un respaldo JSON.

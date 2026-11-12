@@ -1,3 +1,4 @@
+import ThemeControl from "./ThemeControl";
 import DatePicker from "./DatePicker";
 import {
   cloneElement,
@@ -459,7 +460,7 @@ export default function App() {
             <span className="local-badge">
               <b /> Privado y local
             </span>
-            <span className="avatar">M</span>
+            <ThemeControl />
           </div>
         </header>
         <div className="page">

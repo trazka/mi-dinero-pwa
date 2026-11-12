@@ -1242,3 +1242,202 @@ li {
   background: #23583d;
   color: #fff;
 }
+
+/* The preference is applied in theme.js before React or the main CSS loads. */
+.theme-control {
+  position: relative;
+}
+.theme-trigger {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dfe5d9;
+  border-radius: 50%;
+  background: #fff;
+  color: #28583b;
+}
+.theme-menu {
+  position: absolute;
+  top: 49px;
+  right: 0;
+  width: 245px;
+  padding: 19px;
+  border: 1px solid #dfe5d9;
+  border-radius: 14px;
+  background: #fff;
+  color: #243d32;
+  box-shadow: 0 12px 40px #09211422;
+  z-index: 15;
+}
+.theme-menu h2 {
+  font-size: 15px;
+}
+.theme-menu p {
+  font-size: 11px;
+  margin: 7px 0 12px;
+}
+.theme-menu [role="group"] {
+  display: grid;
+  gap: 5px;
+}
+.theme-menu [role="group"] button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  min-height: 44px;
+  font-size: 13px;
+  border-radius: 8px;
+  text-align: left;
+}
+.theme-menu button[aria-pressed="true"] {
+  background: #edf3e9;
+  color: #28583b;
+  font-weight: 600;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e3ede7;
+  background: #0e1814;
+}
+:root[data-theme="dark"]
+  :is(
+    .sidebar,
+    .stat,
+    .panel,
+    .modal,
+    .theme-menu,
+    .theme-trigger,
+    .date-trigger,
+    .date-calendar,
+    input,
+    select,
+    textarea
+  ) {
+  background: #18271f;
+  color: #e3ede7;
+  border-color: #35483c;
+}
+:root[data-theme="dark"] :is(.topbar, .sidebar-note) {
+  background: #122019;
+  border-color: #35483c;
+}
+:root[data-theme="dark"] .mobile-nav {
+  background: #14231df5;
+  border-color: #35483c;
+}
+:root[data-theme="dark"] :is(.sidebar nav button, .mobile-nav button) {
+  color: #a1b7a6;
+}
+:root[data-theme="dark"]
+  :is(.sidebar nav button.active, .theme-menu button[aria-pressed="true"]) {
+  background: #284635;
+  color: #b3e4bc;
+}
+:root[data-theme="dark"] .mobile-nav button.active {
+  color: #a3e0b5;
+}
+:root[data-theme="dark"]
+  :is(
+    p,
+    small,
+    .topbar > span,
+    .local-badge,
+    .eyebrow,
+    .nav-label,
+    .field > label,
+    .date-weekdays,
+    .debt-meta,
+    details,
+    th,
+    .sidebar-bottom,
+    .privacy-footer
+  ) {
+  color: #a6b9aa;
+}
+:root[data-theme="dark"]
+  :is(
+    .sidebar-note,
+    .sidebar-note strong,
+    .tip strong,
+    .text-button,
+    .positive,
+    .empty h3,
+    .date-footer button,
+    .row-actions,
+    .install ol
+  ) {
+  color: #ace0b6;
+}
+:root[data-theme="dark"] :is(.tip, .local-note, .summary-strip, .notice) {
+  background: #263e2a;
+  border-color: #3d573d;
+  color: #c3e3b7;
+}
+:root[data-theme="dark"] :is(.button.secondary, .date-toolbar .date-heading) {
+  background: #203729;
+  border-color: #435b46;
+  color: #c2e6c7;
+}
+:root[data-theme="dark"]
+  :is(
+    .button.secondary:hover,
+    .date-days button:hover,
+    .date-options button:hover
+  ) {
+  background: #2b4a36;
+}
+:root[data-theme="dark"]
+  :is(
+    .date-days button[aria-pressed="true"],
+    .date-options button[aria-pressed="true"]
+  ) {
+  background: #3b805a;
+  color: #fff;
+}
+:root[data-theme="dark"] :is(.movement, .filters, td, th, .date-footer) {
+  border-color: #304436;
+}
+:root[data-theme="dark"] .divider {
+  background: #304436;
+}
+:root[data-theme="dark"] .income {
+  background: #25472f;
+  color: #afe0a8;
+}
+:root[data-theme="dark"] .expense {
+  background: #3c3322;
+  color: #e4c38b;
+}
+:root[data-theme="dark"] .debt {
+  background: #353a28;
+  color: #d4d6ac;
+}
+:root[data-theme="dark"] .pill {
+  background: #413823;
+  color: #e4c38b;
+}
+:root[data-theme="dark"] .pill.paid {
+  background: #25472f;
+  color: #afe0a8;
+}
+:root[data-theme="dark"] .alert {
+  background: #492d21;
+  color: #ffc3a6;
+}
+:root[data-theme="dark"] .modal-backdrop {
+  background: #020a06b8;
+}
+:root[data-theme="dark"] .balance-card {
+  background: #174832;
+}
+:root[data-theme="dark"] .balance-card :is(p, .balance-label) {
+  color: #c3dcc9;
+}
+:root[data-theme="dark"] :is(input, textarea)::placeholder {
+  color: #9aaa9d;
+}
+:root[data-theme="dark"] .theme-trigger {
+  color: #b3e4bc;
+}

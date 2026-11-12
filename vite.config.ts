@@ -9,7 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       scope: base,
-      includeAssets: ["icon.svg", "apple-touch-icon.png"],
+      includeAssets: ["icon-v2.svg", "apple-touch-icon-v2.png", "theme.js"],
       manifest: {
         name: "Mi dinero",
         short_name: "Mi dinero",
@@ -22,9 +22,13 @@ export default defineConfig({
         background_color: "#f5f7f4",
         theme_color: "#124c38",
         icons: [
-          { src: `${base}icon-192.png`, sizes: "192x192", type: "image/png" },
           {
-            src: `${base}icon-512.png`,
+            src: `${base}icon-v2-192.png`,
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: `${base}icon-v2-512.png`,
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
