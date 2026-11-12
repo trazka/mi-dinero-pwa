@@ -16,12 +16,20 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
   const balance = await page.locator(".balance-card").boundingBox();
   expect(balance!.y + balance!.height).toBeLessThan(650);
   await page.screenshot({ path: "test-results/iphone-native-light.png" });
-  await page.evaluate(() => window.scrollTo(0, 1000));
+  await page.locator(".page").evaluate((el) => {
+    el.scrollTop = 1000;
+  });
+  await expect
+    .poll(() => page.locator(".page").evaluate((el) => el.scrollTop))
+    .toBeGreaterThan(0);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(
     nav.getByRole("button", { name: "Deudas", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect
+    .poll(() => page.locator(".page").evaluate((el) => el.scrollTop))
+    .toBe(0);
   await expect(
     page.getByRole("heading", { level: 1, name: "Deudas" }),
   ).toBeVisible();

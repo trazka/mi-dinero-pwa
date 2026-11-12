@@ -115,6 +115,7 @@ export default function App() {
     if (modal?.kind === "debt") setDebtKind("normal");
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!modal) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -202,6 +203,7 @@ export default function App() {
     expenses = data.movements.reduce((s, m) => s + expenseAmount(m), 0),
     pending = data.debts.reduce((s, d) => s + balance(d), 0);
   useEffect(() => {
+    pageRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 });
   }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
@@ -475,7 +477,7 @@ export default function App() {
             <ThemeControl />
           </div>
         </header>
-        <div className="page">
+        <div className="page" ref={pageRef}>
           <div className="page-heading">
             <div>
               <p className="eyebrow">TUS FINANZAS PERSONALES</p>

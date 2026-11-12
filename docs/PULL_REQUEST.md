@@ -1,17 +1,18 @@
-# Apariencia de app de iPhone para Mi dinero
+# Marco fijo de app y desplazamiento interno en iPhone
 
-Hace más compacta y cómoda la interfaz móvil: encabezado fijo con identidad de la app y acceso a Apariencia, título «Tu resumen», saldo visible más arriba, tarjetas redondeadas y pestañas inferiores con indicador activo. Los formularios aparecen como hojas inferiores con encabezado fijo, cierre accesible y botones amplios. Las listas, campos y estados vacíos usan tamaños adecuados para tocar en iPhone.
+El documento completo se desplazaba detrás del encabezado y la barra de pestañas. En pantallas móviles, la app ahora ocupa `100dvh` y distribuye encabezado, sección central y pestañas en filas: solo el contenido central tiene desplazamiento vertical. Se evita propagar ese desplazamiento al documento, se mantienen las áreas seguras y el contenido largo sigue siendo accesible.
 
-Mantiene tonos verdes, modos claro/oscuro/automático y diseño de escritorio. Respeta áreas seguras y reducción de movimiento. Cambiar de pestaña vuelve al inicio de la sección y expone `aria-current`. Oculta la pantalla inicial en el mismo commit de React para evitar que se vea junto con la interfaz durante el arranque.
+Los formularios conservan su propio desplazamiento y encabezado visible. Cambiar de sección reinicia el scroll de su contenedor. Las tablas conservan desplazamiento horizontal y no se interceptan gestos táctiles globalmente. El bloqueo del documento solo se aplica cuando la app está montada, de modo que la pantalla de error de arranque mantiene su accesibilidad. La vista de escritorio no cambia.
 
-No cambia IndexedDB, cálculos, compras, abonos, respaldos ni reglas financieras. El verificador de GitHub Pages y las pruebas de arranque usan el nuevo título visible del inicio.
+No se modifican cálculos, IndexedDB, movimientos, deudas ni respaldos.
 
 ## Validación
 
 - `npm test`: 22/22 pruebas aprobadas.
 - `npm run build`: TypeScript, Vite y PWA correctos.
-- `npm run test:e2e`: 18/18 pruebas aprobadas, incluidas las anteriores de finanzas, offline, temas, calendario y arranque.
-- La prueba móvil nueva comprueba saldo visible arriba, navegación activa y vuelta al inicio, formularios tipo hoja, cierre automático del calendario, tema oscuro y ausencia de desbordamiento a 320 px. Guarda capturas claras y oscuras.
-- Revisión visual de la captura con perfil iPhone 13 en Chromium. La interacción y apariencia finales en Safari físico quedan para confirmar tras publicar.
+- `npm run test:e2e`: 20/20 pruebas aprobadas.
+- Pruebas nuevas: scroll real del contenido con encabezado/pestañas inmóviles y documento sin desplazarse, acceso al último control de Respaldos, formulario con altura reducida y cierre accesible, desplazamiento normal de escritorio.
+- La prueba de diseño móvil existente comprueba ahora el scroll del contenedor central y su reinicio al cambiar de sección.
+- Se mantienen pruebas de temas, calendario, offline, finanzas y arranque. La interacción final de Safari físico queda para confirmar tras publicar.
 
-Los cambios están en una rama; el despliegue y la comprobación de la URL pública se ejecutarán al integrarla en `main`.
+El contenido largo sigue desplazándose dentro de la sección; no se ocultan controles ni se impide acceder al final para simular una pantalla inmóvil.
