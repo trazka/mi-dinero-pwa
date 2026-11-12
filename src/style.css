@@ -2436,7 +2436,7 @@ li {
 .filter-actions {
   grid-column: 1 / -1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 .credit-report-totals {
   display: grid;
