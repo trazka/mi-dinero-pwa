@@ -254,7 +254,7 @@ b,
   font-weight: 650;
   margin-bottom: 12px;
 }
-.page-heading h1 + p {
+.page-heading .section-description {
   margin-top: 12px;
   font-size: 12px;
 }
@@ -928,7 +928,7 @@ li {
     max-width: 340px;
     line-height: 1.22;
   }
-  .page-heading h1 + p {
+  .page-heading .section-description {
     font-size: 12px;
     max-width: 300px;
   }
@@ -1546,7 +1546,7 @@ li {
     line-height: 1.15;
     font-weight: 750;
   }
-  .page-heading h1 + p {
+  .page-heading .section-description {
     margin-top: 6px;
     max-width: none;
     font-size: 13px;
@@ -2237,7 +2237,7 @@ li {
     font-size: 24px;
     line-height: 1.2;
   }
-  .page-heading h1 + p {
+  .page-heading .section-description {
     margin-top: 6px;
     font-size: 12px;
   }
@@ -2400,4 +2400,19 @@ li {
 .concept-options > li:hover,
 .concept-options > li[aria-selected="true"] {
   background: var(--native-active);
+}
+
+.page-heading-content {
+  flex: 1;
+  min-width: 0;
+}
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.section-title-row .savings-privacy {
+  margin: 0;
+  flex: 0 0 auto;
 }

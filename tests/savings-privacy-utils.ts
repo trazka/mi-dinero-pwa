@@ -31,11 +31,12 @@ export async function enableSavingsPrivacy(
   await page
     .getByRole("button", { name: "Confirmar activación", exact: true })
     .click();
-  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await page
     .getByRole("button", { name: "Mostrar ahorros", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Ocultar ahorros", exact: true }),
   ).toBeVisible();
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
 }

@@ -124,7 +124,7 @@ La app se bloquea al abrirla y al ocultarse, manteniendo los formularios sin gua
 
 ## Apartados para ahorro
 
-En **Apartados → Nuevo apartado**, crea una meta con nombre e importe objetivo. **Aportar** reserva dinero de tu saldo libre; **Retirar** lo libera. Son reservas manuales: no mueven dinero entre bancos ni generan ingresos o gastos. El saldo principal conserva su cálculo de ingresos menos gastos pagados; Inicio muestra además el total apartado y el saldo libre después de reservarlo.
+En **Apartados → Nuevo apartado**, crea una meta con nombre e importe objetivo. **Aportar** reserva dinero de tu saldo libre; **Retirar** lo libera. Son reservas manuales: no mueven dinero entre bancos ni generan ingresos o gastos. El saldo principal conserva su cálculo de ingresos menos gastos pagados; Apartados muestra el total reservado y el saldo libre después de reservarlo.
 
 Cada apartado tiene progreso e historial de aportaciones y retiros. Puedes cambiar su nombre/meta sin perder el historial y eliminarlo solo cuando su saldo sea cero. No se permite aportar más del saldo libre ni retirar más de lo reservado. Si después registras gastos que superan el dinero libre, la app muestra el saldo libre negativo y pide revisar las reservas: no altera ni rechaza tus movimientos financieros. Para gastar dinero reservado, retíralo del apartado y registra el gasto una sola vez.
 
@@ -140,7 +140,7 @@ También puedes aportar desde **Nuevo movimiento → Tipo → Apartado**: selecc
 
 ## Privacidad visual de los apartados
 
-Los ahorros empiezan ocultos al abrir la app: Inicio muestra `••••` para el total apartado y el saldo libre; en Apartados se ocultan nombres, metas, importes e historial. El ojo alterna directamente entre **Mostrar ahorros** y **Ocultar ahorros**, sin activar el bloqueo ni pedir verificación, tanto si el bloqueo general está configurado como si no.
+Los ahorros empiezan ocultos al abrir la app: Inicio no muestra resumen de apartados ni ojo; en Apartados se ocultan nombres, metas, importes e historial. El ojo está al extremo derecho, alineado con el título Apartados. El ojo alterna directamente entre **Mostrar ahorros** y **Ocultar ahorros**, sin activar el bloqueo ni pedir verificación, tanto si el bloqueo general está configurado como si no.
 
 En **Nuevo movimiento → Apartado** puedes elegir el nombre y aportar sin revelar los saldos ocultos. También permite crear una meta si todavía no tienes apartados. Al salir de la app, los ahorros vuelven a ocultarse. El bloqueo opcional de toda la aplicación funciona por separado. Los borradores se conservan mientras la sección permanezca abierta. Esta es privacidad visual; los JSON conservan todos los datos.
 

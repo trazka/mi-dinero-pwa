@@ -1,6 +1,6 @@
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
-import { freeAmount, reservedAmount, moveSaving } from "./savings";
+import { moveSaving } from "./savings";
 import { SecurityPanel, useSecurity } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -860,10 +860,13 @@ export default function App() {
           }}
         >
           <div className="page-heading">
-            <div>
+            <div className="page-heading-content">
               <p className="eyebrow">TUS FINANZAS PERSONALES</p>
-              <h1>{tab === "Inicio" ? "Tu resumen" : tab}</h1>
-              <p>
+              <div className="section-title-row">
+                <h1>{tab === "Inicio" ? "Tu resumen" : tab}</h1>
+                {tab === "Apartados" && savingsPrivacy}
+              </div>
+              <p className="section-description">
                 {tab === "Inicio"
                   ? "Tu dinero, al día."
                   : (
@@ -978,27 +981,6 @@ export default function App() {
                     </button>
                   </div>
                 )}
-              {!!data.savings?.length && (
-                <div className="notice savings-summary">
-                  <span>
-                    {canSeeSavings ? (
-                      <>
-                        Apartado para tus metas: {money(reservedAmount(data))} ·
-                        Saldo libre: {money(freeAmount(data))}
-                      </>
-                    ) : (
-                      "Apartado para tus metas: •••• · Saldo libre: ••••"
-                    )}
-                  </span>
-                  <button
-                    className="text-button"
-                    onClick={() => setTab("Apartados")}
-                  >
-                    Ver apartados
-                  </button>
-                </div>
-              )}
-              {savingsPrivacy}
               <section className="overview">
                 <div className="balance-card">
                   <div className="balance-label">
@@ -1274,7 +1256,6 @@ export default function App() {
           )}
           {tab === "Apartados" && (
             <>
-              {savingsPrivacy}
               {!canSeeSavings && !savingCreating && (
                 <section className="panel savings-hidden">
                   <h2>Ahorros ocultos</h2>

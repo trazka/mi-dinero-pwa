@@ -45,11 +45,8 @@ test("el ojo muestra y oculta sin bloqueo y conserva los importes en el respaldo
 }) => {
   await seed(page);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
-  await expect(page.locator(".savings-summary")).toContainText("••••");
-  await expect(page.locator(".savings-summary")).not.toContainText("$350.00");
-  await expect(
-    page.getByRole("button", { name: "Mostrar ahorros", exact: true }),
-  ).toBeEnabled();
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
+  await expect(page.locator(".savings-eye")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Meta confidencial", exact: true }),
@@ -89,7 +86,7 @@ test("el ojo no pide verificación con bloqueo activo y vuelve a ocultar al sali
   await seed(page);
   await enableSavingsPrivacy(page, context);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
-  await expect(page.locator(".savings-summary")).toContainText("$350.00");
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Meta confidencial", exact: true }),
@@ -147,14 +144,14 @@ test("el ojo no pide verificación con bloqueo activo y vuelve a ocultar al sali
     page.getByRole("heading", { name: "Ahorros ocultos", exact: true }),
   ).toBeVisible();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
-  await expect(page.locator(".savings-summary")).toContainText("••••");
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
 });
 
 test("aportar muestra nombres sin desbloquear ni revelar los saldos", async ({
   page,
 }) => {
   await seed(page);
-  await expect(page.locator(".savings-eye")).toHaveText("");
+  await expect(page.locator(".savings-eye")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
@@ -170,7 +167,7 @@ test("aportar muestra nombres sin desbloquear ni revelar los saldos", async ({
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("50");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.locator(".savings-summary")).toContainText("••••");
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
   const download = page.waitForEvent("download");
   await page
     .getByRole("navigation", { name: "Navegación principal" })
