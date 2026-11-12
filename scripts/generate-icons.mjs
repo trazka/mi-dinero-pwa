@@ -1,9 +1,10 @@
 import { chromium } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
-const svg = await readFile(
-  new URL("../public/icon-v2.svg", import.meta.url),
-  "utf8",
-);
+const source =
+  "data:image/png;base64," +
+  (
+    await readFile(new URL("../assets/icon-v3-master.png", import.meta.url))
+  ).toString("base64");
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_USE_BUNDLED_BROWSER
     ? undefined
@@ -12,15 +13,14 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage();
   for (const [filename, size] of [
-    ["icon-v2-192.png", 192],
-    ["icon-v2-512.png", 512],
-    ["apple-touch-icon-v2.png", 180],
+    ["icon-v3-192.png", 192],
+    ["icon-v3-512.png", 512],
+    ["apple-touch-icon-v3.png", 180],
   ]) {
     const encoded = await page.evaluate(
-      async ({ svg, size }) => {
+      async ({ source, size }) => {
         const image = new Image();
-        image.src =
-          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        image.src = source;
         await image.decode();
         const canvas = document.createElement("canvas");
         canvas.width = size;
@@ -28,7 +28,7 @@ try {
         canvas.getContext("2d").drawImage(image, 0, 0, size, size);
         return canvas.toDataURL("image/png").split(",")[1];
       },
-      { svg, size },
+      { source, size },
     );
     await writeFile(
       new URL("../public/" + filename, import.meta.url),

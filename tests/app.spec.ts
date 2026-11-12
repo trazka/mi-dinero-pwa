@@ -308,7 +308,7 @@ test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async
   });
   expect(
     await page.locator('link[rel="apple-touch-icon"]').getAttribute("href"),
-  ).toBe("/mi-dinero-pwa/apple-touch-icon-v2.png");
+  ).toBe("/mi-dinero-pwa/apple-touch-icon-v3.png");
   await expect
     .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
     .toBe(true);
