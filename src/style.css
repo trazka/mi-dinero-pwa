@@ -680,15 +680,23 @@ details p {
 }
 .report-totals {
   display: flex;
+  justify-content: space-between;
   gap: 50px;
   margin: 30px 0;
 }
 .report-totals > div {
+  flex: 1;
+  min-width: 0;
   display: grid;
   gap: 12px;
   font-size: 12px;
 }
+.report-totals > div:last-child {
+  text-align: right;
+}
 .report-totals strong {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
   font-size: 25px;
 }
 .table-scroll {
