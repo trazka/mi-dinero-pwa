@@ -1,3 +1,4 @@
+import { chooseDate } from "./date-utils";
 import { test, expect, type Page } from "@playwright/test";
 import type { Data } from "../src/data";
 
@@ -258,8 +259,8 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
   await expect(page.locator("tbody tr").last()).toContainText("$80.00");
   await page.getByLabel("Agrupar por").selectOption("daily");
   await expect(page.locator("tbody tr")).toHaveCount(3);
-  await page.getByLabel("Desde", { exact: true }).fill("2026-11-01");
-  await page.getByLabel("Hasta", { exact: true }).fill("2026-11-02");
+  await chooseDate(page, "Desde", "2026-11-01");
+  await chooseDate(page, "Hasta", "2026-11-02");
   await expect(page.locator("tbody tr")).toHaveCount(2);
   await page
     .getByLabel("Categoría", { exact: true })

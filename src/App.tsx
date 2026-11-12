@@ -1,3 +1,4 @@
+import DatePicker from "./DatePicker";
 import {
   cloneElement,
   useId,
@@ -355,19 +356,10 @@ export default function App() {
   const filters = (
     <div className="filters">
       <Field label="Desde">
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-        />
+        <DatePicker value={from} onChange={setFrom} />
       </Field>
       <Field label="Hasta">
-        <input
-          type="date"
-          value={to}
-          min={from || undefined}
-          onChange={(e) => setTo(e.target.value)}
-        />
+        <DatePicker value={to} min={from || undefined} onChange={setTo} />
       </Field>
       <Field label="Categoría">
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -978,9 +970,8 @@ export default function App() {
                       />
                     </Field>
                     <Field label="Fecha">
-                      <input
+                      <DatePicker
                         name="date"
-                        type="date"
                         required
                         defaultValue={modal.movement?.date ?? today()}
                       />
@@ -1074,12 +1065,7 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Fecha de vencimiento">
-                    <input
-                      name="due"
-                      type="date"
-                      required
-                      defaultValue={today()}
-                    />
+                    <DatePicker name="due" required defaultValue={today()} />
                   </Field>
                   <p className="helper">
                     El saldo actual permite registrar deudas que ya has empezado
@@ -1106,12 +1092,7 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Fecha del abono">
-                    <input
-                      name="date"
-                      type="date"
-                      defaultValue={today()}
-                      required
-                    />
+                    <DatePicker name="date" defaultValue={today()} required />
                   </Field>
                   <p className="helper">
                     Se registrará una sola vez como gasto en la categoría Pago

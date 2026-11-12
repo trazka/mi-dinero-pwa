@@ -70,3 +70,5 @@ Esta comprobación abre **la URL pública real** `https://trazka.github.io/mi-di
 El workflow ejecuta esta comprobación **después** de publicar y adjunta la captura en el artefacto `github-pages-interface`, incluso si falla la comprobación. Una compilación aprobada ya no es la única señal de salud: debe aprobar también el job `verify-published`. La prueba sigue sin sustituir una revisión en Safari/Brave de un iPhone físico.
 
 Para diagnosticar una pantalla vacía, conserva el texto exacto del error visible y consulta el artefacto del último despliegue. Una sesión privada nueva también reproduce problemas de recursos o ejecución sin depender de una instalación anterior. No borres los datos del sitio como paso de diagnóstico; contienen tus movimientos.
+
+Los campos de fecha usan un calendario en español: al tocar el día, se aplica la selección y se cierra automáticamente, sin palomita adicional. En los formularios, el botón Guardar sigue siendo necesario para guardar el registro completo; los filtros se aplican al seleccionar la fecha.
