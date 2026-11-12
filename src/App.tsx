@@ -298,21 +298,21 @@ export default function App() {
               </small>
               {m.creditDebtId && (
                 <small>
-                  Tarjeta:{" "}
+                  Compra a deuda · No suma al gasto · Tarjeta:{" "}
                   {data.debts.find((d) => d.id === m.creditDebtId)?.creditor}
                 </small>
               )}
               {m.paymentId && (
                 <small>
                   {m.creditPaymentDebtId
-                    ? "Abono de tarjeta · No suma al gasto"
+                    ? "Abono de tarjeta · Cuenta como gasto"
                     : "Abono vinculado · elimina para revertir"}
                 </small>
               )}
             </div>
             <div className="movement-right">
               <strong className={m.type === "income" ? "positive" : ""}>
-                {m.type === "income" ? "+" : "−"}
+                {m.type === "income" ? "+" : m.creditDebtId ? "" : "−"}
                 {money(m.amount)}
               </strong>
               <div className="row-actions">
@@ -575,7 +575,7 @@ export default function App() {
                   </span>
                   <span>Egresos</span>
                   <strong>{money(expenses)}</strong>
-                  <small>Compras y abonos de otras deudas</small>
+                  <small>Pagos y abonos realizados</small>
                 </div>
               </section>
               <section className="dashboard-grid">
@@ -660,9 +660,9 @@ export default function App() {
                 <strong>{money(pending)}</strong>
               </div>
               <p className="helper">
-                Las compras vinculadas a una tarjeta aumentan su deuda. Sus
-                abonos no vuelven a contar como gasto. Para otras deudas, cada
-                abono crea un único gasto vinculado.
+                Las compras con tarjeta solo aumentan la deuda. El gasto y la
+                reducción del saldo disponible se registran al abonar. No
+                registres el abono otra vez como gasto.
               </p>
               <div className="debt-grid">
                 {data.debts.map((d) => (
@@ -1025,7 +1025,11 @@ export default function App() {
                         setMovementType(e.target.value as Movement["type"])
                       }
                     >
-                      <option value="expense">Gasto</option>
+                      <option value="expense">
+                        {movementMethod === "Tarjeta de crédito"
+                          ? "Compra con tarjeta"
+                          : "Gasto"}
+                      </option>
                       <option value="income">Ingreso</option>
                     </select>
                   </Field>
@@ -1139,9 +1143,9 @@ export default function App() {
                           </select>
                         </Field>
                         <p className="helper">
-                          La compra aumenta el saldo de esta tarjeta y cuenta
-                          como gasto una sola vez. Sus nuevos abonos reducen la
-                          deuda sin sumar otro gasto. Los abonos anteriores se
+                          La compra solo aumenta la deuda; no suma al gasto ni
+                          reduce el saldo disponible. El gasto se registra al
+                          abonar a la tarjeta. Los abonos anteriores se
                           conservan tal como fueron registrados.
                           {!data.debts.length &&
                             " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
@@ -1234,7 +1238,7 @@ export default function App() {
                   </Field>
                   <p className="helper">
                     {modal.debt.kind === "credit"
-                      ? "Este abono reduce la deuda de la tarjeta sin sumar otro gasto. El gasto ya se registra al comprar."
+                      ? "Este abono reduce la deuda y se registra como gasto en la fecha del pago. Las compras vinculadas no cuentan como gasto."
                       : "Se registrará una sola vez como gasto en la categoría Pago de deuda."}{" "}
                     Se registra mediante transferencia. Para corregirlo,
                     revierte el abono y regístralo de nuevo.
