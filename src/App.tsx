@@ -67,6 +67,9 @@ import {
 } from "./data";
 type Tab =
   "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos" | "Apartados";
+type MovementFilter = "all" | "income" | "expense" | "credit";
+const acquiredDebtAmount = (movement: Movement) =>
+  movement.creditDebtId ? movement.amount : 0;
 type Modal =
   | { kind: "movement"; movement?: Movement; initialType?: "saving" }
   | { kind: "debt"; debt?: Debt }
@@ -324,9 +327,7 @@ export default function App() {
       document.documentElement.style.removeProperty("--app-height");
     };
   }, []);
-  const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">(
-    "all",
-  );
+  const [typeFilter, setTypeFilter] = useState<MovementFilter>("all");
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [category, setCategory] = useState(""),
@@ -345,7 +346,7 @@ export default function App() {
     setCategory("");
     setMerchant("");
   }
-  function showMovements(type: "all" | "income" | "expense") {
+  function showMovements(type: MovementFilter) {
     clearFilters();
     setTypeFilter(type);
     setTab("Movimientos");
@@ -446,7 +447,9 @@ export default function App() {
       (typeFilter === "all" ||
         (typeFilter === "income"
           ? m.type === "income"
-          : expenseAmount(m) > 0)) &&
+          : typeFilter === "credit"
+            ? acquiredDebtAmount(m) > 0
+            : expenseAmount(m) > 0)) &&
       (!from || m.date >= from) &&
       (!to || m.date <= to) &&
       (!category || m.category === category) &&
@@ -456,6 +459,28 @@ export default function App() {
       (!debtFilter || movementDebtId(data, m) === debtFilter),
   );
   const recent = newestFirst.slice(0, 5);
+  const acquired = data.movements.reduce(
+    (total, m) => total + acquiredDebtAmount(m),
+    0,
+  );
+  const typeLabels = {
+    all: ["movimiento", "movimientos"],
+    income: ["ingreso", "ingresos"],
+    expense: ["egreso", "egresos"],
+    credit: ["compra con TDC", "compras con TDC"],
+  };
+  const filteredLabel = typeLabels[typeFilter][filtered.length === 1 ? 0 : 1];
+  const filteredTotal = filtered.reduce(
+    (total, m) =>
+      total +
+      (typeFilter === "income"
+        ? m.amount
+        : typeFilter === "credit"
+          ? acquiredDebtAmount(m)
+          : expenseAmount(m)),
+    0,
+  );
+
   function saveForm(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget),
@@ -638,7 +663,10 @@ export default function App() {
       </div>
     );
   }
-  const groupTotals = new Map<string, { income: number; expense: number }>();
+  const groupTotals = new Map<
+    string,
+    { income: number; expense: number; acquired: number }
+  >();
   for (const m of filtered) {
     let key = m.date;
     if (period === "monthly") key = m.date.slice(0, 7);
@@ -647,7 +675,12 @@ export default function App() {
       d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
       key = d.toISOString().slice(0, 10);
     }
-    const group = groupTotals.get(key) ?? { income: 0, expense: 0 };
+    const group = groupTotals.get(key) ?? {
+      income: 0,
+      expense: 0,
+      acquired: 0,
+    };
+    group.acquired += acquiredDebtAmount(m);
     group[m.type === "income" ? "income" : "expense"] +=
       m.type === "income" ? m.amount : expenseAmount(m);
     groupTotals.set(key, group);
@@ -657,13 +690,12 @@ export default function App() {
       <Field label="Tipo de movimiento">
         <select
           value={typeFilter}
-          onChange={(e) =>
-            setTypeFilter(e.target.value as "all" | "income" | "expense")
-          }
+          onChange={(e) => setTypeFilter(e.target.value as MovementFilter)}
         >
           <option value="all">Todos los movimientos</option>
           <option value="income">Solo ingresos</option>
           <option value="expense">Solo egresos</option>
+          <option value="credit">Deuda adquirida (TDC)</option>
         </select>
       </Field>
       <Field label="Buscar movimientos">
@@ -706,9 +738,6 @@ export default function App() {
           ))}
         </select>
       </Field>
-      <button className="text-button" onClick={clearFilters}>
-        Limpiar filtros
-      </button>
       <Field label="Desde">
         <DatePicker value={from} onChange={setFrom} />
       </Field>
@@ -736,9 +765,23 @@ export default function App() {
           placeholder="Buscar establecimiento"
         />
       </Field>
+      {tab === "Reportes" && (
+        <Field label="Agrupar por">
+          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+            <option value="daily">Día</option>
+            <option value="weekly">Semana (lunes a domingo)</option>
+            <option value="monthly">Mes</option>
+          </select>
+        </Field>
+      )}
       {from && to && from > to && (
         <p role="alert">La fecha inicial debe ser anterior a la final.</p>
       )}
+      <div className="filter-actions">
+        <button type="button" className="text-button" onClick={clearFilters}>
+          Limpiar filtros
+        </button>
+      </div>
     </div>
   );
   return (
@@ -1056,6 +1099,19 @@ export default function App() {
                   <strong>{money(expenses)}</strong>
                   <small>Pagos y abonos · Ver listado</small>
                 </button>
+                <button
+                  type="button"
+                  className="stat stat-link stat-credit"
+                  aria-label="Ver deuda adquirida"
+                  onClick={() => showMovements("credit")}
+                >
+                  <span className="stat-icon debt">
+                    <HandCoins size={20} />
+                  </span>
+                  <span>Deuda adquirida</span>
+                  <strong>{money(acquired)}</strong>
+                  <small>Compras con TDC · Ver listado</small>
+                </button>
               </section>
               <section className="dashboard-grid">
                 <div className="panel">
@@ -1124,19 +1180,14 @@ export default function App() {
               {filters}
               <div className="panel-heading">
                 <h2>
-                  {filtered.length}{" "}
-                  {typeFilter === "income"
-                    ? "ingresos"
-                    : typeFilter === "expense"
-                      ? "egresos"
-                      : "movimientos"}
+                  {filtered.length} {filteredLabel}
                 </h2>
                 <button
                   className="text-button"
                   onClick={() =>
                     download(
                       csv(filtered),
-                      `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "egresos" : "movimientos"}-${today()}.csv`,
+                      `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "egresos" : typeFilter === "credit" ? "deuda-adquirida" : "movimientos"}-${today()}.csv`,
                       "text/csv;charset=utf-8",
                     )
                   }
@@ -1146,19 +1197,16 @@ export default function App() {
               </div>
               {typeFilter !== "all" && (
                 <p className="filtered-total">
-                  Total de {typeFilter === "income" ? "ingresos" : "egresos"}:{" "}
-                  <strong>
-                    {money(
-                      filtered.reduce(
-                        (total, m) =>
-                          total +
-                          (typeFilter === "income"
-                            ? m.amount
-                            : expenseAmount(m)),
-                        0,
-                      ),
-                    )}
-                  </strong>
+                  {typeFilter === "credit"
+                    ? "Deuda adquirida"
+                    : `Total de ${typeFilter === "income" ? "ingresos" : "egresos"}`}
+                  : <strong>{money(filteredTotal)}</strong>
+                </p>
+              )}
+              {typeFilter === "credit" && (
+                <p className="helper">
+                  Compras con TDC del periodo. Los pagos no reducen este total;
+                  el saldo pendiente se consulta en Deudas.
                 </p>
               )}
               {movementList(filtered)}
@@ -1369,17 +1417,7 @@ export default function App() {
                 ]}
               />
               {filters}
-              <Field label="Agrupar por">
-                <select
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                >
-                  <option value="daily">Día</option>
-                  <option value="weekly">Semana (lunes a domingo)</option>
-                  <option value="monthly">Mes</option>
-                </select>
-              </Field>
-              <div className="report-totals">
+              <div className="report-totals credit-report-totals">
                 <div>
                   <span>Ingresos filtrados</span>
                   <strong className="positive">
@@ -1396,6 +1434,17 @@ export default function App() {
                     {money(filtered.reduce((s, m) => s + expenseAmount(m), 0))}
                   </strong>
                 </div>
+                <div>
+                  <span>Deuda adquirida</span>
+                  <strong>
+                    {money(
+                      filtered.reduce(
+                        (total, m) => total + acquiredDebtAmount(m),
+                        0,
+                      ),
+                    )}
+                  </strong>
+                </div>
               </div>
               {groupTotals.size ? (
                 <div className="table-scroll">
@@ -1405,6 +1454,7 @@ export default function App() {
                         <th>Periodo</th>
                         <th>Ingresos</th>
                         <th>Egresos</th>
+                        <th>Deuda adquirida</th>
                         <th>Balance</th>
                       </tr>
                     </thead>
@@ -1426,6 +1476,7 @@ export default function App() {
                             </td>
                             <td className="positive">{money(g.income)}</td>
                             <td>{money(g.expense)}</td>
+                            <td>{money(g.acquired)}</td>
                             <td>{money(g.income - g.expense)}</td>
                           </tr>
                         ))}
