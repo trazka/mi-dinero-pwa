@@ -1,9 +1,11 @@
-# Bloqueo opcional con llave de acceso del dispositivo
+# Autocompletado y navegación táctil por secciones
 
-Añade Seguridad en Respaldos: activación voluntaria con autenticación de plataforma y verificación obligatoria del usuario (Face ID o código, según el dispositivo). Exige confirmar que se guardó un código de recuperación antes de activar. Permite bloquear manualmente y desactivar desde la sesión desbloqueada.
+Los campos de establecimiento/concepto sugieren valores existentes de movimientos y recurrentes mediante autocompletado nativo, manteniendo la escritura libre. El filtro por establecimiento y el formulario recurrente comparten las sugerencias sin modificar registros previos.
 
-Bloquea al abrir y al ocultarse la app, conservando el estado de formularios ocultos. Verifica localmente las firmas ES256, el desafío aleatorio, origen, RP, identificador de credencial y presencia/verificación del usuario. Cancelar o recibir una firma inválida mantiene el bloqueo. Usa una base IndexedDB de seguridad separada de los datos financieros; no se exportan las credenciales en respaldos. La recuperación usa un código aleatorio de 128 bits y solo guarda su hash.
+El botón con «+» queda flotante: crea deudas en Deudas y movimientos en Inicio, Movimientos y Reportes; no aparece en Respaldos. Se deshabilita mientras hay formularios abiertos. Los deslizamientos horizontales recorren las secciones sin circular entre extremos; se ignoran desplazamientos verticales, multitáctiles, formularios y tablas con desplazamiento horizontal. El menú lateral permite desplazarse en ventanas horizontales de poca altura para alcanzar su tarjeta inferior.
 
-El bloqueo protege la interfaz y no cifra IndexedDB ni los JSON. No exige exclusivamente Face ID: el sistema decide el método de verificación. La disponibilidad depende del navegador y del autenticador. El desbloqueo local se prueba sin red con un autenticador virtual; debe comprobarse también en un iPhone real instalado desde Safari, con Face ID y en modo avión, antes de prometer compatibilidad en ese dispositivo.
+No cambia el almacenamiento, los cálculos financieros ni el bloqueo existente; no incorpora autenticación automática.
 
-Validación: 34 pruebas unitarias y 30 pruebas de navegador aprobadas; compilación correcta. Comprobadas firma inválida, cancelación, recuperación errónea/correcta, autenticación y recuperación sin conexión, bloqueo al ocultarse, conservación de borradores y datos, y navegador sin autenticador compatible. Captura revisada en tamaño iPhone.
+También preselecciona la única TDC en gastos recurrentes, conservando la tarjeta de los registros editados. El marco móvil sigue la altura visual disponible y restablece el desplazamiento del documento al regresar de horizontal a vertical, evitando el encabezado oculto y el espacio inferior.
+
+Validación: 34 pruebas unitarias y 34 pruebas de navegador aprobadas; compilación TypeScript/Vite/PWA correcta. Incluye finanzas, respaldos, modo offline, bloqueo, selección de la única TDC sin intervención manual y dos rotaciones consecutivas tras desplazar la vista horizontal. Captura de iPhone revisada. Safari/iPhone físico sigue requiriendo comprobación manual del autocompletado, los gestos y la rotación.

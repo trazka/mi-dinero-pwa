@@ -199,7 +199,7 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await page.getByLabel("Concepto recurrente").fill("Compra programada");
   await page.getByLabel("Importe recurrente (MXN)").fill("10");
   await page.getByLabel("Método recurrente").selectOption("Tarjeta de crédito");
-  await page.getByLabel("Tarjeta recurrente").selectOption("card");
+  await expect(page.getByLabel("Tarjeta recurrente")).toHaveValue("card");
   await page
     .getByRole("button", { name: "Guardar recurrente", exact: true })
     .click();
@@ -240,7 +240,7 @@ test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", asy
     "Selecciona tu tarjeta de crédito",
     "Tarjeta de prueba · $100.00",
   ]);
-  await cards.selectOption("card");
+  await expect(cards).toHaveValue("card");
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("25");
   await page.getByLabel("Establecimiento o concepto").fill("Compra de prueba");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
@@ -253,6 +253,7 @@ test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", asy
     "Selecciona tu tarjeta de crédito",
     "Tarjeta de prueba · $125.00",
   ]);
+  await expect(cards).toHaveValue("card");
   await page.getByLabel("Tipo", { exact: true }).selectOption("payment");
   await expect(page.getByLabel("Deuda a abonar").locator("option")).toHaveText([
     "Selecciona una deuda pendiente",

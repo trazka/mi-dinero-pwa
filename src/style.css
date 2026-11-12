@@ -1861,7 +1861,11 @@ li {
   .app {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    min-height: 0;
+    height: var(--app-height, 100dvh);
     overflow: hidden;
   }
   .app > main {
@@ -2092,4 +2096,46 @@ li {
 .security-panel .text-button,
 .lock-card .text-button {
   margin-top: 12px;
+}
+
+/* Keep the privacy card within short landscape viewports. */
+.sidebar {
+  overflow-y: auto;
+}
+.sidebar > * {
+  flex-shrink: 0;
+}
+
+@media (max-height: 700px) and (min-width: 801px) {
+  .sidebar {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+  .nav-label {
+    margin-top: 24px;
+  }
+  .sidebar-note {
+    margin-top: 24px;
+    padding: 14px;
+  }
+  .sidebar-bottom {
+    margin-top: 16px;
+  }
+}
+.page-heading > .section-add {
+  width: auto;
+  border-radius: 28px;
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 18;
+  box-shadow: 0 5px 20px #0003;
+}
+@media (max-width: 800px) {
+  .page-heading > .section-add {
+    bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+  .page {
+    padding-bottom: calc(165px + env(safe-area-inset-bottom));
+  }
 }
