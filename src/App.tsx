@@ -282,7 +282,11 @@ export default function App() {
       resumeTimer = window.setTimeout(resize, 150);
     };
     const layoutChanges = new MutationObserver(() => {
-      if (document.documentElement.hasAttribute("data-input-active")) resize();
+      if (
+        document.documentElement.hasAttribute("data-input-active") ||
+        document.documentElement.hasAttribute("data-field-focused")
+      )
+        resize();
     });
     const app = pageRef.current?.closest(".app");
     if (app) layoutChanges.observe(app, { childList: true, subtree: true });

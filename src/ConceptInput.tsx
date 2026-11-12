@@ -17,6 +17,7 @@ export default function ConceptInput({
   onValueChange?: (value: string) => void;
 }) {
   const listId = useId();
+  const root = useRef<HTMLDivElement>(null);
   const press = useRef<{ id: number; x: number; y: number } | null>(null);
   const [text, setText] = useState(String(defaultValue ?? ""));
   const [open, setOpen] = useState(false);
@@ -34,7 +35,7 @@ export default function ConceptInput({
   }
 
   return (
-    <div className="concept-input">
+    <div className="concept-input" ref={root}>
       <input
         {...props}
         value={current}
@@ -56,7 +57,11 @@ export default function ConceptInput({
           setOpen(true);
           setActive(-1);
         }}
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          // On iOS a tap can blur the input before pointerup/click. Keep the
+          // option mounted until that interaction finishes.
+          if (!press.current) setOpen(false);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Escape" && expanded) {
             e.preventDefault();
@@ -89,34 +94,45 @@ export default function ConceptInput({
           className="concept-options"
         >
           {matches.map((item, index) => (
-            <li
-              key={item}
-              id={`${listId}-${index}`}
-              role="option"
-              aria-selected={index === active}
-              onPointerDown={(e) => {
-                // Keep the input focused. Safari may suppress the compatibility
-                // click after this, so select explicitly on pointer release.
-                e.preventDefault();
-                press.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
-              }}
-              onPointerCancel={() => {
-                press.current = null;
-              }}
-              onPointerUp={(e) => {
-                const start = press.current;
-                press.current = null;
-                if (
-                  start?.id === e.pointerId &&
-                  Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10
-                ) {
-                  e.preventDefault();
-                  choose(item);
-                }
-              }}
-              onClick={() => choose(item)}
-            >
-              {item}
+            <li key={item} role="presentation">
+              <button
+                type="button"
+                tabIndex={-1}
+                id={`${listId}-${index}`}
+                role="option"
+                aria-selected={index === active}
+                onPointerDown={(e) => {
+                  press.current = {
+                    id: e.pointerId,
+                    x: e.screenX,
+                    y: e.screenY,
+                  };
+                  // Mouse selection keeps focus in the input. Touch may close
+                  // the keyboard; screen coordinates remain stable when it does.
+                  if (e.pointerType === "mouse") e.preventDefault();
+                }}
+                onPointerCancel={() => {
+                  press.current = null;
+                  if (!root.current?.contains(document.activeElement))
+                    setOpen(false);
+                }}
+                onPointerUp={(e) => {
+                  const start = press.current;
+                  press.current = null;
+                  if (
+                    start?.id === e.pointerId &&
+                    Math.hypot(e.screenX - start.x, e.screenY - start.y) < 10
+                  ) {
+                    e.preventDefault();
+                    choose(item);
+                  } else if (!root.current?.contains(document.activeElement)) {
+                    setOpen(false);
+                  }
+                }}
+                onClick={() => choose(item)}
+              >
+                {item}
+              </button>
             </li>
           ))}
         </ul>

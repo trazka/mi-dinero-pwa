@@ -2390,15 +2390,18 @@ li {
   border-radius: 12px;
   background: var(--native-surface);
 }
-.concept-options > li {
+.concept-options button {
+  display: block;
+  width: 100%;
+  text-align: left;
   padding: 12px;
   min-height: 44px;
   cursor: pointer;
   border-radius: 8px;
   overflow-wrap: anywhere;
 }
-.concept-options > li:hover,
-.concept-options > li[aria-selected="true"] {
+.concept-options button:hover,
+.concept-options button[aria-selected="true"] {
   background: var(--native-active);
 }
 
