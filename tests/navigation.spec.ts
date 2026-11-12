@@ -91,6 +91,28 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
   await expect(concept).toHaveValue("ti");
   await option.tap();
   await expect(concept).toHaveValue("Tienda de prueba");
+  await concept.fill("ti");
+  await option.dispatchEvent("pointerdown", {
+    pointerId: 3,
+    pointerType: "touch",
+    screenX: 80,
+    screenY: 450,
+    clientX: 80,
+    clientY: 450,
+  });
+  await concept.blur();
+  await expect(option).toBeVisible();
+  // Closing the keyboard moves the option in the viewport during the tap.
+  await option.dispatchEvent("pointerup", {
+    pointerId: 3,
+    pointerType: "touch",
+    screenX: 80,
+    screenY: 450,
+    clientX: 80,
+    clientY: 650,
+  });
+  await expect(concept).toHaveValue("Tienda de prueba");
+  await concept.focus();
   await concept.fill("cafe");
   await expect(
     page.getByRole("option", { name: "Café Central", exact: true }),
