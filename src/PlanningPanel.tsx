@@ -1,3 +1,4 @@
+import MoneyInput from "./MoneyInput";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import DatePicker from "./DatePicker";
 import { money, today, type Data, type Recurring } from "./data";
@@ -119,7 +120,7 @@ export function BudgetPanel({
           </label>
           <label>
             Límite mensual (MXN)
-            <input
+            <MoneyInput
               name="limit"
               aria-label="Límite mensual (MXN)"
               type="number"
@@ -294,7 +295,7 @@ export function RecurringPanel({
           </label>
           <label>
             Importe recurrente (MXN)
-            <input
+            <MoneyInput
               name="amount"
               aria-label="Importe recurrente (MXN)"
               type="number"
