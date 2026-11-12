@@ -160,6 +160,8 @@ test("capturar con teclado oculta navegación y sigue el área visual sin perder
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   const search = page.getByLabel("Buscar movimientos", { exact: true });
   await search.fill("Texto conservado");
+  // Hide immediately, even before the visual viewport reports a keyboard.
+  await expect(nav).toBeHidden();
   await page.evaluate(() => {
     Object.defineProperty(window.visualViewport!, "height", {
       configurable: true,

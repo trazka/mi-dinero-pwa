@@ -2330,3 +2330,28 @@ li {
     display: none;
   }
 }
+
+.savings-eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+@media (max-width: 800px) {
+  :root[data-field-focused] .mobile-nav,
+  :root[data-field-focused] .section-add {
+    display: none;
+  }
+  :root[data-field-focused] .page {
+    padding-bottom: 24px;
+  }
+  :root[data-field-focused] .keyboard-done {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-weight: 650;
+  }
+}
