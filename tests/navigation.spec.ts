@@ -4,7 +4,11 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
   page,
 }) => {
   await page.goto("./");
-  for (const concept of ["Tienda de prueba", "Concepto completamente nuevo"]) {
+  for (const concept of [
+    "Tienda de prueba",
+    "Concepto completamente nuevo",
+    "Café Central",
+  ]) {
     await page
       .getByRole("button", { name: "Nuevo movimiento", exact: true })
       .click();
@@ -19,17 +23,56 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
+  const concept = page.getByRole("combobox", {
+    name: "Establecimiento o concepto",
+    exact: true,
+  });
+  await concept.focus();
   await expect(
-    page.getByLabel("Establecimiento o concepto", { exact: true }),
-  ).toHaveAttribute("list", "merchant-suggestions");
+    page.getByRole("option", { name: "Tienda de prueba", exact: true }),
+  ).toBeVisible();
   await expect(
-    page.locator('#merchant-suggestions option[value="Tienda de prueba"]'),
-  ).toHaveCount(1);
+    page.getByRole("option", {
+      name: "Concepto completamente nuevo",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await concept.fill("tiENda");
   await expect(
-    page.locator(
-      '#merchant-suggestions option[value="Concepto completamente nuevo"]',
-    ),
-  ).toHaveCount(1);
+    page.getByRole("option", { name: "Tienda de prueba", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("option", {
+      name: "Concepto completamente nuevo",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("option", { name: "Tienda de prueba", exact: true })
+    .click();
+  await expect(concept).toHaveValue("Tienda de prueba");
+  await concept.fill("cafe");
+  await expect(
+    page.getByRole("option", { name: "Café Central", exact: true }),
+  ).toBeVisible();
+  await concept.press("ArrowDown");
+  await concept.press("Enter");
+  await expect(concept).toHaveValue("Café Central");
+  await concept.fill("Otro concepto nuevo");
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("25");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Movimientos", exact: true })
+    .click();
+  const filter = page.getByLabel("Establecimiento", { exact: true });
+  await filter.fill("tienda");
+  await page
+    .getByRole("option", { name: "Tienda de prueba", exact: true })
+    .click();
+  await expect(filter).toHaveValue("Tienda de prueba");
+  await expect(page.locator(".movement")).toHaveCount(1);
 });
 
 test("gestos cambian sección y el botón flotante sigue su contexto", async ({
@@ -61,7 +104,10 @@ test("gestos cambian sección y el botón flotante sigue su contexto", async ({
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await swipe(-140);
   await expect(page.locator(".page h1")).toHaveText("Apartados");
-  await expect(page.locator(".section-add")).toHaveText("Nuevo apartado");
+  await expect(page.locator(".section-add")).toHaveAccessibleName(
+    "Nuevo apartado",
+  );
+  await expect(page.locator(".section-add")).toHaveText("");
   await swipe(-140);
   await swipe(-140);
   await expect(page.locator(".page h1")).toHaveText("Respaldos");

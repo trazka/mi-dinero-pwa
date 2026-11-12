@@ -1,3 +1,4 @@
+import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
 import { freeAmount, reservedAmount, moveSaving } from "./savings";
 import { SecurityPanel, useSecurity } from "./SecurityGate";
@@ -66,7 +67,7 @@ import {
 type Tab =
   "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos" | "Apartados";
 type Modal =
-  | { kind: "movement"; movement?: Movement }
+  | { kind: "movement"; movement?: Movement; initialType?: "saving" }
   | { kind: "debt"; debt?: Debt }
   | { kind: "payment"; debt: Debt }
   | null;
@@ -174,7 +175,7 @@ export default function App() {
       setMovementType(
         modal.movement?.creditDebtId
           ? "credit"
-          : (modal.movement?.type ?? "expense"),
+          : (modal.movement?.type ?? modal.initialType ?? "expense"),
       );
       setMovementMethod(modal.movement?.method ?? "Efectivo");
     }
@@ -703,10 +704,10 @@ export default function App() {
         </select>
       </Field>
       <Field label="Establecimiento">
-        <input
+        <ConceptInput
+          suggestions={merchantOptions}
           value={merchant}
-          onChange={(e) => setMerchant(e.target.value)}
-          list="merchant-suggestions"
+          onValueChange={setMerchant}
           placeholder="Buscar establecimiento"
         />
       </Field>
@@ -717,11 +718,6 @@ export default function App() {
   );
   return (
     <div className={`app${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
-      <datalist id="merchant-suggestions">
-        {merchantOptions.map((value) => (
-          <option key={value} value={value} />
-        ))}
-      </datalist>
       <aside className="sidebar" id="app-sidebar">
         <a
           className="brand"
@@ -892,12 +888,21 @@ export default function App() {
             {tab !== "Respaldos" && (
               <button
                 className="button section-add"
-                disabled={
-                  !loaded ||
-                  !!modal ||
-                  planningEditing ||
-                  (tab === "Apartados" && !canSeeSavings && !savingCreating)
+                aria-label={
+                  tab === "Apartados"
+                    ? "Nuevo apartado"
+                    : tab === "Deudas"
+                      ? "Nueva deuda"
+                      : "Nuevo movimiento"
                 }
+                title={
+                  tab === "Apartados"
+                    ? "Nuevo apartado"
+                    : tab === "Deudas"
+                      ? "Nueva deuda"
+                      : "Nuevo movimiento"
+                }
+                disabled={!loaded || !!modal || planningEditing}
                 onClick={() => {
                   setError("");
                   if (tab === "Apartados") {
@@ -909,12 +914,7 @@ export default function App() {
                   );
                 }}
               >
-                <Plus size={18} />
-                {tab === "Apartados"
-                  ? "Nuevo apartado"
-                  : tab === "Deudas"
-                    ? "Nueva deuda"
-                    : "Nuevo movimiento"}
+                <Plus size={26} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -1099,6 +1099,7 @@ export default function App() {
               <RecurringPanel
                 onEditing={setPlanningEditing}
                 data={data}
+                suggestions={merchantOptions}
                 mutate={mutate}
                 busy={busy}
                 categories={[...categories, "Pago de deuda"]}
@@ -1286,6 +1287,14 @@ export default function App() {
                 <section className="panel savings-hidden">
                   <h2>Ahorros ocultos</h2>
                   <p>••••</p>
+                  <button
+                    className="button secondary"
+                    onClick={() =>
+                      setModal({ kind: "movement", initialType: "saving" })
+                    }
+                  >
+                    Agregar dinero
+                  </button>
                 </section>
               )}
               <div
@@ -1695,9 +1704,9 @@ export default function App() {
                   ) : (
                     <>
                       <Field label="Establecimiento o concepto">
-                        <input
+                        <ConceptInput
+                          suggestions={merchantOptions}
                           name="merchant"
-                          list="merchant-suggestions"
                           autoComplete="off"
                           required
                           maxLength={120}
