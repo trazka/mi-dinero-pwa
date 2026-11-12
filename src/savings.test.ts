@@ -109,3 +109,13 @@ it("solo elimina apartados sin fondos y avisa saldo libre negativo sin cambiar g
   expect(removeSaving(data, id).savings).toHaveLength(0);
   expect(data.movements).toHaveLength(2);
 });
+
+it("la aportación conserva la fecha elegida y rechaza fechas inválidas", () => {
+  const data = saveSaving(initial(), "Prueba", 1000);
+  const id = data.savings![0].id;
+  expect(
+    moveSaving(data, id, "deposit", 100, "2026-10-15").savings![0].entries[0]
+      .date,
+  ).toBe("2026-10-15");
+  expect(() => moveSaving(data, id, "deposit", 100, "2026-02-30")).toThrow();
+});
