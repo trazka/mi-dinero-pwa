@@ -1419,9 +1419,9 @@ export default function App() {
                                   "Tarjeta de crédito" &&
                                 !modal.movement.creditDebtId
                                   ? "Mantener sin vincular (registro anterior)"
-                                  : "Selecciona tu tarjeta o deuda"}
+                                  : "Selecciona tu tarjeta de crédito"}
                               </option>
-                              {data.debts.map((d) => (
+                              {creditDebts.map((d) => (
                                 <option key={d.id} value={d.id}>
                                   {d.creditor} · {money(balance(d))}
                                 </option>
@@ -1433,7 +1433,7 @@ export default function App() {
                             reduce el saldo disponible. El gasto se registra al
                             abonar a la tarjeta. Los abonos anteriores se
                             conservan tal como fueron registrados.
-                            {!data.debts.length &&
+                            {!creditDebts.length &&
                               " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
                           </p>
                         </>

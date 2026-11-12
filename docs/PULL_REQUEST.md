@@ -1,7 +1,7 @@
-# Icono de lanzamiento: billetera con M
+# Mostrar solo tarjetas de crédito al registrar compras
 
-Aplica el diseño aprobado de una M dentro de una billetera, en verde intenso sobre negro uniforme. Genera PNG de 180, 192 y 512 px desde el maestro v5 y actualiza el manifiesto, favicon y apple-touch-icon. Las rutas PNG anteriores sirven también el nuevo diseño.
+El selector de compras con tarjeta incluía también deudas como el coche. Ahora ofrece únicamente deudas de tipo Tarjeta de crédito, tanto desde Compra a crédito como al elegir ese método de pago. Si no hay tarjetas, muestra cómo registrarlas. Los abonos siguen ofreciendo todas las deudas pendientes.
 
-Conserva la billetera del encabezado, la identidad de la PWA, las funciones financieras e IndexedDB. iOS puede mantener el icono ya instalado en caché; no se borran datos ni se fuerza una reinstalación.
+No se modifican cálculos financieros ni datos almacenados. Se agregan pruebas de tarjeta y coche, abono al coche y ausencia de tarjetas.
 
-Validación: 34 pruebas unitarias y 25 pruebas de navegador aprobadas; compilación de producción correcta. Verificadas las rutas de iconos y el funcionamiento offline bajo /mi-dinero-pwa/.
+Validación: 34 pruebas unitarias y 27 pruebas de navegador aprobadas; compilación de producción correcta.
