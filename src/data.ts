@@ -49,7 +49,7 @@ export const cents = (v: number) =>
   v <= 999999999 &&
   Math.abs(v * 100 - Math.round(v * 100)) < 0.0001;
 export const expenseAmount = (m: Movement) =>
-  m.type === "expense" && !m.creditPaymentDebtId ? m.amount : 0;
+  m.type === "expense" && !m.creditDebtId ? m.amount : 0;
 
 export function payDebt(
   data: Data,
@@ -342,10 +342,12 @@ export function csv(movements: Movement[]) {
       ...movements.map((m) => [
         m.date,
         m.creditPaymentDebtId
-          ? "Abono de tarjeta (sin gasto)"
-          : m.type === "income"
-            ? "Ingreso"
-            : "Gasto",
+          ? "Abono de tarjeta"
+          : m.creditDebtId
+            ? "Compra con tarjeta (a deuda)"
+            : m.type === "income"
+              ? "Ingreso"
+              : "Gasto",
         m.merchant,
         m.category,
         m.amount.toFixed(2),

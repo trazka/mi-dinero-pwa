@@ -53,17 +53,17 @@ const purchase = (amount = 100): Movement => ({
 const total = (d: Data) =>
   d.movements.reduce((sum, m) => sum + expenseAmount(m), 0);
 describe("Compras vinculadas y abonos de tarjeta", () => {
-  it("crea un cargo y cuenta solo la compra; abonar no duplica el gasto", () => {
+  it("la compra solo aumenta deuda y el gasto se reconoce al abonar", () => {
     let d = saveMovement(fixture(), purchase());
     expect(balance(d.debts[0])).toBe(100);
-    expect(total(d)).toBe(100);
+    expect(total(d)).toBe(0);
     d = payDebt(d, "card", 40, "2026-11-11");
     expect(balance(d.debts[0])).toBe(60);
-    expect(total(d)).toBe(100);
+    expect(total(d)).toBe(40);
     expect(d.movements).toHaveLength(2);
     expect(d.movements[1].creditPaymentDebtId).toBe("card");
     expect(validateBackup(d)).toEqual(d);
-    expect(csv(d.movements)).toContain("Abono de tarjeta (sin gasto)");
+    expect(csv(d.movements)).toContain("Abono de tarjeta");
   });
   it("editar varias veces, cambiar importe y cambiar de tarjeta no duplica cargos", () => {
     let d = saveMovement(fixture(), purchase());
@@ -92,7 +92,7 @@ describe("Compras vinculadas y abonos de tarjeta", () => {
     d = payDebt(d, "card", 40, "2026-11-11");
     d = removeMovement(d, d.movements.find((m) => m.paymentId)!.id);
     expect(balance(d.debts[0])).toBe(100);
-    expect(total(d)).toBe(100);
+    expect(total(d)).toBe(0);
     d = removeMovement(d, "purchase");
     expect(balance(d.debts[0])).toBe(0);
     expect(total(d)).toBe(0);
@@ -126,9 +126,9 @@ describe("Compras vinculadas y abonos de tarjeta", () => {
     const paid = payDebt(d, "card", 10, "2026-11-11");
     const linked = saveMovement(paid, purchase(20));
     expect(balance(linked.debts[0])).toBe(110);
-    expect(total(linked)).toBe(30);
+    expect(total(linked)).toBe(10);
     const next = payDebt(linked, "card", 10, "2026-11-11");
-    expect(total(next)).toBe(30);
+    expect(total(next)).toBe(20);
     const legacy = { ...purchase(), creditDebtId: undefined };
     const previous = { ...fixture(), movements: [legacy] };
     const edited = saveMovement(previous, { ...legacy, notes: "Nota editada" });
@@ -159,7 +159,7 @@ describe("Compras vinculadas y abonos de tarjeta", () => {
     );
     expect(validateBackup(JSON.parse(JSON.stringify(d)))).toEqual(d);
   });
-  it("rechaza cargos huérfanos, duplicados, importes alterados y pagos falsamente excluidos", () => {
+  it("rechaza cargos huérfanos, duplicados, importes alterados y vínculos de pago falsos", () => {
     const d = saveMovement(fixture(), purchase());
     const duplicate = structuredClone(d);
     duplicate.debts[0].charges!.push(duplicate.debts[0].charges![0]);
@@ -183,7 +183,7 @@ describe("Compras vinculadas y abonos de tarjeta", () => {
     ]);
     const d = await readData();
     expect(balance(d.debts[0])).toBe(150);
-    expect(total(d)).toBe(150);
+    expect(total(d)).toBe(0);
     expect(validateBackup(d)).toEqual(d);
   });
 });
@@ -226,4 +226,32 @@ it("actualiza datos locales de versión 1 sin borrar movimientos ni saldos", asy
   expect(stored.version).toBe(2);
   expect(stored.movements).toHaveLength(2);
   expect(balance(stored.debts[0])).toBe(80);
+});
+
+it("reconoce pagos parciales en sus fechas, incluida la liquidación y su reversión", () => {
+  let d = saveMovement(fixture(), purchase());
+  expect(total(d)).toBe(0);
+  d = payDebt(d, "card", 40, "2026-12-01");
+  d = payDebt(d, "card", 60, "2027-01-01");
+  expect(balance(d.debts[0])).toBe(0);
+  expect(total(d)).toBe(100);
+  expect(
+    d.movements
+      .filter((m) => m.date.startsWith("2026-11"))
+      .reduce((s, m) => s + expenseAmount(m), 0),
+  ).toBe(0);
+  expect(
+    d.movements
+      .filter((m) => m.date.startsWith("2026-12"))
+      .reduce((s, m) => s + expenseAmount(m), 0),
+  ).toBe(40);
+  expect(
+    d.movements
+      .filter((m) => m.date.startsWith("2027-01"))
+      .reduce((s, m) => s + expenseAmount(m), 0),
+  ).toBe(60);
+  d = removeMovement(d, d.movements.find((m) => m.date === "2027-01-01")!.id);
+  expect(balance(d.debts[0])).toBe(60);
+  expect(total(d)).toBe(40);
+  expect(csv(d.movements)).toContain("Compra con tarjeta (a deuda)");
 });

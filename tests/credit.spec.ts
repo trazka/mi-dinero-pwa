@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-test("compra a crédito aumenta deuda; abonar no duplica gastos y persiste al importar", async ({
+test("compra a crédito solo aumenta deuda; el abono registra el gasto y persiste al importar", async ({
   page,
 }) => {
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
@@ -30,6 +30,12 @@ test("compra a crédito aumenta deuda; abonar no duplica gastos y persiste al im
   await expect(page.getByRole("dialog")).toBeHidden();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$0.00");
+  await expect(
+    page.locator(".stat").filter({ hasText: "Egresos" }),
+  ).toContainText("$0.00");
+  await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
@@ -38,14 +44,14 @@ test("compra a crédito aumenta deuda; abonar no duplica gastos y persiste al im
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await page.reload();
-  await expect(page.locator(".balance-number")).toContainText("-$100.00");
+  await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await expect(
     page.locator(".stat").filter({ hasText: "Egresos" }),
-  ).toContainText("$100.00");
+  ).toContainText("$40.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
-  await expect(page.locator(".report-totals")).toContainText("$100.00");
+  await expect(page.locator(".report-totals")).toContainText("$40.00");
   await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody")).toContainText("$100.00");
+  await expect(page.locator("tbody")).toContainText("$40.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
   await page
@@ -60,7 +66,7 @@ test("compra a crédito aumenta deuda; abonar no duplica gastos y persiste al im
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(page.locator(".movement")).toHaveCount(2);
   await expect(
-    page.getByText("Abono de tarjeta · No suma al gasto"),
+    page.getByText("Abono de tarjeta · Cuenta como gasto"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Editar Compra ficticia" }).click();
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("20");
@@ -81,6 +87,8 @@ test("compra a crédito aumenta deuda; abonar no duplica gastos y persiste al im
     .getByRole("button", { name: "Revertir abono de Tarjeta ficticia" })
     .click();
   await expect(page.locator(".debt-number")).toHaveText("$120.00");
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Eliminar Compra ficticia" }).click();
