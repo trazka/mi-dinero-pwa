@@ -2273,3 +2273,21 @@ li {
     margin-left: 0;
   }
 }
+.savings-privacy {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.savings-privacy p {
+  font-size: 12px;
+}
+.savings-hidden {
+  padding: 28px;
+}
+.savings-hidden p {
+  font-size: 24px;
+  letter-spacing: 4px;
+  margin-top: 12px;
+}

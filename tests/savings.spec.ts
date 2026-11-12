@@ -1,3 +1,4 @@
+import { enableSavingsPrivacy } from "./savings-privacy-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 test("apartados ahorran sin gastos, conservan historial y viajan en respaldos offline", async ({
@@ -5,6 +6,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   context,
 }) => {
   await page.goto("./");
+  await enableSavingsPrivacy(page, context);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
@@ -78,6 +80,21 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   });
   await context.setOffline(true);
   await page.reload();
+  await page
+    .getByRole("button", {
+      name: "Desbloquear con el dispositivo",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Desbloquear con el dispositivo",
+      exact: true,
+    })
+    .click();
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await expect(
     page.getByLabel("Progreso de Fondo de emergencia"),
@@ -92,8 +109,10 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
 
 test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", async ({
   page,
+  context,
 }) => {
   await page.goto("./");
+  await enableSavingsPrivacy(page, context);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   page.once("dialog", (d) => d.accept());
@@ -162,8 +181,10 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
 
 test("Nuevo movimiento permite crear un apartado cuando no hay metas", async ({
   page,
+  context,
 }) => {
   await page.goto("./");
+  await enableSavingsPrivacy(page, context);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();

@@ -1,6 +1,6 @@
 import SavingsPanel from "./SavingsPanel";
 import { freeAmount, reservedAmount, moveSaving } from "./savings";
-import { SecurityPanel } from "./SecurityGate";
+import { SecurityPanel, useSecurity } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
 import {
@@ -42,6 +42,8 @@ import {
   PiggyBank,
   PanelLeftClose,
   PanelLeftOpen,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   balance,
@@ -110,6 +112,62 @@ function download(content: string, name: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export default function App() {
+  const security = useSecurity();
+  const [savingsVisible, setSavingsVisible] = useState(false);
+  const canSeeSavings = savingsVisible && !!security.config;
+  useEffect(() => {
+    const hide = () => {
+      if (document.hidden) setSavingsVisible(false);
+    };
+    const pageHide = () => setSavingsVisible(false);
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("pagehide", pageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", hide);
+      window.removeEventListener("pagehide", pageHide);
+    };
+  }, []);
+  useEffect(() => {
+    if (!security.config) setSavingsVisible(false);
+  }, [security.config]);
+  const savingsPrivacy = (
+    <div className="savings-privacy">
+      <button
+        type="button"
+        className="button secondary"
+        aria-label={canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
+        aria-pressed={canSeeSavings}
+        onClick={() =>
+          canSeeSavings
+            ? setSavingsVisible(false)
+            : security.verify(() => setSavingsVisible(true))
+        }
+        disabled={!security.config}
+      >
+        {canSeeSavings ? <EyeOff size={18} /> : <Eye size={18} />}
+        {canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
+      </button>
+      {!security.config && (
+        <>
+          <p>Activa el bloqueo en Seguridad para poder mostrar tus ahorros.</p>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              setModal(null);
+              setTab("Respaldos");
+            }}
+          >
+            Configurar bloqueo
+          </button>
+        </>
+      )}
+      {!!security.config && !canSeeSavings && (
+        <p>Los ahorros están ocultos. Mostrar requiere desbloqueo manual.</p>
+      )}
+    </div>
+  );
+
   const [data, setData] = useState<Data>(empty),
     [loaded, setLoaded] = useState(false),
     [error, setError] = useState(""),
@@ -352,6 +410,10 @@ export default function App() {
     if (!modal) return;
     if (modal.kind === "movement") {
       if (movementType === "saving") {
+        if (!canSeeSavings) {
+          setError("Muestra tus ahorros con el bloqueo para poder aportar.");
+          return;
+        }
         void mutate((d) =>
           moveSaving(d, get("savingId"), "deposit", num("amount"), get("date")),
         );
@@ -796,7 +858,12 @@ export default function App() {
             {tab !== "Respaldos" && (
               <button
                 className="button section-add"
-                disabled={!loaded || !!modal || planningEditing}
+                disabled={
+                  !loaded ||
+                  !!modal ||
+                  planningEditing ||
+                  (tab === "Apartados" && !canSeeSavings)
+                }
                 onClick={() => {
                   setError("");
                   if (tab === "Apartados") {
@@ -888,8 +955,14 @@ export default function App() {
               {!!data.savings?.length && (
                 <div className="notice savings-summary">
                   <span>
-                    Apartado para tus metas: {money(reservedAmount(data))} ·
-                    Saldo libre: {money(freeAmount(data))}
+                    {canSeeSavings ? (
+                      <>
+                        Apartado para tus metas: {money(reservedAmount(data))} ·
+                        Saldo libre: {money(freeAmount(data))}
+                      </>
+                    ) : (
+                      "Apartado para tus metas: •••• · Saldo libre: ••••"
+                    )}
                   </span>
                   <button
                     className="text-button"
@@ -899,6 +972,7 @@ export default function App() {
                   </button>
                 </div>
               )}
+              {savingsPrivacy}
               <section className="overview">
                 <div className="balance-card">
                   <div className="balance-label">
@@ -1172,14 +1246,25 @@ export default function App() {
             </>
           )}
           {tab === "Apartados" && (
-            <SavingsPanel
-              data={data}
-              mutate={mutate}
-              busy={busy}
-              creating={savingCreating}
-              onClose={() => setSavingCreating(false)}
-              onEditing={setPlanningEditing}
-            />
+            <>
+              {savingsPrivacy}
+              {!canSeeSavings && (
+                <section className="panel savings-hidden">
+                  <h2>Ahorros ocultos</h2>
+                  <p>••••</p>
+                </section>
+              )}
+              <div hidden={!canSeeSavings} inert={!canSeeSavings}>
+                <SavingsPanel
+                  data={data}
+                  mutate={mutate}
+                  busy={busy}
+                  creating={savingCreating}
+                  onClose={() => setSavingCreating(false)}
+                  onEditing={setPlanningEditing}
+                />
+              </div>
+            </>
           )}
           {tab === "Reportes" && (
             <section className="panel full-panel">
@@ -1500,47 +1585,52 @@ export default function App() {
                   </div>
                   {movementType === "saving" ? (
                     <>
-                      <Field label="Apartado de ahorro">
-                        <select
-                          name="savingId"
-                          required
-                          defaultValue={
-                            data.savings?.length === 1 ? data.savings[0].id : ""
-                          }
-                        >
-                          <option value="" disabled>
-                            Selecciona un apartado
-                          </option>
-                          {(data.savings ?? []).map((saving) => (
-                            <option key={saving.id} value={saving.id}>
-                              {saving.name}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <p className="helper">
-                        Reserva dinero para tu meta sin generar un gasto ni
-                        cambiar tus ingresos. Libre para apartar:{" "}
-                        {money(freeAmount(data))}.
-                      </p>
-                      {!data.savings?.length && (
-                        <>
-                          <p className="helper">
-                            Primero crea una meta de ahorro en Apartados.
-                          </p>
-                          <button
-                            type="button"
-                            className="button secondary"
-                            onClick={() => {
-                              setModal(null);
-                              setTab("Apartados");
-                              setSavingCreating(true);
-                            }}
+                      {savingsPrivacy}
+                      <div hidden={!canSeeSavings} inert={!canSeeSavings}>
+                        <Field label="Apartado de ahorro">
+                          <select
+                            name="savingId"
+                            required
+                            defaultValue={
+                              data.savings?.length === 1
+                                ? data.savings[0].id
+                                : ""
+                            }
                           >
-                            Crear apartado
-                          </button>
-                        </>
-                      )}
+                            <option value="" disabled>
+                              Selecciona un apartado
+                            </option>
+                            {(data.savings ?? []).map((saving) => (
+                              <option key={saving.id} value={saving.id}>
+                                {saving.name}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <p className="helper">
+                          Reserva dinero para tu meta sin generar un gasto ni
+                          cambiar tus ingresos. Libre para apartar:{" "}
+                          {money(freeAmount(data))}.
+                        </p>
+                        {!data.savings?.length && (
+                          <>
+                            <p className="helper">
+                              Primero crea una meta de ahorro en Apartados.
+                            </p>
+                            <button
+                              type="button"
+                              className="button secondary"
+                              onClick={() => {
+                                setModal(null);
+                                setTab("Apartados");
+                                setSavingCreating(true);
+                              }}
+                            >
+                              Crear apartado
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </>
                   ) : movementType === "payment" ? (
                     <>
@@ -1840,7 +1930,16 @@ export default function App() {
                 >
                   Cancelar
                 </button>
-                <button className="button" disabled={busy || !loaded}>
+                <button
+                  className="button"
+                  disabled={
+                    busy ||
+                    !loaded ||
+                    (modal.kind === "movement" &&
+                      movementType === "saving" &&
+                      !canSeeSavings)
+                  }
+                >
                   {busy ? "Guardando…" : "Guardar"}
                 </button>
               </div>
