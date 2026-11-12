@@ -2432,3 +2432,42 @@ li {
   margin: 0 0 18px;
   line-height: 1.5;
 }
+
+.filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-start;
+}
+.credit-report-totals {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (min-width: 1100px) {
+  .overview {
+    grid-template-columns: minmax(0, 1.8fr) repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 801px) and (max-width: 1099px) {
+  .overview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .overview > .balance-card {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 800px) {
+  .stat-credit {
+    grid-column: 1 / -1;
+  }
+  .credit-report-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .credit-report-totals > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.credit-report-totals > div:last-child {
+  text-align: left;
+}
