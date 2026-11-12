@@ -89,12 +89,6 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await page
     .getByRole("button", { name: "Mostrar ahorros", exact: true })
     .click();
-  await page
-    .getByRole("button", {
-      name: "Desbloquear con el dispositivo",
-      exact: true,
-    })
-    .click();
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await expect(
     page.getByLabel("Progreso de Fondo de emergencia"),

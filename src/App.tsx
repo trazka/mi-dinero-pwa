@@ -115,7 +115,7 @@ function download(content: string, name: string, type: string) {
 export default function App() {
   const security = useSecurity();
   const [savingsVisible, setSavingsVisible] = useState(false);
-  const canSeeSavings = savingsVisible && !!security.config;
+  const canSeeSavings = savingsVisible;
   useEffect(() => {
     const hide = () => {
       if (document.hidden) setSavingsVisible(false);
@@ -128,9 +128,6 @@ export default function App() {
       window.removeEventListener("pagehide", pageHide);
     };
   }, []);
-  useEffect(() => {
-    if (!security.config) setSavingsVisible(false);
-  }, [security.config]);
   const savingsPrivacy = (
     <div className="savings-privacy">
       <button
@@ -139,12 +136,7 @@ export default function App() {
         title={canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
         aria-label={canSeeSavings ? "Ocultar ahorros" : "Mostrar ahorros"}
         aria-pressed={canSeeSavings}
-        onClick={() =>
-          canSeeSavings
-            ? setSavingsVisible(false)
-            : security.verify(() => setSavingsVisible(true))
-        }
-        disabled={!security.config}
+        onClick={() => setSavingsVisible((visible) => !visible)}
       >
         {canSeeSavings ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
