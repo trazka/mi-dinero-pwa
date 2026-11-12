@@ -101,3 +101,52 @@ test("rotar con desplazamiento de escritorio restaura encabezado y altura vertic
     await expect(page.locator(".topbar")).toBeInViewport();
   }
 });
+
+test("al regresar a la app recupera la altura y los toques del menú sin eventos resize", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("./");
+  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  for (const event of ["visibilitychange", "pageshow", "focus"]) {
+    await page.evaluate((event) => {
+      // Simulate a stale viewport left by backgrounding the standalone PWA.
+      document.documentElement.style.setProperty("--app-height", "1200px");
+      if (event === "visibilitychange") {
+        Object.defineProperty(document, "hidden", {
+          configurable: true,
+          value: true,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+        Reflect.deleteProperty(document, "hidden");
+        document.dispatchEvent(new Event("visibilitychange"));
+      } else
+        window.dispatchEvent(
+          event === "pageshow"
+            ? new PageTransitionEvent("pageshow", { persisted: true })
+            : new Event("focus"),
+        );
+    }, event);
+    await expect
+      .poll(() =>
+        page
+          .locator(".app")
+          .evaluate((el) => el.getBoundingClientRect().height),
+      )
+      .toBe(844);
+    for (const name of [
+      "Movimientos",
+      "Deudas",
+      "Apartados",
+      "Reportes",
+      "Respaldos",
+      "Inicio",
+    ]) {
+      await nav.getByRole("button", { name, exact: true }).tap();
+      await expect(page.locator(".page h1")).toHaveText(
+        name === "Inicio" ? "Tu resumen" : name,
+      );
+    }
+  }
+});

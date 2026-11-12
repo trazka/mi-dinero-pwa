@@ -191,12 +191,16 @@ export default function App() {
   useEffect(() => {
     const mobile = matchMedia("(max-width: 800px)");
     let frame = 0;
+    let resumeTimer = 0;
     const resize = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
+        if (document.hidden) return;
+        const height = window.visualViewport?.height ?? window.innerHeight;
+        if (height <= 0) return;
         document.documentElement.style.setProperty(
           "--app-height",
-          `${window.visualViewport?.height ?? window.innerHeight}px`,
+          `${height}px`,
         );
       });
     };
@@ -204,12 +208,27 @@ export default function App() {
       resize();
       if (mobile.matches) window.scrollTo(0, 0);
     };
+    const resume = () => {
+      swipe.current = null;
+      if (document.hidden) return;
+      resetDocument();
+      // iOS can settle the visual viewport after the foreground event.
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(resize, 150);
+    };
     resize();
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("focus", resume);
     mobile.addEventListener("change", resetDocument);
     window.addEventListener("resize", resize);
     window.visualViewport?.addEventListener("resize", resize);
     return () => {
       cancelAnimationFrame(frame);
+      window.clearTimeout(resumeTimer);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("focus", resume);
       mobile.removeEventListener("change", resetDocument);
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
