@@ -40,6 +40,8 @@ import {
   ChevronRight,
   Leaf,
   PiggyBank,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import {
   balance,
@@ -118,6 +120,7 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(
     !!window.__miDineroUpdate,
   );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [savingCreating, setSavingCreating] = useState(false);
   const [planningEditing, setPlanningEditing] = useState(false);
@@ -601,13 +604,13 @@ export default function App() {
     </div>
   );
   return (
-    <div className="app">
+    <div className={`app${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
       <datalist id="merchant-suggestions">
         {merchantOptions.map((value) => (
           <option key={value} value={value} />
         ))}
       </datalist>
-      <aside className="sidebar">
+      <aside className="sidebar" id="app-sidebar">
         <a
           className="brand"
           href="#"
@@ -651,6 +654,29 @@ export default function App() {
       <main>
         <header className="topbar">
           <div className="app-identity">
+            <button
+              className="sidebar-toggle"
+              type="button"
+              aria-label={
+                sidebarCollapsed
+                  ? "Mostrar menú lateral"
+                  : "Ocultar menú lateral"
+              }
+              title={
+                sidebarCollapsed
+                  ? "Mostrar menú lateral"
+                  : "Ocultar menú lateral"
+              }
+              aria-controls="app-sidebar"
+              aria-expanded={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen size={22} />
+              ) : (
+                <PanelLeftClose size={22} />
+              )}
+            </button>
             <img
               src={`${import.meta.env.BASE_URL}icon-v2.svg`}
               alt=""

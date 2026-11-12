@@ -133,3 +133,5 @@ Los apartados se guardan en IndexedDB y se incluyen en el JSON; importar sigue r
 En horizontal con poca altura, el menú lateral oculta su tarjeta informativa y pie decorativo para evitar que aparezcan recortados; los accesos a las secciones siguen disponibles.
 
 Para cambiar de sección, desliza horizontalmente sobre el contenido: a la izquierda avanzas y a la derecha vuelves. El recorrido es Inicio → Movimientos → Deudas → Apartados → Reportes → Respaldos, sin saltar del último al primero. Se tolera una pequeña desviación vertical del dedo; los desplazamientos verticales, las tablas horizontales y los formularios abiertos conservan su función.
+
+En horizontal, el botón de panel situado a la izquierda de «Mi dinero» permite **Ocultar menú lateral** y **Mostrar menú lateral**. Al ocultarlo, el contenido ocupa el ancho disponible y conserva la sección actual. En vertical se mantiene la navegación inferior; el botón de panel solo aparece donde existe menú lateral.
