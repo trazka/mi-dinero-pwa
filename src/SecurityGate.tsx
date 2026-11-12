@@ -22,6 +22,7 @@ const SecurityContext = createContext<{
   config: LockConfig | null;
   save: (config: LockConfig | null) => Promise<void>;
   lock: () => void;
+  verify: (onVerified: () => void) => void;
   busy: (value: boolean) => void;
 } | null>(null);
 export default function SecurityGate({ children }: { children: ReactNode }) {
@@ -57,9 +58,11 @@ export default function SecurityGate({ children }: { children: ReactNode }) {
   const [recovery, setRecovery] = useState(false);
   const [code, setCode] = useState("");
   const internal = useRef(false);
+  const pendingVerification = useRef<(() => void) | null>(null);
   useEffect(() => {
     const hide = () => {
       if (document.hidden && config && !internal.current) {
+        pendingVerification.current = null;
         setLocked(true);
         setCode("");
         setError("");
@@ -90,6 +93,11 @@ export default function SecurityGate({ children }: { children: ReactNode }) {
       } else await authenticate(config);
       setStarted(true);
       setLocked(document.hidden);
+      if (!document.hidden) {
+        const verified = pendingVerification.current;
+        pendingVerification.current = null;
+        verified?.();
+      }
       setCode("");
       setRecovery(false);
     } catch (err) {
@@ -114,6 +122,13 @@ export default function SecurityGate({ children }: { children: ReactNode }) {
           setConfig(next);
         },
         lock: () => setLocked(true),
+        verify: (onVerified) => {
+          if (!config) return;
+          pendingVerification.current = onVerified;
+          setCode("");
+          setError("");
+          setLocked(true);
+        },
         busy: (value) => {
           internal.current = value;
         },
@@ -173,6 +188,9 @@ export default function SecurityGate({ children }: { children: ReactNode }) {
       )}
     </SecurityContext.Provider>
   );
+}
+export function useSecurity() {
+  return useContext(SecurityContext)!;
 }
 export function SecurityPanel() {
   const security = useContext(SecurityContext)!;

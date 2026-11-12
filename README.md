@@ -137,3 +137,9 @@ Para cambiar de sección, desliza horizontalmente sobre el contenido: a la izqui
 En horizontal, el botón de panel situado a la izquierda de «Mi dinero» permite **Ocultar menú lateral** y **Mostrar menú lateral**. Al ocultarlo, el contenido ocupa el ancho disponible y conserva la sección actual. En vertical se mantiene la navegación inferior; el botón de panel solo aparece donde existe menú lateral.
 
 También puedes aportar desde **Nuevo movimiento → Tipo → Apartado**: selecciona tu meta, importe y fecha. Si solo tienes un apartado queda seleccionado. Esta operación solo reserva saldo y aparece en el historial de la meta; no genera un gasto en Movimientos. Si aún no hay metas, **Crear apartado** abre el formulario correspondiente.
+
+## Privacidad visual de los apartados
+
+Los ahorros empiezan ocultos al abrir la app: Inicio muestra `••••` para el total apartado y el saldo libre; en Apartados se ocultan nombres, metas, importes e historial. El botón **Mostrar ahorros** exige tener activado el bloqueo en **Respaldos → Seguridad**. Al pulsarlo aparece la pantalla de bloqueo y debes iniciar manualmente el desbloqueo con el dispositivo o tu recuperación. No se solicita autenticación de forma automática. **Ocultar ahorros** vuelve a cubrirlos sin modificar datos.
+
+Sin bloqueo no se pueden revelar ni gestionar apartados; **Configurar bloqueo** lleva a Seguridad. También se protege el selector de metas de Nuevo movimiento. Al salir de la app, los ahorros vuelven a ocultarse, aunque desbloquees después la sesión general. Los borradores de Apartados se conservan mientras la sección permanezca abierta. Esta es privacidad visual, no cifrado: los JSON siguen incluyendo los ahorros y deben guardarse con cuidado.
