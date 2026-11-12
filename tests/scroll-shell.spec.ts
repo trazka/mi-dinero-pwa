@@ -150,3 +150,59 @@ test("al regresar a la app recupera la altura y los toques del menú sin eventos
     }
   }
 });
+
+test("capturar con teclado oculta navegación y sigue el área visual sin perder texto", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  const search = page.getByLabel("Buscar movimientos", { exact: true });
+  await search.fill("Texto conservado");
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, "height", {
+      configurable: true,
+      value: 390,
+    });
+    Object.defineProperty(window.visualViewport!, "offsetTop", {
+      configurable: true,
+      value: 100,
+    });
+    window.visualViewport!.dispatchEvent(new Event("resize"));
+    window.visualViewport!.dispatchEvent(new Event("scroll"));
+  });
+  await expect(nav).toBeHidden();
+  await expect(page.locator(".section-add")).toBeHidden();
+  await expect
+    .poll(() =>
+      page.locator(".app").evaluate((el) => el.getBoundingClientRect().height),
+    )
+    .toBe(390);
+  await expect
+    .poll(() =>
+      page.locator(".app").evaluate((el) => el.getBoundingClientRect().top),
+    )
+    .toBe(100);
+  await expect(search).toBeInViewport();
+  await expect(search).toHaveValue("Texto conservado");
+  await page.getByRole("button", { name: "Listo", exact: true }).click();
+  await page.evaluate(() => {
+    Reflect.deleteProperty(window.visualViewport!, "height");
+    Reflect.deleteProperty(window.visualViewport!, "offsetTop");
+    window.visualViewport!.dispatchEvent(new Event("resize"));
+  });
+  await expect(nav).toBeVisible();
+  await expect
+    .poll(() =>
+      page.locator(".app").evaluate((el) => el.getBoundingClientRect().height),
+    )
+    .toBe(844);
+  await expect
+    .poll(() =>
+      page.locator(".app").evaluate((el) => el.getBoundingClientRect().top),
+    )
+    .toBe(0);
+  await nav.getByRole("button", { name: "Deudas", exact: true }).tap();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
+});

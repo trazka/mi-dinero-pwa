@@ -250,16 +250,47 @@ export default function App() {
     const mobile = matchMedia("(max-width: 800px)");
     let frame = 0;
     let resumeTimer = 0;
+    let viewportWidth = window.innerWidth;
+    let fullHeight = window.innerHeight;
     const resize = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (document.hidden) return;
         const height = window.visualViewport?.height ?? window.innerHeight;
         if (height <= 0) return;
+        const active = document.activeElement as HTMLElement | null;
+        const editing = !!active?.matches(
+          'textarea, input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="color"]), select',
+        );
+        if (window.innerWidth !== viewportWidth) {
+          viewportWidth = window.innerWidth;
+          fullHeight = window.innerHeight;
+        }
+        fullHeight = Math.max(fullHeight, window.innerHeight, height);
+        const keyboardOpen = editing && fullHeight - height > 120;
+        document.documentElement.toggleAttribute(
+          "data-input-active",
+          keyboardOpen,
+        );
         document.documentElement.style.setProperty(
           "--app-height",
           `${height}px`,
         );
+        document.documentElement.style.setProperty(
+          "--app-top",
+          `${editing ? (window.visualViewport?.offsetTop ?? 0) : 0}px`,
+        );
+        if (mobile.matches && editing && active) {
+          const scroller = active.closest<HTMLElement>(".modal, .page");
+          if (scroller) {
+            const field = active.getBoundingClientRect();
+            const container = scroller.getBoundingClientRect();
+            if (field.bottom > container.bottom - 16)
+              scroller.scrollTop += field.bottom - container.bottom + 16;
+            else if (field.top < container.top + 16)
+              scroller.scrollTop -= container.top + 16 - field.top;
+          }
+        }
       });
     };
     const resetDocument = () => {
@@ -274,6 +305,11 @@ export default function App() {
       window.clearTimeout(resumeTimer);
       resumeTimer = window.setTimeout(resize, 150);
     };
+    const layoutChanges = new MutationObserver(() => {
+      if (document.documentElement.hasAttribute("data-input-active")) resize();
+    });
+    const app = pageRef.current?.closest(".app");
+    if (app) layoutChanges.observe(app, { childList: true, subtree: true });
     resize();
     document.addEventListener("visibilitychange", resume);
     window.addEventListener("pageshow", resume);
@@ -281,8 +317,12 @@ export default function App() {
     mobile.addEventListener("change", resetDocument);
     window.addEventListener("resize", resize);
     window.visualViewport?.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("scroll", resize);
+    document.addEventListener("focusin", resize);
+    document.addEventListener("focusout", resize);
     return () => {
       cancelAnimationFrame(frame);
+      layoutChanges.disconnect();
       window.clearTimeout(resumeTimer);
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("pageshow", resume);
@@ -290,6 +330,11 @@ export default function App() {
       mobile.removeEventListener("change", resetDocument);
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("scroll", resize);
+      document.removeEventListener("focusin", resize);
+      document.removeEventListener("focusout", resize);
+      document.documentElement.removeAttribute("data-input-active");
+      document.documentElement.style.removeProperty("--app-top");
       document.documentElement.style.removeProperty("--app-height");
     };
   }, []);
@@ -776,6 +821,15 @@ export default function App() {
             <span className="local-badge">
               <b /> Privado y local
             </span>
+            <button
+              type="button"
+              className="keyboard-done"
+              onClick={() =>
+                (document.activeElement as HTMLElement | null)?.blur()
+              }
+            >
+              Listo
+            </button>
             <ThemeControl />
           </div>
         </header>
