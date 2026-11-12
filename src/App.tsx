@@ -133,6 +133,15 @@ export default function App() {
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{ x: number; y: number; time: number } | null>(null);
+  const merchantOptions = [
+    ...new Set([
+      ...data.movements.map((m) => m.merchant),
+      ...(data.recurrents ?? []).map((r) => r.merchant),
+    ]),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "es"));
   useEffect(() => {
     if (!modal) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -547,6 +556,7 @@ export default function App() {
         <input
           value={merchant}
           onChange={(e) => setMerchant(e.target.value)}
+          list="merchant-suggestions"
           placeholder="Buscar establecimiento"
         />
       </Field>
@@ -557,6 +567,11 @@ export default function App() {
   );
   return (
     <div className="app">
+      <datalist id="merchant-suggestions">
+        {merchantOptions.map((value) => (
+          <option key={value} value={value} />
+        ))}
+      </datalist>
       <aside className="sidebar">
         <a
           className="brand"
@@ -616,7 +631,62 @@ export default function App() {
             <ThemeControl />
           </div>
         </header>
-        <div className="page" ref={pageRef}>
+        <div
+          className="page"
+          ref={pageRef}
+          onTouchStart={(e) => {
+            swipe.current = null;
+            if (modal || planningEditing || e.touches.length !== 1) return;
+            let target = e.target as HTMLElement;
+            if (
+              target.closest(
+                "input, select, textarea, button, a, [role=dialog]",
+              )
+            )
+              return;
+            while (target && target !== e.currentTarget) {
+              if (
+                target.scrollWidth > target.clientWidth &&
+                ["auto", "scroll"].includes(getComputedStyle(target).overflowX)
+              )
+                return;
+              target = target.parentElement!;
+            }
+            swipe.current = {
+              x: e.touches[0].clientX,
+              y: e.touches[0].clientY,
+              time: Date.now(),
+            };
+          }}
+          onTouchCancel={() => {
+            swipe.current = null;
+          }}
+          onTouchMove={(e) => {
+            if (
+              e.touches.length !== 1 ||
+              (swipe.current &&
+                Math.abs(e.touches[0].clientY - swipe.current.y) > 30)
+            )
+              swipe.current = null;
+          }}
+          onTouchEnd={(e) => {
+            const start = swipe.current;
+            swipe.current = null;
+            if (!start || modal || planningEditing || !e.changedTouches.length)
+              return;
+            const dx = e.changedTouches[0].clientX - start.x;
+            const dy = e.changedTouches[0].clientY - start.y;
+            if (
+              Date.now() - start.time > 700 ||
+              Math.abs(dx) < 70 ||
+              Math.abs(dx) < Math.abs(dy) * 2
+            )
+              return;
+            const next =
+              tabs[tabs.findIndex((t) => t.name === tab) + (dx < 0 ? 1 : -1)];
+            if (next) setTab(next.name);
+          }}
+        >
           <div className="page-heading">
             <div>
               <p className="eyebrow">TUS FINANZAS PERSONALES</p>
@@ -636,8 +706,8 @@ export default function App() {
             </div>
             {tab !== "Respaldos" && (
               <button
-                className="button"
-                disabled={!loaded}
+                className="button section-add"
+                disabled={!loaded || !!modal || planningEditing}
                 onClick={() => {
                   setError("");
                   setModal(
@@ -1332,6 +1402,8 @@ export default function App() {
                       <Field label="Establecimiento o concepto">
                         <input
                           name="merchant"
+                          list="merchant-suggestions"
+                          autoComplete="off"
                           required
                           maxLength={120}
                           defaultValue={modal.movement?.merchant}

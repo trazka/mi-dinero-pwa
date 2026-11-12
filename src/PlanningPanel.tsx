@@ -287,6 +287,8 @@ export function RecurringPanel({
             Concepto recurrente
             <input
               name="merchant"
+              list="merchant-suggestions"
+              autoComplete="off"
               aria-label="Concepto recurrente"
               maxLength={120}
               required
