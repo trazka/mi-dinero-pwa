@@ -409,21 +409,22 @@ export default function App() {
     if (tab !== "Apartados") setSavingCreating(false);
   }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
-  const filtered = data.movements
-    .filter(
-      (m) =>
-        (!from || m.date >= from) &&
-        (!to || m.date <= to) &&
-        (!category || m.category === category) &&
-        m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
-        matchesSearch(m, search) &&
-        (!methodFilter || m.method === methodFilter) &&
-        (!debtFilter || movementDebtId(data, m) === debtFilter),
-    )
+  // Reverse registration order first; stable date sorting keeps the latest
+  // registered movement first when several share the same date.
+  const newestFirst = [...data.movements]
+    .reverse()
     .sort((a, b) => b.date.localeCompare(a.date));
-  const recent = [...data.movements]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5);
+  const filtered = newestFirst.filter(
+    (m) =>
+      (!from || m.date >= from) &&
+      (!to || m.date <= to) &&
+      (!category || m.category === category) &&
+      m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
+      matchesSearch(m, search) &&
+      (!methodFilter || m.method === methodFilter) &&
+      (!debtFilter || movementDebtId(data, m) === debtFilter),
+  );
+  const recent = newestFirst.slice(0, 5);
   function saveForm(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget),
