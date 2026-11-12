@@ -2291,3 +2291,42 @@ li {
   letter-spacing: 4px;
   margin-top: 12px;
 }
+/* Give capture fields the visual viewport while the software keyboard is open. */
+@media (max-width: 800px) {
+  .app {
+    top: var(--app-top, 0px);
+    bottom: auto;
+  }
+  :root[data-input-active] .mobile-nav,
+  :root[data-input-active] .section-add {
+    display: none;
+  }
+  :root[data-input-active] .page {
+    padding-bottom: 24px;
+  }
+  :root[data-input-active] .modal-backdrop {
+    top: var(--app-top, 0px);
+    bottom: auto;
+    height: var(--app-height, 100dvh);
+    padding-bottom: 0;
+  }
+  :root[data-input-active] .modal {
+    max-height: 100%;
+  }
+}
+
+.keyboard-done {
+  display: none;
+}
+@media (max-width: 800px) {
+  :root[data-input-active] .keyboard-done {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-weight: 650;
+  }
+  :root[data-input-active] .topbar .local-badge {
+    display: none;
+  }
+}

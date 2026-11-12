@@ -12,4 +12,6 @@ Los campos de establecimiento/concepto sugieren valores de movimientos y recurre
 
 Se conserva la contabilización financiera y el bloqueo opcional existente; no añade autenticación automática, transferencias bancarias ni aportaciones en segundo plano.
 
-Validación: 40 pruebas unitarias y 43 pruebas de navegador aprobadas, con compilación TypeScript/Vite/PWA correcta. Se comprueban contabilidad, ahorro, importación/exportación, modo offline, autenticación manual, ocultación sin bloqueo, privacidad al regresar a la app, ausencia de solicitudes de autenticación automáticas, navegación, rotación y proporciones horizontales. La comprobación de Safari/iPhone físico sigue pendiente.
+La captura móvil sigue la altura y el desplazamiento del viewport visual al abrir el teclado. Oculta navegación inferior y «+» solo cuando el teclado reduce la altura, permite terminar con Listo y conserva los valores del campo; vuelve a mostrar la navegación al cerrar. Los formularios se limitan al área visible. Con teclado externo no oculta la barra.
+
+Validación: 40 pruebas unitarias aprobadas. El último ajuste de teclado pasó 11 pruebas de navegador de captura, desplazamiento, rotación y bloqueo, con compilación TypeScript/Vite/PWA correcta. Se comprueban contabilidad, ahorro, importación/exportación, modo offline, autenticación manual, ocultación sin bloqueo, privacidad al regresar a la app, ausencia de solicitudes de autenticación automáticas, navegación, rotación y proporciones horizontales. La comprobación de Safari/iPhone físico sigue pendiente.
