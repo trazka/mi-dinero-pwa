@@ -16,7 +16,7 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
   );
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
     "href",
-    "/mi-dinero-pwa/apple-touch-icon-v4.png",
+    "/mi-dinero-pwa/apple-touch-icon-v5.png",
   );
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(
