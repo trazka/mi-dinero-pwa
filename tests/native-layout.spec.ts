@@ -76,3 +76,45 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
       nav.getByRole("button", { name, exact: true }),
     ).toBeInViewport();
 });
+
+test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("./");
+  await page
+    .locator(".sidebar")
+    .getByRole("button", { name: "Reportes", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Cerrar aviso", exact: true }).click();
+  for (const width of [844, 960]) {
+    await page.setViewportSize({ width, height: 390 });
+    const sidebar = await page.locator(".sidebar").boundingBox();
+    const topbar = await page.locator(".topbar").boundingBox();
+    const heading = await page.locator(".page-heading").boundingBox();
+    const panel = await page.locator(".full-panel").boundingBox();
+    expect(sidebar!.width).toBe(184);
+    expect(topbar!.height).toBe(64);
+    expect(topbar!.x).toBe(sidebar!.width);
+    expect(heading!.x).toBe(panel!.x);
+    expect(panel!.y).toBeLessThan(180);
+    await expect(page.locator(".sidebar-note")).toBeHidden();
+    for (const name of [
+      "Inicio",
+      "Movimientos",
+      "Deudas",
+      "Apartados",
+      "Reportes",
+      "Respaldos",
+    ])
+      await expect(
+        page.locator(".sidebar").getByRole("button", { name, exact: true }),
+      ).toBeInViewport();
+  }
+  await page.screenshot({
+    path: "test-results/reportes-horizontal-proporcionado.png",
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator(".topbar")).toHaveCSS("height", "89px");
+  await expect(page.locator(".sidebar-note")).toBeVisible();
+});

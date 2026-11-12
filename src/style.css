@@ -2193,3 +2193,61 @@ li {
 .page:has(.table-scroll) {
   touch-action: auto;
 }
+/* Use the limited landscape height for content, with matching shell spacing. */
+@media (min-width: 801px) and (max-height: 700px) {
+  .sidebar {
+    width: 184px;
+    padding: 16px;
+  }
+  .sidebar .brand {
+    font-size: 22px;
+  }
+  .sidebar .brand-icon {
+    margin-right: 8px;
+  }
+  .sidebar .nav-label {
+    margin: 20px 0 12px 8px;
+    font-size: 8px;
+    letter-spacing: 1.2px;
+  }
+  .sidebar nav button {
+    gap: 10px;
+  }
+  .app > main {
+    margin-left: 184px;
+  }
+  .topbar {
+    height: 64px;
+    padding: 0 24px;
+  }
+  .topbar > div {
+    gap: 12px;
+  }
+  .page {
+    padding: 20px 24px 96px;
+  }
+  .page-heading {
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+  .page-heading .eyebrow {
+    display: none;
+  }
+  .page-heading h1 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .page-heading h1 + p {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .full-panel {
+    padding: 20px;
+  }
+  .planning-heading {
+    gap: 8px;
+  }
+  .section-add {
+    font-size: 12px;
+  }
+}
