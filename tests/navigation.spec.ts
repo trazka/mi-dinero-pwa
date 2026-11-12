@@ -60,20 +60,77 @@ test("gestos cambian sección y el botón flotante sigue su contexto", async ({
   await expect(page.locator(".page h1")).toHaveText("Deudas");
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await swipe(-140);
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await expect(page.locator(".section-add")).toHaveText("Nuevo apartado");
+  await swipe(-140);
   await swipe(-140);
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   await expect(page.locator(".section-add")).toHaveCount(0);
 });
 
-test("menú lateral en horizontal permite alcanzar el recuadro inferior", async ({
+test("menú lateral horizontal no muestra tarjetas decorativas recortadas", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("./");
-  const note = page.locator(".sidebar-note");
-  await note.scrollIntoViewIfNeeded();
-  await expect(note).toBeInViewport();
-  const box = await note.boundingBox();
-  expect(box!.y).toBeGreaterThanOrEqual(0);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(390);
+  await expect(page.locator(".sidebar-note")).toBeHidden();
+  await expect(page.locator(".sidebar-bottom")).toBeHidden();
+  await expect(
+    page
+      .locator(".sidebar")
+      .getByRole("button", { name: "Respaldos", exact: true }),
+  ).toBeInViewport();
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await expect(page.locator(".sidebar-note")).toBeVisible();
+});
+
+test("deslizamientos táctiles reales recorren todas las secciones en ambos sentidos", async ({
+  page,
+  context,
+}) => {
+  await page.goto("./");
+  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  const cdp = await context.newCDPSession(page);
+  async function swipe(direction: "left" | "right") {
+    const x = direction === "left" ? 300 : 90;
+    const dx = direction === "left" ? -180 : 180;
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y: 120 }],
+    });
+    for (let step = 1; step <= 6; step++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: x + (dx * step) / 6, y: 120 + (35 * step) / 6 }],
+      });
+    }
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  }
+  await swipe("right");
+  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  for (const name of [
+    "Movimientos",
+    "Deudas",
+    "Apartados",
+    "Reportes",
+    "Respaldos",
+  ]) {
+    await swipe("left");
+    await expect(page.locator(".page h1")).toHaveText(name);
+  }
+  await swipe("left");
+  await expect(page.locator(".page h1")).toHaveText("Respaldos");
+  for (const name of [
+    "Reportes",
+    "Apartados",
+    "Deudas",
+    "Movimientos",
+    "Tu resumen",
+  ]) {
+    await swipe("right");
+    await expect(page.locator(".page h1")).toHaveText(name);
+  }
 });

@@ -1,3 +1,5 @@
+import SavingsPanel from "./SavingsPanel";
+import { freeAmount, reservedAmount } from "./savings";
 import { SecurityPanel } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -37,6 +39,7 @@ import {
   Wallet,
   ChevronRight,
   Leaf,
+  PiggyBank,
 } from "lucide-react";
 import {
   balance,
@@ -56,7 +59,8 @@ import {
   type Debt,
   type Movement,
 } from "./data";
-type Tab = "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos";
+type Tab =
+  "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos" | "Apartados";
 type Modal =
   | { kind: "movement"; movement?: Movement }
   | { kind: "debt"; debt?: Debt }
@@ -77,6 +81,7 @@ const tabs: { name: Tab; icon: typeof Home }[] = [
   { name: "Inicio", icon: Home },
   { name: "Movimientos", icon: ArrowLeftRight },
   { name: "Deudas", icon: HandCoins },
+  { name: "Apartados", icon: PiggyBank },
   { name: "Reportes", icon: ChartNoAxesCombined },
   { name: "Respaldos", icon: ShieldCheck },
 ];
@@ -114,6 +119,7 @@ export default function App() {
     !!window.__miDineroUpdate,
   );
   const [updating, setUpdating] = useState(false);
+  const [savingCreating, setSavingCreating] = useState(false);
   const [planningEditing, setPlanningEditing] = useState(false);
   const [movementType, setMovementType] = useState<
     Movement["type"] | "credit" | "payment"
@@ -298,6 +304,7 @@ export default function App() {
   useEffect(() => {
     pageRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 });
+    if (tab !== "Apartados") setSavingCreating(false);
   }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
   const filtered = data.movements
@@ -693,7 +700,9 @@ export default function App() {
             if (
               e.touches.length !== 1 ||
               (swipe.current &&
-                Math.abs(e.touches[0].clientY - swipe.current.y) > 30)
+                Math.abs(e.touches[0].clientY - swipe.current.y) > 20 &&
+                Math.abs(e.touches[0].clientY - swipe.current.y) >
+                  Math.abs(e.touches[0].clientX - swipe.current.x))
             )
               swipe.current = null;
           }}
@@ -705,9 +714,9 @@ export default function App() {
             const dx = e.changedTouches[0].clientX - start.x;
             const dy = e.changedTouches[0].clientY - start.y;
             if (
-              Date.now() - start.time > 700 ||
-              Math.abs(dx) < 70 ||
-              Math.abs(dx) < Math.abs(dy) * 2
+              Date.now() - start.time > 1200 ||
+              Math.abs(dx) < 60 ||
+              Math.abs(dx) < Math.abs(dy) * 1.5
             )
               return;
             const next =
@@ -727,6 +736,7 @@ export default function App() {
                         Movimientos: "Cada ingreso y gasto, en un solo lugar.",
                         Deudas: "Un paso más cerca de estar al día.",
                         Reportes: "Entiende a dónde va tu dinero.",
+                        Apartados: "Reserva dinero para tus metas.",
                         Respaldos: "Cuida lo que llevas registrado.",
                       } as Record<string, string>
                     )[tab]}
@@ -738,13 +748,21 @@ export default function App() {
                 disabled={!loaded || !!modal || planningEditing}
                 onClick={() => {
                   setError("");
+                  if (tab === "Apartados") {
+                    setSavingCreating(true);
+                    return;
+                  }
                   setModal(
                     tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
                   );
                 }}
               >
                 <Plus size={18} />
-                {tab === "Deudas" ? "Nueva deuda" : "Nuevo movimiento"}
+                {tab === "Apartados"
+                  ? "Nuevo apartado"
+                  : tab === "Deudas"
+                    ? "Nueva deuda"
+                    : "Nuevo movimiento"}
               </button>
             )}
           </div>
@@ -798,7 +816,8 @@ export default function App() {
               {(data.movements.length > 0 ||
                 data.debts.length > 0 ||
                 !!data.budgets?.length ||
-                !!data.recurrents?.length) &&
+                !!data.recurrents?.length ||
+                !!data.savings?.length) &&
                 backupOverdue(data.lastBackupAt) && (
                   <div className="notice">
                     <span>
@@ -815,6 +834,20 @@ export default function App() {
                     </button>
                   </div>
                 )}
+              {!!data.savings?.length && (
+                <div className="notice savings-summary">
+                  <span>
+                    Apartado para tus metas: {money(reservedAmount(data))} ·
+                    Saldo libre: {money(freeAmount(data))}
+                  </span>
+                  <button
+                    className="text-button"
+                    onClick={() => setTab("Apartados")}
+                  >
+                    Ver apartados
+                  </button>
+                </div>
+              )}
               <section className="overview">
                 <div className="balance-card">
                   <div className="balance-label">
@@ -1086,6 +1119,16 @@ export default function App() {
                 </div>
               )}
             </>
+          )}
+          {tab === "Apartados" && (
+            <SavingsPanel
+              data={data}
+              mutate={mutate}
+              busy={busy}
+              creating={savingCreating}
+              onClose={() => setSavingCreating(false)}
+              onEditing={setPlanningEditing}
+            />
           )}
           {tab === "Reportes" && (
             <section className="panel full-panel">
