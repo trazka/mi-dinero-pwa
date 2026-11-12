@@ -138,7 +138,7 @@ export default function App() {
         aria-pressed={canSeeSavings}
         onClick={() => setSavingsVisible((visible) => !visible)}
       >
-        {canSeeSavings ? <EyeOff size={18} /> : <Eye size={18} />}
+        {canSeeSavings ? <EyeOff size={28} /> : <Eye size={28} />}
       </button>
     </div>
   );
