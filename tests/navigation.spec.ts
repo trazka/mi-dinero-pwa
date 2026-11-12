@@ -51,6 +51,46 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
     .getByRole("option", { name: "Tienda de prueba", exact: true })
     .click();
   await expect(concept).toHaveValue("Tienda de prueba");
+  await concept.fill("ti");
+  const option = page.getByRole("option", {
+    name: "Tienda de prueba",
+    exact: true,
+  });
+  // Safari can omit click after pointerdown.preventDefault(). A touch release
+  // must select without relying on a compatibility mouse event.
+  await option.dispatchEvent("pointerdown", {
+    pointerId: 1,
+    pointerType: "touch",
+    clientX: 40,
+    clientY: 50,
+  });
+  await option.dispatchEvent("pointerup", {
+    pointerId: 1,
+    pointerType: "touch",
+    clientX: 40,
+    clientY: 50,
+  });
+  await expect(concept).toHaveValue("Tienda de prueba");
+  await concept.fill("ti");
+  await option.dispatchEvent("pointerdown", {
+    pointerId: 2,
+    pointerType: "touch",
+    clientX: 40,
+    clientY: 50,
+  });
+  await option.dispatchEvent("pointercancel", {
+    pointerId: 2,
+    pointerType: "touch",
+  });
+  await option.dispatchEvent("pointerup", {
+    pointerId: 2,
+    pointerType: "touch",
+    clientX: 40,
+    clientY: 50,
+  });
+  await expect(concept).toHaveValue("ti");
+  await option.tap();
+  await expect(concept).toHaveValue("Tienda de prueba");
   await concept.fill("cafe");
   await expect(
     page.getByRole("option", { name: "Café Central", exact: true }),
