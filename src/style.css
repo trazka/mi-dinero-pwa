@@ -2039,3 +2039,57 @@ li {
 .field .date-trigger svg {
   flex-shrink: 0;
 }
+
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px
+    max(20px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: #f5f7f4;
+}
+:root[data-theme="dark"] .lock-screen {
+  background: #0e1814;
+}
+.lock-card {
+  width: min(100%, 440px);
+  padding: 28px;
+  text-align: center;
+}
+.lock-card h1 {
+  font-size: 24px;
+}
+.lock-card .button {
+  width: 100%;
+  margin-top: 18px;
+}
+.lock-card label,
+.security-panel label {
+  display: grid;
+  gap: 10px;
+}
+.recovery-code {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 16px 0;
+  font-size: 18px;
+  user-select: all;
+}
+.security-panel .recovery-confirm {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.recovery-confirm input {
+  width: 22px;
+  min-height: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.security-panel .text-button,
+.lock-card .text-button {
+  margin-top: 12px;
+}

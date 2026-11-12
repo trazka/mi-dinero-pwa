@@ -1,4 +1,5 @@
 import React, { Component, useLayoutEffect, type ReactNode } from "react";
+import SecurityGate from "./SecurityGate";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 
@@ -40,7 +41,9 @@ import("./App")
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
         <StartupBoundary>
-          <App />
+          <SecurityGate>
+            <App />
+          </SecurityGate>
           <Ready />
         </StartupBoundary>
       </React.StrictMode>,

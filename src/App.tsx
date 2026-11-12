@@ -1,3 +1,4 @@
+import { SecurityPanel } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
 import {
@@ -1081,6 +1082,7 @@ export default function App() {
           )}
           {tab === "Respaldos" && (
             <div className="backup-grid">
+              <SecurityPanel />
               <div className="panel backup backup-history">
                 <h2>Tu último respaldo</h2>
                 <p>
