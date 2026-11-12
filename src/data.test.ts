@@ -58,7 +58,7 @@ describe("Respaldos", () => {
     expect(validateBackup(JSON.parse(JSON.stringify(fixture())))).toEqual(
       fixture(),
     );
-    expect(() => validateBackup({ ...fixture(), version: 2 })).toThrow();
+    expect(() => validateBackup({ ...fixture(), version: 3 })).toThrow();
   });
   it("rechaza gastos huérfanos, vínculos duplicados y saldos alterados", () => {
     const d = payDebt(fixture(), "debt", 200, "2026-11-11");

@@ -28,7 +28,7 @@ Las pruebas de navegador usan Chromium instalado en `/usr/bin/chromium` por defe
 - **Inicio:** saldo de todos los ingresos menos los gastos, ingresos, egresos y deuda pendiente acumulados. El saldo inicial es cero: para representar dinero previo registra un ingreso con concepto «Saldo inicial».
 - **Movimientos:** altas, edición y eliminación; fecha local, concepto o establecimiento, categoría, importe en MXN, método de pago y notas. Filtros inclusivos por fecha, categoría y establecimiento.
 - **Deudas:** acreedor, importe original, saldo pendiente al incorporarla, vencimiento, abonos e historial. Una deuda no genera automáticamente un ingreso ni un gasto. Los abonos anteriores al registro quedan representados por la diferencia entre el original y el saldo inicial.
-- **Abonos:** cada abono crea exactamente un gasto vinculado en una única transacción IndexedDB. El importe del gasto y del abono siempre coinciden. Los abonos se registran mediante transferencia. No vuelvas a registrar manualmente ese mismo pago como gasto. Para corregirlo, elimina/revierte el abono y créalo de nuevo: la reversión elimina el gasto y restituye el saldo pendiente. No se permiten sobrepagos.
+- **Abonos:** en deudas ordinarias, cada abono crea un único gasto vinculado. En tarjetas, los nuevos abonos crean un movimiento vinculado excluido del gasto: la compra ya se contabilizó al registrarla. Ambos se guardan atómicamente en IndexedDB, mediante transferencia. No registres el pago por separado. Revertir el abono elimina su movimiento y restituye la deuda. No se permiten sobrepagos.
 - **Reportes:** totales de ingresos, egresos y balance diarios, semanales (lunes a domingo) y mensuales, con los mismos filtros. El rango incluye ambos extremos.
 - **Respaldos:** exportación JSON versionada de toda la información; importación validada, con confirmación, que reemplaza el conjunto completo de datos atómicamente. No mezcla ni duplica registros al reimportar. Límite de archivo de 10 MB. CSV de todos los movimientos o de los movimientos filtrados, con escape de comillas, BOM UTF-8 y protección contra fórmulas comunes.
 
@@ -74,3 +74,16 @@ Para diagnosticar una pantalla vacía, conserva el texto exacto del error visibl
 Los campos de fecha usan un calendario en español: al tocar el día, se aplica la selección y se cierra automáticamente, sin palomita adicional. En los formularios, el botón Guardar sigue siendo necesario para guardar el registro completo; los filtros se aplican al seleccionar la fecha.
 
 El mes y el año también se seleccionan dentro del calendario con botones, sin abrir selectores nativos de iPhone. Si hay una versión pendiente, el aviso **Actualizar aplicación** permite aplicarla; guarda o cierra los formularios antes de pulsarlo. La actualización no borra IndexedDB ni los respaldos.
+
+## Compras con tarjeta de crédito
+
+1. En **Deudas → Nueva deuda**, selecciona **Tipo de deuda → Tarjeta de crédito**. Registra el acreedor, vencimiento e importes de apertura. Si está en cero, introduce 0 en ambos importes.
+2. En **Nuevo movimiento**, selecciona **Gasto → Tarjeta de crédito** y elige **Tarjeta o deuda vinculada**. Si solo hay una tarjeta registrada, queda preseleccionada. También puedes elegir una deuda existente: se utilizará como tarjeta a partir de esa compra.
+3. La compra aumenta automáticamente el saldo pendiente de esa tarjeta. Cuenta como gasto en su categoría y fecha originales.
+4. Usa **Deudas → Registrar abono** para pagar. El pago reduce la deuda, aparece en Movimientos y no vuelve a sumar al gasto en Inicio ni Reportes. Ejemplo: compra $100 y abono $40 → deuda $60 y gasto $100.
+
+El saldo disponible sigue representando ingresos menos gastos registrados; las compras a crédito lo reducen al comprarlas, no otra vez al pagar la tarjeta. El saldo inicial de una tarjeta representa compras anteriores al registro y no crea gastos nuevos. Los movimientos y abonos anteriores permanecen con su contabilización original; no se vinculan ni reclasifican retroactivamente. Un gasto antiguo con tarjeta sin vínculo puede editarse manteniéndolo sin vincular. Si decides vincularlo expresamente, su importe se agrega a la deuda: evita incluirlo también en el saldo de apertura.
+
+Al editar, eliminar o cambiar de tarjeta una compra, su cargo se ajusta en la misma transacción. Si eso dejaría el saldo negativo porque ya hubo abonos, se rechaza el cambio: primero revierte los abonos correspondientes. El CSV incluye los vínculos y una columna **Gasto contabilizado MXN**, con cero para los abonos de tarjeta.
+
+El formato de respaldo es ahora versión 2. Se admiten respaldos anteriores de versión 1 y se preservan movimientos, deudas y abonos. No se recrea la base de IndexedDB: la lectura adapta el formato en memoria y la siguiente escritura guarda la versión 2. Las versiones anteriores de la aplicación pueden rechazar respaldos nuevos.

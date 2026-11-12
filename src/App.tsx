@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import {
   balance,
+  expenseAmount,
+  saveMovement,
   cents,
   changeData,
   csv,
@@ -101,6 +103,16 @@ export default function App() {
     !!window.__miDineroUpdate,
   );
   const [updating, setUpdating] = useState(false);
+  const [movementType, setMovementType] = useState<Movement["type"]>("expense");
+  const [movementMethod, setMovementMethod] = useState("Efectivo");
+  const [debtKind, setDebtKind] = useState("normal");
+  useEffect(() => {
+    if (modal?.kind === "movement") {
+      setMovementType(modal.movement?.type ?? "expense");
+      setMovementMethod(modal.movement?.method ?? "Efectivo");
+    }
+    if (modal?.kind === "debt") setDebtKind("normal");
+  }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!modal) return;
@@ -186,10 +198,9 @@ export default function App() {
   const incomes = data.movements
       .filter((m) => m.type === "income")
       .reduce((s, m) => s + m.amount, 0),
-    expenses = data.movements
-      .filter((m) => m.type === "expense")
-      .reduce((s, m) => s + m.amount, 0),
+    expenses = data.movements.reduce((s, m) => s + expenseAmount(m), 0),
     pending = data.debts.reduce((s, d) => s + balance(d), 0);
+  const creditDebts = data.debts.filter((d) => d.kind === "credit");
   const filtered = data.movements
     .filter(
       (m) =>
@@ -223,18 +234,15 @@ export default function App() {
         setError("Introduce un importe válido con hasta dos decimales.");
         return;
       }
-      void mutate((d) => ({
-        ...d,
-        movements: modal.movement
-          ? d.movements.map((old) => (old.id === m.id ? m : old))
-          : [...d.movements, m],
-      }));
+      if (m.type === "expense" && m.method === "Tarjeta de crédito")
+        m.creditDebtId = get("creditDebtId");
+      void mutate((d) => saveMovement(d, m));
     }
     if (modal.kind === "debt") {
       const original = num("original"),
         initialBalance = num("balance");
       if (
-        !cents(original) ||
+        !(cents(original) || (debtKind === "credit" && original === 0)) ||
         !Number.isFinite(initialBalance) ||
         initialBalance < 0 ||
         initialBalance > original ||
@@ -257,6 +265,9 @@ export default function App() {
             initialBalance,
             due: get("due"),
             payments: [],
+            ...(debtKind === "credit"
+              ? { kind: "credit" as const, charges: [] }
+              : {}),
           },
         ],
       }));
@@ -285,8 +296,18 @@ export default function App() {
                 {m.method}
                 {m.notes ? ` · ${m.notes}` : ""}
               </small>
+              {m.creditDebtId && (
+                <small>
+                  Tarjeta:{" "}
+                  {data.debts.find((d) => d.id === m.creditDebtId)?.creditor}
+                </small>
+              )}
               {m.paymentId && (
-                <small>Abono vinculado · elimina para revertir</small>
+                <small>
+                  {m.creditPaymentDebtId
+                    ? "Abono de tarjeta · No suma al gasto"
+                    : "Abono vinculado · elimina para revertir"}
+                </small>
               )}
             </div>
             <div className="movement-right">
@@ -352,7 +373,8 @@ export default function App() {
       key = d.toISOString().slice(0, 10);
     }
     const group = groupTotals.get(key) ?? { income: 0, expense: 0 };
-    group[m.type === "income" ? "income" : "expense"] += m.amount;
+    group[m.type === "income" ? "income" : "expense"] +=
+      m.type === "income" ? m.amount : expenseAmount(m);
     groupTotals.set(key, group);
   }
   const filters = (
@@ -553,7 +575,7 @@ export default function App() {
                   </span>
                   <span>Egresos</span>
                   <strong>{money(expenses)}</strong>
-                  <small>Incluye abonos a deudas</small>
+                  <small>Compras y abonos de otras deudas</small>
                 </div>
               </section>
               <section className="dashboard-grid">
@@ -638,8 +660,9 @@ export default function App() {
                 <strong>{money(pending)}</strong>
               </div>
               <p className="helper">
-                Registrar una deuda no genera un gasto. Cada abono crea un único
-                gasto vinculado; no lo registres de nuevo en Movimientos.
+                Las compras vinculadas a una tarjeta aumentan su deuda. Sus
+                abonos no vuelven a contar como gasto. Para otras deudas, cada
+                abono crea un único gasto vinculado.
               </p>
               <div className="debt-grid">
                 {data.debts.map((d) => (
@@ -659,11 +682,32 @@ export default function App() {
                     <p>Saldo pendiente</p>
                     <strong className="debt-number">{money(balance(d))}</strong>
                     <progress
-                      value={d.original - balance(d)}
-                      max={d.original}
+                      value={
+                        d.original +
+                        (d.charges ?? []).reduce(
+                          (sum, c) => sum + c.amount,
+                          0,
+                        ) -
+                        balance(d)
+                      }
+                      max={Math.max(
+                        0.01,
+                        d.original +
+                          (d.charges ?? []).reduce(
+                            (sum, c) => sum + c.amount,
+                            0,
+                          ),
+                      )}
                     />
                     <div className="debt-meta">
-                      <span>Original: {money(d.original)}</span>
+                      <span>
+                        {d.kind === "credit"
+                          ? "Tarjeta · Apertura"
+                          : "Original"}
+                        : {money(d.original)}
+                        {d.kind === "credit" &&
+                          ` · Compras: ${money((d.charges ?? []).reduce((sum, c) => sum + c.amount, 0))}`}
+                      </span>
                       <span>
                         Vence: {dateLabel(d.due)} {d.due.slice(0, 4)}
                       </span>
@@ -751,11 +795,7 @@ export default function App() {
                 <div>
                   <span>Egresos filtrados</span>
                   <strong>
-                    {money(
-                      filtered
-                        .filter((m) => m.type === "expense")
-                        .reduce((s, m) => s + m.amount, 0),
-                    )}
+                    {money(filtered.reduce((s, m) => s + expenseAmount(m), 0))}
                   </strong>
                 </div>
               </div>
@@ -980,7 +1020,10 @@ export default function App() {
                   <Field label="Tipo">
                     <select
                       name="type"
-                      defaultValue={modal.movement?.type ?? "expense"}
+                      value={movementType}
+                      onChange={(e) =>
+                        setMovementType(e.target.value as Movement["type"])
+                      }
                     >
                       <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
@@ -1038,7 +1081,8 @@ export default function App() {
                     <Field label="Método de pago">
                       <select
                         name="method"
-                        defaultValue={modal.movement?.method ?? "Efectivo"}
+                        value={movementMethod}
+                        onChange={(e) => setMovementMethod(e.target.value)}
                       >
                         {[
                           "Efectivo",
@@ -1052,6 +1096,58 @@ export default function App() {
                       </select>
                     </Field>
                   </div>
+                  {movementType === "expense" &&
+                    movementMethod === "Tarjeta de crédito" && (
+                      <>
+                        <Field label="Tarjeta o deuda vinculada">
+                          <select
+                            name="creditDebtId"
+                            required={
+                              !!modal.movement?.creditDebtId ||
+                              modal.movement?.method !== "Tarjeta de crédito" ||
+                              modal.movement?.type !== "expense"
+                            }
+                            defaultValue={
+                              modal.movement?.creditDebtId ??
+                              (modal.movement?.method === "Tarjeta de crédito"
+                                ? ""
+                                : creditDebts.length === 1
+                                  ? creditDebts[0].id
+                                  : "")
+                            }
+                          >
+                            <option
+                              value=""
+                              disabled={
+                                !!modal.movement?.creditDebtId ||
+                                modal.movement?.method !==
+                                  "Tarjeta de crédito" ||
+                                modal.movement?.type !== "expense"
+                              }
+                            >
+                              {modal.movement?.method ===
+                                "Tarjeta de crédito" &&
+                              !modal.movement.creditDebtId
+                                ? "Mantener sin vincular (registro anterior)"
+                                : "Selecciona tu tarjeta o deuda"}
+                            </option>
+                            {data.debts.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.creditor} · {money(balance(d))}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <p className="helper">
+                          La compra aumenta el saldo de esta tarjeta y cuenta
+                          como gasto una sola vez. Sus nuevos abonos reducen la
+                          deuda sin sumar otro gasto. Los abonos anteriores se
+                          conservan tal como fueron registrados.
+                          {!data.debts.length &&
+                            " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
+                        </p>
+                      </>
+                    )}
                   <Field label="Notas (opcional)">
                     <textarea
                       name="notes"
@@ -1064,6 +1160,15 @@ export default function App() {
               )}
               {modal.kind === "debt" && (
                 <>
+                  <Field label="Tipo de deuda">
+                    <select
+                      value={debtKind}
+                      onChange={(e) => setDebtKind(e.target.value)}
+                    >
+                      <option value="normal">Otra deuda</option>
+                      <option value="credit">Tarjeta de crédito</option>
+                    </select>
+                  </Field>
                   <Field label="Acreedor">
                     <input
                       autoFocus
@@ -1077,7 +1182,7 @@ export default function App() {
                     <input
                       name="original"
                       type="number"
-                      min="0.01"
+                      min={debtKind === "credit" ? "0" : "0.01"}
                       max="999999999"
                       step="0.01"
                       inputMode="decimal"
@@ -1100,7 +1205,9 @@ export default function App() {
                   </Field>
                   <p className="helper">
                     El saldo actual permite registrar deudas que ya has empezado
-                    a pagar. No se generarán gastos por pagos anteriores.
+                    a pagar. No se generarán gastos por pagos anteriores.{" "}
+                    {debtKind === "credit" &&
+                      "Si tu tarjeta no tiene adeudo, escribe 0 en ambos importes. Las compras nuevas se agregarán automáticamente al saldo al vincularlas."}
                   </p>
                 </>
               )}
@@ -1126,9 +1233,11 @@ export default function App() {
                     <DatePicker name="date" defaultValue={today()} required />
                   </Field>
                   <p className="helper">
-                    Se registrará una sola vez como gasto en la categoría Pago
-                    de deuda, mediante transferencia. Para corregirlo, revierte
-                    el abono y regístralo de nuevo.
+                    {modal.debt.kind === "credit"
+                      ? "Este abono reduce la deuda de la tarjeta sin sumar otro gasto. El gasto ya se registra al comprar."
+                      : "Se registrará una sola vez como gasto en la categoría Pago de deuda."}{" "}
+                    Se registra mediante transferencia. Para corregirlo,
+                    revierte el abono y regístralo de nuevo.
                   </p>
                 </>
               )}
