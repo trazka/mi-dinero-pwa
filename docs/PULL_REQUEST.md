@@ -1,17 +1,13 @@
-# Icono M en verde intenso sobre fondo negro
+# Restaurar la billetera en el encabezado y conservar la M de lanzamiento
 
-Sustituye la cartera por el símbolo solicitado: M geométrica y punto en verde intenso, con fondo negro, tomando como referencia las capturas proporcionadas. El tono es una aproximación visual al verde de SIGTI; no se afirma un color corporativo exacto a partir del favicon pequeño.
+Corrige la interpretación del cambio anterior: la billetera en verde/menta vuelve al encabezado dentro de Mi dinero. La M y el punto en verde intenso sobre negro permanecen exclusivamente como iconos de lanzamiento PWA/Apple y favicon.
 
-Actualiza icono de Apple, manifest PWA, favicon e identidad del encabezado. Genera PNG de 180, 192 y 512 px desde el maestro en `assets/icon-v3-master.png`, conservando un generador reproducible. Los nombres nuevos evitan reutilizar los archivos de cartera; se mantienen los anteriores para clientes instalados. La identidad, alcance y ruta base de la PWA no cambian.
-
-No modifica colores de la interfaz, modo oscuro, cálculos ni IndexedDB.
+Se reutiliza `icon-v2.svg` para el encabezado y se conservan los PNG `icon-v3-*` y `apple-touch-icon-v3.png` en el manifiesto y HTML. Las rutas PNG de lanzamiento anteriores (versiones 1 y 2) ahora sirven la misma M intensa, para que un cliente que vuelva a consultarlas reciba el diseño nuevo; el SVG de la billetera se mantiene intacto. No se cambia la identidad instalada, ruta base, tema, datos ni cálculos. La prueba de interfaz comprueba explícitamente que ambas referencias sean diferentes para evitar otra sustitución accidental.
 
 ## Validación
 
-- `npm run build`: TypeScript, Vite y precaché correctos.
+- `npm run build`: TypeScript, Vite y PWA.
 - `npm test`: 34 pruebas de datos/persistencia.
-- `npm run test:e2e`: 25 pruebas de navegador, incluida validación de las nuevas rutas de icono y de funcionamiento offline.
-- Dimensiones PNG comprobadas: 192×192, 512×512 y 180×180.
-- Revisión visual del icono generado.
+- `npm run test:e2e`: 25 pruebas de navegador, incluida billetera en encabezado, M v3 en icono Apple e igualdad del contenido servido por las dos rutas antiguas de Apple y la actual.
 
-El icono existente de la pantalla de inicio puede permanecer en la caché de iOS tras publicar. No se desinstala ni se borran datos para forzar su renovación. La actualización visual de una instalación real se confirma después del despliegue.
+La captura del usuario muestra la nueva M intensa dentro de la app y la antigua M tenue en la pantalla de inicio: los recursos de la app se actualizaron pero el icono de lanzamiento instalado en iOS sigue siendo anterior. No se promete que cambiar recursos web fuerce a iOS a renovar el icono ya instalado. Se debe exportar un respaldo JSON antes de intentar reemplazar el acceso y no borrar datos ni desinstalar para forzar una caché.

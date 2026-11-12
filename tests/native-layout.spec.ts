@@ -9,6 +9,15 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
   await expect(
     page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
   ).toBeEnabled();
+  // The in-app wallet and the installed launcher are intentionally different.
+  await expect(page.locator(".app-identity img")).toHaveAttribute(
+    "src",
+    "/mi-dinero-pwa/icon-v2.svg",
+  );
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
+    "href",
+    "/mi-dinero-pwa/apple-touch-icon-v3.png",
+  );
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(
     nav.getByRole("button", { name: "Inicio", exact: true }),
