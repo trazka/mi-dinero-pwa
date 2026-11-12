@@ -9,6 +9,8 @@ export type Movement = {
   method: string;
   notes: string;
   paymentId?: string;
+  creditDebtId?: string;
+  creditPaymentDebtId?: string;
 };
 export type Payment = {
   id: string;
@@ -23,9 +25,11 @@ export type Debt = {
   initialBalance: number;
   due: string;
   payments: Payment[];
+  kind?: "credit";
+  charges?: { movementId: string; amount: number }[];
 };
-export type Data = { version: 1; movements: Movement[]; debts: Debt[] };
-export const empty = (): Data => ({ version: 1, movements: [], debts: [] });
+export type Data = { version: 2; movements: Movement[]; debts: Debt[] };
+export const empty = (): Data => ({ version: 2, movements: [], debts: [] });
 export const money = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
     n,
@@ -35,7 +39,8 @@ export const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 export const balance = (d: Debt) =>
-  (Math.round(d.initialBalance * 100) -
+  (Math.round(d.initialBalance * 100) +
+    (d.charges ?? []).reduce((s, c) => s + Math.round(c.amount * 100), 0) -
     d.payments.reduce((s, p) => s + Math.round(p.amount * 100), 0)) /
   100;
 export const cents = (v: number) =>
@@ -43,6 +48,9 @@ export const cents = (v: number) =>
   v > 0 &&
   v <= 999999999 &&
   Math.abs(v * 100 - Math.round(v * 100)) < 0.0001;
+export const expenseAmount = (m: Movement) =>
+  m.type === "expense" && !m.creditPaymentDebtId ? m.amount : 0;
+
 export function payDebt(
   data: Data,
   id: string,
@@ -81,19 +89,74 @@ export function payDebt(
         method: "Transferencia",
         notes: "Abono vinculado a deuda",
         paymentId,
+        ...(debt.kind === "credit" ? { creditPaymentDebtId: debt.id } : {}),
       },
     ],
   };
 }
+function assertBalances(data: Data): Data {
+  if (data.debts.some((d) => balance(d) < 0))
+    throw Error(
+      "Primero revierte los abonos de esta deuda antes de reducir o eliminar la compra.",
+    );
+  return data;
+}
+export function saveMovement(data: Data, movement: Movement): Data {
+  const old = data.movements.find((m) => m.id === movement.id);
+  if (old?.paymentId || movement.paymentId || movement.creditPaymentDebtId)
+    throw Error("Los abonos se corrigen desde su deuda.");
+  if (
+    !cents(movement.amount) ||
+    !validDate(movement.date) ||
+    !["income", "expense"].includes(movement.type)
+  )
+    throw Error("Revisa los datos del movimiento.");
+  const linked =
+    movement.type === "expense" && movement.method === "Tarjeta de crédito";
+  const legacyUnlinked =
+    old?.type === "expense" &&
+    old.method === "Tarjeta de crédito" &&
+    !old.creditDebtId;
+  if (
+    linked &&
+    !(legacyUnlinked && !movement.creditDebtId) &&
+    !data.debts.some((d) => d.id === movement.creditDebtId)
+  )
+    throw Error(
+      "Selecciona la deuda o tarjeta a la que corresponde la compra.",
+    );
+  const m = { ...movement };
+  if (!linked || !m.creditDebtId) delete m.creditDebtId;
+  const next: Data = {
+    ...data,
+    movements: old
+      ? data.movements.map((item) => (item.id === m.id ? m : item))
+      : [...data.movements, m],
+    debts: data.debts.map((d) => {
+      const charges = (d.charges ?? []).filter((c) => c.movementId !== m.id);
+      if (m.creditDebtId === d.id)
+        return {
+          ...d,
+          kind: "credit",
+          charges: [...charges, { movementId: m.id, amount: m.amount }],
+        };
+      return d.charges ? { ...d, charges } : d;
+    }),
+  };
+  return assertBalances(next);
+}
 export function removeMovement(data: Data, id: string): Data {
-  return {
+  return assertBalances({
     ...data,
     movements: data.movements.filter((m) => m.id !== id),
     debts: data.debts.map((d) => ({
       ...d,
       payments: d.payments.filter((p) => p.movementId !== id),
+      ...(d.charges
+        ? { charges: d.charges.filter((c) => c.movementId !== id) }
+        : {}),
     })),
-  };
+  });
 }
 export function validDate(v: unknown): v is string {
   return (
@@ -113,7 +176,11 @@ export function validateBackup(input: unknown): Data {
   };
   if (!input || typeof input !== "object") return fail();
   const d = input as Data;
-  if (d.version !== 1 || !Array.isArray(d.movements) || !Array.isArray(d.debts))
+  if (
+    ![1, 2].includes((d as { version: number }).version) ||
+    !Array.isArray(d.movements) ||
+    !Array.isArray(d.debts)
+  )
     return fail();
   const ids = new Set<string>();
   const unique = (id: unknown) => {
@@ -137,7 +204,10 @@ export function validateBackup(input: unknown): Data {
     if (
       !debt ||
       !str(debt.creditor) ||
-      !cents(debt.original) ||
+      !(
+        cents(debt.original) ||
+        (debt.kind === "credit" && debt.original === 0)
+      ) ||
       !Number.isFinite(debt.initialBalance) ||
       debt.initialBalance < 0 ||
       debt.initialBalance > debt.original ||
@@ -149,6 +219,29 @@ export function validateBackup(input: unknown): Data {
     )
       return fail();
     unique(debt.id);
+    if (debt.kind !== undefined && debt.kind !== "credit") return fail();
+    if (
+      debt.charges !== undefined &&
+      (!Array.isArray(debt.charges) || debt.kind !== "credit")
+    )
+      return fail();
+    const charges = new Set<string>();
+    for (const c of debt.charges ?? []) {
+      const m = d.movements.find((m) => m.id === c?.movementId);
+      if (
+        !c ||
+        !cents(c.amount) ||
+        !m ||
+        m.creditDebtId !== debt.id ||
+        m.type !== "expense" ||
+        m.method !== "Tarjeta de crédito" ||
+        m.paymentId ||
+        m.amount !== c.amount ||
+        charges.has(m.id)
+      )
+        return fail();
+      charges.add(m.id);
+    }
     for (const p of debt.payments) {
       if (!p || !cents(p.amount) || !validDate(p.date)) return fail();
       unique(p.id);
@@ -159,16 +252,34 @@ export function validateBackup(input: unknown): Data {
         m.type !== "expense" ||
         m.amount !== p.amount ||
         m.date !== p.date ||
-        links.has(m.id)
+        links.has(m.id) ||
+        (m.creditPaymentDebtId !== undefined &&
+          (m.creditPaymentDebtId !== debt.id || debt.kind !== "credit"))
       )
         return fail();
       links.add(m.id);
     }
     if (balance(debt) < 0) return fail();
   }
-  for (const m of d.movements)
+  for (const m of d.movements) {
     if (m.paymentId && !links.has(m.id)) return fail();
-  return structuredClone(d);
+    if (
+      m.creditPaymentDebtId !== undefined &&
+      (!m.paymentId || !str(m.creditPaymentDebtId))
+    )
+      return fail();
+    if (m.creditDebtId !== undefined) {
+      const debt = d.debts.find((debt) => debt.id === m.creditDebtId);
+      if (
+        !debt ||
+        debt.kind !== "credit" ||
+        !(debt.charges ?? []).some((c) => c.movementId === m.id) ||
+        m.creditPaymentDebtId
+      )
+        return fail();
+    }
+  }
+  return { ...structuredClone(d), version: 2 };
 }
 const db = () =>
   openDB("mi-dinero", 1, {
@@ -178,12 +289,18 @@ const db = () =>
   });
 export async function readData(): Promise<Data> {
   const database = await db();
-  return (await database.get("data", "main")) ?? empty();
+  const stored = (await database.get("data", "main")) ?? empty();
+  if (![1, 2].includes(stored.version))
+    throw Error(
+      "La versión de los datos no es compatible con esta aplicación.",
+    );
+  return { ...stored, version: 2 };
 }
 export async function changeData(fn: (data: Data) => Data): Promise<Data> {
   const database = await db();
   const tx = database.transaction("data", "readwrite");
-  const current = (await tx.store.get("main")) ?? empty();
+  const stored = (await tx.store.get("main")) ?? empty();
+  const current: Data = { ...stored, version: 2 };
   let next: Data;
   try {
     next = fn(current);
@@ -218,15 +335,25 @@ export function csv(movements: Movement[]) {
         "Importe MXN",
         "Método de pago",
         "Notas",
+        "ID deuda de compra",
+        "ID deuda de abono",
+        "Gasto contabilizado MXN",
       ],
       ...movements.map((m) => [
         m.date,
-        m.type === "income" ? "Ingreso" : "Gasto",
+        m.creditPaymentDebtId
+          ? "Abono de tarjeta (sin gasto)"
+          : m.type === "income"
+            ? "Ingreso"
+            : "Gasto",
         m.merchant,
         m.category,
         m.amount.toFixed(2),
         m.method,
         m.notes,
+        m.creditDebtId ?? "",
+        m.creditPaymentDebtId ?? "",
+        expenseAmount(m).toFixed(2),
       ]),
     ]
       .map((r) => r.map(cell).join(","))
