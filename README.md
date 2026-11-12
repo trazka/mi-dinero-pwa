@@ -150,3 +150,8 @@ Al seleccionar un campo de captura en móvil, se ocultan temporalmente la navega
 Las sugerencias de establecimiento/concepto aparecen en una lista propia de la app al enfocar el campo. Se filtran mientras escribes sin distinguir mayúsculas ni acentos; puedes tocar una opción, elegirla con flechas y Enter o escribir un concepto nuevo. Se comparten entre movimientos, filtros y recurrentes y se reconstruyen con los registros guardados, también sin conexión.
 
 El acceso flotante de cada sección muestra únicamente **+**, con su nombre accesible: Nuevo movimiento, Nueva deuda o Nuevo apartado. En Apartados puedes crear una meta con **+** aunque los saldos estén ocultos, o pulsar **Agregar dinero** para elegir una meta y aportar sin desbloquear los detalles.
+
+
+En **Inicio**, toca **Ingresos** o **Egresos** para abrir el listado separado con todos los registros de ese tipo. El acceso limpia filtros anteriores; usa **Desde** y **Hasta** para acotar fechas, incluidos ambos extremos. El selector **Tipo de movimiento** permite cambiar de tipo en Movimientos o Reportes. **Exportar CSV** exporta únicamente el listado filtrado. Egresos incluye gastos pagados y abonos; las compras vinculadas a TDC quedan fuera hasta pagarse, para coincidir con el total de Inicio. **Ver todos** y **Limpiar filtros** vuelven al listado completo.
+
+Al seleccionar un establecimiento o concepto de la lista de sugerencias, se carga su última categoría registrada. Se conserva la opción de cambiarla antes de guardar. Si el concepto solo existe en gastos recurrentes, se utiliza la categoría de esa programación. Escribir un concepto nuevo conserva la categoría elegida. Esto funciona tanto en movimientos como en recurrentes.

@@ -1,3 +1,4 @@
+import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import MoneyInput from "./MoneyInput";
 import { useEffect, useId, useState, type FormEvent } from "react";
@@ -161,6 +162,7 @@ export function RecurringPanel({
 }) {
   const [draft, setDraft] = useState<Recurring | null | undefined>(),
     [method, setMethod] = useState("Efectivo");
+  const [category, setCategory] = useState(categories[0]);
   const dateId = useId();
   useEffect(() => {
     onEditing(draft !== undefined);
@@ -169,6 +171,7 @@ export function RecurringPanel({
   function edit(rule: Recurring | null) {
     setDraft(rule);
     setMethod(rule?.method ?? "Efectivo");
+    setCategory(rule?.category ?? categories[0]);
   }
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -290,6 +293,10 @@ export function RecurringPanel({
             Concepto recurrente
             <ConceptInput
               suggestions={suggestions}
+              onSelectSuggestion={(concept) => {
+                const previous = categoryForConcept(data, concept);
+                if (previous) setCategory(previous);
+              }}
               name="merchant"
               autoComplete="off"
               aria-label="Concepto recurrente"
@@ -317,9 +324,10 @@ export function RecurringPanel({
             <select
               name="category"
               aria-label="Categoría recurrente"
-              defaultValue={draft?.category}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
             >
-              {categories.map((c) => (
+              {[...new Set([...categories, category])].map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
