@@ -201,6 +201,9 @@ export default function App() {
       .reduce((s, m) => s + m.amount, 0),
     expenses = data.movements.reduce((s, m) => s + expenseAmount(m), 0),
     pending = data.debts.reduce((s, d) => s + balance(d), 0);
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
   const filtered = data.movements
     .filter(
@@ -433,6 +436,7 @@ export default function App() {
             <button
               key={t.name}
               className={tab === t.name ? "active" : ""}
+              aria-current={tab === t.name ? "page" : undefined}
               onClick={() => setTab(t.name)}
             >
               <t.icon size={20} />
@@ -455,7 +459,15 @@ export default function App() {
       </aside>
       <main>
         <header className="topbar">
-          <span>FINANZAS PERSONALES</span>
+          <div className="app-identity">
+            <img
+              src={`${import.meta.env.BASE_URL}icon-v2.svg`}
+              alt=""
+              width="32"
+              height="32"
+            />
+            <span>Mi dinero</span>
+          </div>
           <div>
             <span className="local-badge">
               <b /> Privado y local
@@ -466,15 +478,11 @@ export default function App() {
         <div className="page">
           <div className="page-heading">
             <div>
-              <p className="eyebrow">TU DINERO, CON CLARIDAD</p>
-              <h1>
-                {tab === "Inicio"
-                  ? "Un poco de orden, mucha tranquilidad."
-                  : tab}
-              </h1>
+              <p className="eyebrow">TUS FINANZAS PERSONALES</p>
+              <h1>{tab === "Inicio" ? "Tu resumen" : tab}</h1>
               <p>
                 {tab === "Inicio"
-                  ? "Cada pequeño paso cuenta. Así van tus finanzas."
+                  ? "Tu dinero, al día."
                   : (
                       {
                         Movimientos: "Cada ingreso y gasto, en un solo lugar.",
@@ -972,6 +980,7 @@ export default function App() {
         {tabs.map((t) => (
           <button
             className={tab === t.name ? "active" : ""}
+            aria-current={tab === t.name ? "page" : undefined}
             key={t.name}
             onClick={() => setTab(t.name)}
           >

@@ -111,7 +111,7 @@ test("IndexedDB no disponible muestra un aviso y la interfaz sigue visible", asy
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Un poco de orden, mucha tranquilidad.",
+      name: "Tu resumen",
     }),
   ).toBeVisible();
   await expect(page.getByRole("alert")).toContainText(
@@ -135,7 +135,7 @@ test("un fallo al cargar el registro PWA no impide iniciar React", async ({
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Un poco de orden, mucha tranquilidad.",
+      name: "Tu resumen",
     }),
   ).toBeVisible();
   await expect(

@@ -1,4 +1,4 @@
-import React, { Component, useEffect, type ReactNode } from "react";
+import React, { Component, useLayoutEffect, type ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 
@@ -27,7 +27,7 @@ class StartupBoundary extends Component<
 }
 
 function Ready() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.__miDineroStartup?.ready();
   }, []);
   return null;

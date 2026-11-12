@@ -1,18 +1,17 @@
-# Icono moderno y modos Claro, Oscuro y Automático
+# Apariencia de app de iPhone para Mi dinero
 
-Añade un control **Apariencia** en la esquina superior derecha. Permite cambiar entre modo claro, oscuro y automático. El automático sigue la preferencia del dispositivo y responde a sus cambios. El modo se aplica antes de montar React para evitar destellos claros al abrir; persiste en una clave de localStorage y sigue funcionando por sesión si no hay permiso para guardar.
+Hace más compacta y cómoda la interfaz móvil: encabezado fijo con identidad de la app y acceso a Apariencia, título «Tu resumen», saldo visible más arriba, tarjetas redondeadas y pestañas inferiores con indicador activo. Los formularios aparecen como hojas inferiores con encabezado fijo, cierre accesible y botones amplios. Las listas, campos y estados vacíos usan tamaños adecuados para tocar en iPhone.
 
-Incluye colores oscuros para navegación, tarjetas, texto, formularios, calendario, avisos y pantalla de arranque. Actualiza el color de las barras del navegador según el tema. No modifica IndexedDB, cálculos, movimientos ni deudas.
+Mantiene tonos verdes, modos claro/oscuro/automático y diseño de escritorio. Respeta áreas seguras y reducción de movimiento. Cambiar de pestaña vuelve al inicio de la sección y expone `aria-current`. Oculta la pantalla inicial en el mismo commit de React para evitar que se vea junto con la interfaz durante el arranque.
 
-Renueva el icono con una cartera en esmeralda y menta, en SVG y PNG 192/512/180 px. El manifest y apple-touch-icon usan nombres versionados para renovar recursos, manteniendo el mismo id, inicio y alcance de la PWA. Los iconos anteriores se conservan para clientes antiguos. Se incluye un generador reproducible basado en SVG/Chromium, sin dependencias adicionales.
+No cambia IndexedDB, cálculos, compras, abonos, respaldos ni reglas financieras. El verificador de GitHub Pages y las pruebas de arranque usan el nuevo título visible del inicio.
 
 ## Validación
 
-- `npm test`: 22 pruebas aprobadas.
-- `npm run build`: TypeScript, Vite y precaché correctos.
-- `npm run test:e2e`: 17 pruebas aprobadas en Chromium con perfil iPhone.
-- Las pruebas nuevas cubren preferencia del sistema, cambios manuales, persistencia al recargar, funcionamiento offline, navegación por todas las secciones, colores del formulario/calendario, falta de acceso a localStorage y ausencia de desbordamiento horizontal.
-- La prueba de metadatos PWA comprueba los nuevos recursos de icono.
-- Revisión visual de la captura oscura y del PNG de 512 px.
+- `npm test`: 22/22 pruebas aprobadas.
+- `npm run build`: TypeScript, Vite y PWA correctos.
+- `npm run test:e2e`: 18/18 pruebas aprobadas, incluidas las anteriores de finanzas, offline, temas, calendario y arranque.
+- La prueba móvil nueva comprueba saldo visible arriba, navegación activa y vuelta al inicio, formularios tipo hoja, cierre automático del calendario, tema oscuro y ausencia de desbordamiento a 320 px. Guarda capturas claras y oscuras.
+- Revisión visual de la captura con perfil iPhone 13 en Chromium. La interacción y apariencia finales en Safari físico quedan para confirmar tras publicar.
 
-La publicación y su validación remota se ejecutarán al integrar en `main`. La apariencia en Safari físico debe confirmarse tras publicar. iOS puede conservar el icono anterior de una instalación existente; no se promete su sustitución inmediata ni se borran instalaciones o datos para forzarla.
+Los cambios están en una rama; el despliegue y la comprobación de la URL pública se ejecutarán al integrarla en `main`.
