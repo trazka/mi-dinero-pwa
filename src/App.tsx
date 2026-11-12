@@ -1,3 +1,4 @@
+import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
 import {
   backupOverdue,
@@ -1280,7 +1281,7 @@ export default function App() {
                   </Field>
                   <div className="form-grid">
                     <Field label="Importe (MXN)">
-                      <input
+                      <MoneyInput
                         autoFocus
                         name="amount"
                         type="number"
@@ -1419,9 +1420,9 @@ export default function App() {
                                   "Tarjeta de crédito" &&
                                 !modal.movement.creditDebtId
                                   ? "Mantener sin vincular (registro anterior)"
-                                  : "Selecciona tu tarjeta o deuda"}
+                                  : "Selecciona tu tarjeta de crédito"}
                               </option>
-                              {data.debts.map((d) => (
+                              {creditDebts.map((d) => (
                                 <option key={d.id} value={d.id}>
                                   {d.creditor} · {money(balance(d))}
                                 </option>
@@ -1433,7 +1434,7 @@ export default function App() {
                             reduce el saldo disponible. El gasto se registra al
                             abonar a la tarjeta. Los abonos anteriores se
                             conservan tal como fueron registrados.
-                            {!data.debts.length &&
+                            {!creditDebts.length &&
                               " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
                           </p>
                         </>
@@ -1473,7 +1474,7 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Importe original (MXN)">
-                    <input
+                    <MoneyInput
                       name="original"
                       readOnly={!!modal.debt}
                       defaultValue={modal.debt?.original}
@@ -1486,7 +1487,7 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Saldo pendiente actual (MXN)">
-                    <input
+                    <MoneyInput
                       name="balance"
                       readOnly={!!modal.debt}
                       defaultValue={modal.debt?.initialBalance}
@@ -1559,7 +1560,7 @@ export default function App() {
                     <strong>{money(balance(modal.debt))}</strong>
                   </p>
                   <Field label="Importe del abono (MXN)">
-                    <input
+                    <MoneyInput
                       autoFocus
                       name="amount"
                       type="number"

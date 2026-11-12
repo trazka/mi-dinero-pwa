@@ -216,3 +216,93 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
     page.locator(".stat").filter({ hasText: "Egresos" }),
   ).toContainText("$0.00");
 });
+
+test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", async ({
+  page,
+}) => {
+  const car = {
+    id: "car",
+    creditor: "Coche de prueba",
+    original: 500,
+    initialBalance: 500,
+    payments: [],
+    due: "2027-01-05",
+  };
+  await seed(page, { ...base, debts: [...base.debts, car] });
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Método de pago").selectOption("Tarjeta de crédito");
+  const cards = page.getByLabel("Tarjeta o deuda vinculada");
+  await expect(cards.locator("option")).toHaveText([
+    "Selecciona tu tarjeta de crédito",
+    "Tarjeta de prueba · $100.00",
+  ]);
+  await cards.selectOption("card");
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("25");
+  await page.getByLabel("Establecimiento o concepto").fill("Compra de prueba");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("credit");
+  await expect(cards.locator("option")).toHaveText([
+    "Selecciona tu tarjeta de crédito",
+    "Tarjeta de prueba · $125.00",
+  ]);
+  await page.getByLabel("Tipo", { exact: true }).selectOption("payment");
+  await expect(page.getByLabel("Deuda a abonar").locator("option")).toHaveText([
+    "Selecciona una deuda pendiente",
+    "Tarjeta de prueba · $125.00",
+    "Coche de prueba · $500.00",
+  ]);
+  await page.getByLabel("Deuda a abonar").selectOption("car");
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("40");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.reload();
+  await expect(page.locator(".balance-number")).toContainText("-$40.00");
+  await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".debt-number")).toHaveText(["$125.00", "$460.00"]);
+});
+
+test("sin tarjetas muestra instrucciones aunque exista una deuda de coche", async ({
+  page,
+}) => {
+  await seed(page, {
+    ...base,
+    debts: [
+      {
+        id: "car",
+        creditor: "Coche de prueba",
+        original: 500,
+        initialBalance: 500,
+        payments: [],
+        due: "2027-01-05",
+      },
+    ],
+  });
+  await page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("button", { name: "Movimientos", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .click();
+  await page.getByLabel("Tipo", { exact: true }).selectOption("credit");
+  const cards = page.getByLabel("Tarjeta o deuda vinculada");
+  await expect(cards.locator("option")).toHaveCount(1);
+  await expect(
+    page.getByText(/Primero registra tu tarjeta en Deudas/),
+  ).toBeVisible();
+  await page.getByLabel("Importe (MXN)", { exact: true }).fill("25");
+  await page.getByLabel("Establecimiento o concepto").fill("Compra de prueba");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(
+    await cards.evaluate((el: HTMLSelectElement) => el.validity.valueMissing),
+  ).toBe(true);
+});
