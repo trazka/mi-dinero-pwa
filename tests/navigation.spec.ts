@@ -60,20 +60,26 @@ test("gestos cambian sección y el botón flotante sigue su contexto", async ({
   await expect(page.locator(".page h1")).toHaveText("Deudas");
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await swipe(-140);
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await expect(page.locator(".section-add")).toHaveText("Nuevo apartado");
+  await swipe(-140);
   await swipe(-140);
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   await expect(page.locator(".section-add")).toHaveCount(0);
 });
 
-test("menú lateral en horizontal permite alcanzar el recuadro inferior", async ({
+test("menú lateral horizontal no muestra tarjetas decorativas recortadas", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("./");
-  const note = page.locator(".sidebar-note");
-  await note.scrollIntoViewIfNeeded();
-  await expect(note).toBeInViewport();
-  const box = await note.boundingBox();
-  expect(box!.y).toBeGreaterThanOrEqual(0);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(390);
+  await expect(page.locator(".sidebar-note")).toBeHidden();
+  await expect(page.locator(".sidebar-bottom")).toBeHidden();
+  await expect(
+    page
+      .locator(".sidebar")
+      .getByRole("button", { name: "Respaldos", exact: true }),
+  ).toBeInViewport();
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await expect(page.locator(".sidebar-note")).toBeVisible();
 });

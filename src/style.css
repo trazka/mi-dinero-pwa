@@ -2139,3 +2139,45 @@ li {
     padding-bottom: calc(165px + env(safe-area-inset-bottom));
   }
 }
+
+/* Decorative footer cards must not peek below short landscape menus. */
+@media (max-height: 700px) and (min-width: 801px) {
+  .sidebar-note,
+  .sidebar-bottom {
+    display: none;
+  }
+}
+.savings-panel > p {
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.savings-panel progress {
+  width: 100%;
+  accent-color: #367251;
+  margin: 8px 0 16px;
+}
+.savings-panel .planning-section {
+  margin-top: 24px;
+}
+@media (max-width: 380px) {
+  .mobile-nav button {
+    font-size: 9px;
+  }
+}
+@media (max-height: 700px) and (min-width: 801px) {
+  .sidebar .nav-label {
+    margin: 18px 0 12px 12px;
+  }
+  .sidebar nav {
+    gap: 4px;
+  }
+  .sidebar nav button {
+    padding: 8px 12px;
+  }
+}
+.savings-panel {
+  overflow-wrap: anywhere;
+}
+.savings-panel .planning-actions button {
+  white-space: normal;
+}

@@ -121,3 +121,13 @@ El icono de lanzamiento v5 combina la M con el contorno de una billetera en verd
 En **Respaldos → Seguridad**, activa el bloqueo del dispositivo. Requiere HTTPS, un autenticador de plataforma compatible y una llave de acceso. iPhone puede solicitar Face ID o el código del dispositivo; la app no controla esa elección. La activación comprueba la llave y exige guardar un código de recuperación fuera de la app. El código permite abrirla si no está disponible la llave.
 
 La app se bloquea al abrirla y al ocultarse, manteniendo los formularios sin guardar en memoria mientras la sesión siga abierta. Puedes bloquear manualmente o desactivarlo desde Seguridad. La comprobación de firmas se hace localmente, sin servidor; la configuración está en una base de seguridad separada y no forma parte del respaldo financiero. El bloqueo es una protección de interfaz, no un cifrado de los datos locales o JSON. No borres los datos del sitio ni desinstales la app para solucionar problemas de acceso. Verifica Face ID y el modo avión en el iPhone real después de publicar: las pruebas con autenticador virtual no sustituyen esa comprobación.
+
+## Apartados para ahorro
+
+En **Apartados → Nuevo apartado**, crea una meta con nombre e importe objetivo. **Aportar** reserva dinero de tu saldo libre; **Retirar** lo libera. Son reservas manuales: no mueven dinero entre bancos ni generan ingresos o gastos. El saldo principal conserva su cálculo de ingresos menos gastos pagados; Inicio muestra además el total apartado y el saldo libre después de reservarlo.
+
+Cada apartado tiene progreso e historial de aportaciones y retiros. Puedes cambiar su nombre/meta sin perder el historial y eliminarlo solo cuando su saldo sea cero. No se permite aportar más del saldo libre ni retirar más de lo reservado. Si después registras gastos que superan el dinero libre, la app muestra el saldo libre negativo y pide revisar las reservas: no altera ni rechaza tus movimientos financieros. Para gastar dinero reservado, retíralo del apartado y registra el gasto una sola vez.
+
+Los apartados se guardan en IndexedDB y se incluyen en el JSON; importar sigue reemplazando todo el conjunto. Los respaldos anteriores sin apartados se admiten. El CSV mantiene su propósito de exportar movimientos financieros; las reservas se conservan en JSON. No hay aportaciones automáticas, intereses ni conexión bancaria.
+
+En horizontal con poca altura, el menú lateral oculta su tarjeta informativa y pie decorativo para evitar que aparezcan recortados; los accesos a las secciones siguen disponibles.

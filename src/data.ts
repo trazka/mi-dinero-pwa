@@ -46,10 +46,22 @@ export type Recurring = {
   anchorDay: number;
   creditDebtId?: string;
 };
+export type Saving = {
+  id: string;
+  name: string;
+  target: number;
+  entries: {
+    id: string;
+    type: "deposit" | "withdrawal";
+    amount: number;
+    date: string;
+  }[];
+};
 export type Data = {
   version: 2;
   movements: Movement[];
   debts: Debt[];
+  savings?: Saving[];
   budgets?: Budget[];
   recurrents?: Recurring[];
   lastBackupAt?: string;
@@ -332,6 +344,33 @@ export function validateBackup(input: unknown): Data {
       )
         return fail();
       occurrences.add(key);
+    }
+  }
+  if (d.savings !== undefined && !Array.isArray(d.savings)) return fail();
+  for (const saving of d.savings ?? []) {
+    if (
+      !saving ||
+      !str(saving.name) ||
+      !saving.name.trim() ||
+      saving.name.length > 120 ||
+      !cents(saving.target) ||
+      !Array.isArray(saving.entries)
+    )
+      return fail();
+    unique(saving.id);
+    let saved = 0;
+    for (const entry of saving.entries) {
+      if (
+        !entry ||
+        !["deposit", "withdrawal"].includes(entry.type) ||
+        !cents(entry.amount) ||
+        !validDate(entry.date)
+      )
+        return fail();
+      unique(entry.id);
+      saved +=
+        (entry.type === "deposit" ? 1 : -1) * Math.round(entry.amount * 100);
+      if (saved < 0 || !Number.isSafeInteger(saved)) return fail();
     }
   }
   if (d.budgets !== undefined && !Array.isArray(d.budgets)) return fail();
