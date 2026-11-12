@@ -1,3 +1,4 @@
+import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
 import { test, expect, type Page } from "@playwright/test";
 import type { Data } from "../src/data";
@@ -100,9 +101,9 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   const path = await download.path();
   expect(path).toBeTruthy();
   page.once("dialog", (d) => d.accept());
-  await page.locator("input[type=file]").setInputFiles(path!);
+  await setBackupFile(page, path!);
   await expect(page.getByRole("status")).toContainText("Datos guardados");
-  await page.locator("input[type=file]").setInputFiles({
+  await setBackupFile(page, {
     name: "invalid.json",
     mimeType: "application/json",
     buffer: Buffer.from('{"version":2}'),
@@ -244,7 +245,7 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
   page.once("dialog", (d) => d.accept());
-  await page.locator("input[type=file]").setInputFiles({
+  await setBackupFile(page, {
     name: "respaldo.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify({ version: 1, movements, debts: [] })),

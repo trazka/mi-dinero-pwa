@@ -1,3 +1,4 @@
+import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
 test("compra a crédito solo aumenta deuda; el abono registra el gasto y persiste al importar", async ({
   page,
@@ -59,7 +60,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
     .click();
   const file = await (await downloadEvent).path();
   page.once("dialog", (d) => d.accept());
-  await page.locator("input[type=file]").setInputFiles(file!);
+  await setBackupFile(page, file!);
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$60.00");

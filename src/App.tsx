@@ -1,3 +1,11 @@
+import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
+import {
+  backupOverdue,
+  cardCycle,
+  editDebt,
+  matchesSearch,
+  movementDebtId,
+} from "./planning";
 import ThemeControl from "./ThemeControl";
 import DatePicker from "./DatePicker";
 import {
@@ -49,7 +57,7 @@ import {
 type Tab = "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos";
 type Modal =
   | { kind: "movement"; movement?: Movement }
-  | { kind: "debt" }
+  | { kind: "debt"; debt?: Debt }
   | { kind: "payment"; debt: Debt }
   | null;
 const categories = [
@@ -104,15 +112,22 @@ export default function App() {
     !!window.__miDineroUpdate,
   );
   const [updating, setUpdating] = useState(false);
-  const [movementType, setMovementType] = useState<Movement["type"]>("expense");
+  const [planningEditing, setPlanningEditing] = useState(false);
+  const [movementType, setMovementType] = useState<
+    Movement["type"] | "credit" | "payment"
+  >("expense");
   const [movementMethod, setMovementMethod] = useState("Efectivo");
   const [debtKind, setDebtKind] = useState("normal");
   useEffect(() => {
     if (modal?.kind === "movement") {
-      setMovementType(modal.movement?.type ?? "expense");
+      setMovementType(
+        modal.movement?.creditDebtId
+          ? "credit"
+          : (modal.movement?.type ?? "expense"),
+      );
       setMovementMethod(modal.movement?.method ?? "Efectivo");
     }
-    if (modal?.kind === "debt") setDebtKind("normal");
+    if (modal?.kind === "debt") setDebtKind(modal.debt?.kind ?? "normal");
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -158,6 +173,9 @@ export default function App() {
     [category, setCategory] = useState(""),
     [merchant, setMerchant] = useState(""),
     [period, setPeriod] = useState("monthly");
+  const [search, setSearch] = useState(""),
+    [methodFilter, setMethodFilter] = useState(""),
+    [debtFilter, setDebtFilter] = useState("");
   useEffect(() => {
     readData()
       .then((d) => {
@@ -169,7 +187,10 @@ export default function App() {
           "No se pudo abrir el almacenamiento. Permite el almacenamiento local y vuelve a cargar.",
         ),
       );
-    const offline = () => setNotice("Aplicación lista para usar sin internet.");
+    const offline = () =>
+      setNotice(
+        (current) => current || "Aplicación lista para usar sin internet.",
+      );
     const update = () => setUpdateAvailable(true);
     if (window.__miDineroUpdate) setUpdateAvailable(true);
     window.addEventListener("offline-ready", offline);
@@ -180,19 +201,52 @@ export default function App() {
     };
   }, []);
   async function mutate(fn: (d: Data) => Data) {
-    if (busy || !loaded) return;
+    if (busy || !loaded) return false;
     setBusy(true);
     setError("");
     try {
       setData(await changeData(fn));
       setModal(null);
       setNotice("Datos guardados en este dispositivo.");
+      return true;
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "No se pudo guardar. Revisa el espacio disponible.",
       );
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function exportBackup() {
+    if (busy || !loaded) return;
+    let started = false;
+    const exportedAt = new Date().toISOString();
+    setError("");
+    try {
+      // Start the download inside the tap handler; mobile Safari may reject a
+      // programmatic download after an asynchronous storage operation.
+      download(
+        JSON.stringify({ ...data, lastBackupAt: exportedAt }, null, 2),
+        `mi-dinero-${today()}.json`,
+        "application/json",
+      );
+      started = true;
+      setBusy(true);
+      const next = await changeData((d) => ({
+        ...d,
+        lastBackupAt: exportedAt,
+      }));
+      setData(next);
+      setNotice("Respaldo generado. Guarda el archivo en un lugar seguro.");
+    } catch {
+      if (started)
+        setNotice(
+          "Respaldo generado, pero no se pudo guardar su fecha en este dispositivo. Comprueba que guardaste el archivo.",
+        );
+      else setError("No se pudo generar el respaldo. Inténtalo de nuevo.");
     } finally {
       setBusy(false);
     }
@@ -213,7 +267,10 @@ export default function App() {
         (!from || m.date >= from) &&
         (!to || m.date <= to) &&
         (!category || m.category === category) &&
-        m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()),
+        m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
+        matchesSearch(m, search) &&
+        (!methodFilter || m.method === methodFilter) &&
+        (!debtFilter || movementDebtId(data, m) === debtFilter),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
   const recent = [...data.movements]
@@ -226,14 +283,21 @@ export default function App() {
       num = (n: string) => Number(get(n));
     if (!modal) return;
     if (modal.kind === "movement") {
+      if (movementType === "payment") {
+        void mutate((d) =>
+          payDebt(d, get("debtId"), num("amount"), get("date")),
+        );
+        return;
+      }
       const m: Movement = {
         id: modal.movement?.id ?? crypto.randomUUID(),
-        type: get("type") as Movement["type"],
+        type: get("type") === "income" ? "income" : "expense",
         date: get("date"),
         merchant: get("merchant"),
         category: get("category"),
         amount: num("amount"),
-        method: get("method"),
+        method:
+          movementType === "credit" ? "Tarjeta de crédito" : get("method"),
         notes: get("notes"),
       };
       if (!cents(m.amount)) {
@@ -245,6 +309,26 @@ export default function App() {
       void mutate((d) => saveMovement(d, m));
     }
     if (modal.kind === "debt") {
+      const metadata = {
+        creditor: get("creditor"),
+        due: get("due"),
+        notes: get("debtNotes"),
+        cutDay: get("cutDay") ? num("cutDay") : undefined,
+        paymentDay: get("paymentDay") ? num("paymentDay") : undefined,
+      };
+      if (modal.debt) {
+        void mutate((d) => editDebt(d, modal.debt!.id, metadata));
+        return;
+      }
+      if (
+        (metadata.cutDay === undefined) !==
+        (metadata.paymentDay === undefined)
+      ) {
+        setError(
+          "Indica tanto el día de corte como el día límite, o deja ambos vacíos.",
+        );
+        return;
+      }
       const original = num("original"),
         initialBalance = num("balance");
       if (
@@ -266,11 +350,10 @@ export default function App() {
           ...d.debts,
           {
             id: crypto.randomUUID(),
-            creditor: get("creditor"),
             original,
             initialBalance,
-            due: get("due"),
             payments: [],
+            ...metadata,
             ...(debtKind === "credit"
               ? { kind: "credit" as const, charges: [] }
               : {}),
@@ -385,6 +468,60 @@ export default function App() {
   }
   const filters = (
     <div className="filters">
+      <Field label="Buscar movimientos">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Concepto, notas o importe"
+        />
+      </Field>
+      <Field label="Filtrar método">
+        <select
+          value={methodFilter}
+          onChange={(e) => setMethodFilter(e.target.value)}
+        >
+          <option value="">Todos los métodos</option>
+          {[
+            ...new Set([
+              "Efectivo",
+              "Tarjeta de débito",
+              "Tarjeta de crédito",
+              "Transferencia",
+              "Otro",
+              ...data.movements.map((m) => m.method),
+            ]),
+          ].map((method) => (
+            <option key={method}>{method}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Filtrar tarjeta o deuda">
+        <select
+          value={debtFilter}
+          onChange={(e) => setDebtFilter(e.target.value)}
+        >
+          <option value="">Todas las deudas</option>
+          {data.debts.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.creditor}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <button
+        className="text-button"
+        onClick={() => {
+          setSearch("");
+          setMethodFilter("");
+          setDebtFilter("");
+          setFrom("");
+          setTo("");
+          setCategory("");
+          setMerchant("");
+        }}
+      >
+        Limpiar filtros
+      </button>
       <Field label="Desde">
         <DatePicker value={from} onChange={setFrom} />
       </Field>
@@ -520,13 +657,15 @@ export default function App() {
             <div className="notice" role="status">
               <span>
                 Hay una nueva versión disponible.
-                {modal
+                {modal || planningEditing
                   ? " Guarda o cierra el formulario antes de actualizar."
                   : ""}
               </span>
               <button
                 className="button secondary"
-                disabled={!!modal || busy || updating || !loaded}
+                disabled={
+                  !!modal || planningEditing || busy || updating || !loaded
+                }
                 onClick={async () => {
                   if (!window.__miDineroUpdate) return;
                   setUpdating(true);
@@ -556,6 +695,26 @@ export default function App() {
           {!loaded && !error && <p>Cargando tus datos…</p>}
           {tab === "Inicio" && (
             <>
+              {(data.movements.length > 0 ||
+                data.debts.length > 0 ||
+                !!data.budgets?.length ||
+                !!data.recurrents?.length) &&
+                backupOverdue(data.lastBackupAt) && (
+                  <div className="notice">
+                    <span>
+                      {data.lastBackupAt
+                        ? "Han pasado 7 días desde tu última exportación."
+                        : "Tus registros aún no tienen respaldo."}
+                    </span>
+                    <button
+                      className="text-button"
+                      disabled={busy}
+                      onClick={() => void exportBackup()}
+                    >
+                      Crear respaldo ahora
+                    </button>
+                  </div>
+                )}
               <section className="overview">
                 <div className="balance-card">
                   <div className="balance-label">
@@ -645,6 +804,13 @@ export default function App() {
           )}
           {tab === "Movimientos" && (
             <section className="panel full-panel">
+              <RecurringPanel
+                onEditing={setPlanningEditing}
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                categories={[...categories, "Pago de deuda"]}
+              />
               {filters}
               <div className="panel-heading">
                 <h2>{filtered.length} movimientos</h2>
@@ -676,93 +842,135 @@ export default function App() {
                 registres el abono otra vez como gasto.
               </p>
               <div className="debt-grid">
-                {data.debts.map((d) => (
-                  <section className="panel debt-detail" key={d.id}>
-                    <div className="panel-heading">
-                      <h2>{d.creditor}</h2>
-                      <span
-                        className={"pill " + (balance(d) === 0 ? "paid" : "")}
-                      >
-                        {balance(d) === 0
-                          ? "Liquidada"
-                          : d.due < today()
-                            ? "Vencida"
-                            : "Pendiente"}
-                      </span>
-                    </div>
-                    <p>Saldo pendiente</p>
-                    <strong className="debt-number">{money(balance(d))}</strong>
-                    <progress
-                      value={
-                        d.original +
-                        (d.charges ?? []).reduce(
-                          (sum, c) => sum + c.amount,
-                          0,
-                        ) -
-                        balance(d)
-                      }
-                      max={Math.max(
-                        0.01,
-                        d.original +
+                {data.debts.map((d) => {
+                  const cycle = cardCycle(d, data);
+                  const due = cycle
+                    ? cycle.amount > 0
+                      ? cycle.due
+                      : cycle.nextDue
+                    : d.due;
+                  return (
+                    <section className="panel debt-detail" key={d.id}>
+                      <div className="panel-heading">
+                        <h2>{d.creditor}</h2>
+                        <button
+                          className="text-button"
+                          aria-label={`Editar deuda ${d.creditor}`}
+                          onClick={() => {
+                            setError("");
+                            setModal({ kind: "debt", debt: d });
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <span
+                          className={"pill " + (balance(d) === 0 ? "paid" : "")}
+                        >
+                          {balance(d) === 0
+                            ? "Liquidada"
+                            : (
+                                  cycle
+                                    ? cycle!.amount > 0 && cycle!.due < today()
+                                    : d.due < today()
+                                )
+                              ? "Vencida"
+                              : "Pendiente"}
+                        </span>
+                      </div>
+                      <p>Saldo pendiente</p>
+                      <strong className="debt-number">
+                        {money(balance(d))}
+                      </strong>
+                      <progress
+                        value={
+                          d.original +
                           (d.charges ?? []).reduce(
                             (sum, c) => sum + c.amount,
                             0,
-                          ),
+                          ) -
+                          balance(d)
+                        }
+                        max={Math.max(
+                          0.01,
+                          d.original +
+                            (d.charges ?? []).reduce(
+                              (sum, c) => sum + c.amount,
+                              0,
+                            ),
+                        )}
+                      />
+                      <div className="debt-meta">
+                        <span>
+                          {d.kind === "credit"
+                            ? "Tarjeta · Apertura"
+                            : "Original"}
+                          : {money(d.original)}
+                          {d.kind === "credit" &&
+                            ` · Compras: ${money((d.charges ?? []).reduce((sum, c) => sum + c.amount, 0))}`}
+                        </span>
+                        <span>
+                          {cycle ? "Límite de pago" : "Vence"}: {dateLabel(due)}{" "}
+                          {due.slice(0, 4)}
+                        </span>
+                      </div>
+                      {cycle && (
+                        <div className="cycle-info">
+                          <p>
+                            Corte: {dateLabel(cycle!.cut)} · Límite:{" "}
+                            {dateLabel(due)}
+                          </p>
+                          <strong>
+                            Pendiente al corte: {money(cycle!.amount)}
+                          </strong>
+                          <p className="helper">
+                            Estimación con los movimientos registrados, sin
+                            intereses ni comisiones bancarias. Los días 29–31 se
+                            ajustan al último día del mes.
+                          </p>
+                        </div>
                       )}
-                    />
-                    <div className="debt-meta">
-                      <span>
-                        {d.kind === "credit"
-                          ? "Tarjeta · Apertura"
-                          : "Original"}
-                        : {money(d.original)}
-                        {d.kind === "credit" &&
-                          ` · Compras: ${money((d.charges ?? []).reduce((sum, c) => sum + c.amount, 0))}`}
-                      </span>
-                      <span>
-                        Vence: {dateLabel(d.due)} {d.due.slice(0, 4)}
-                      </span>
-                    </div>
-                    <button
-                      className="button secondary"
-                      disabled={balance(d) === 0}
-                      onClick={() => setModal({ kind: "payment", debt: d })}
-                    >
-                      <Plus size={17} /> Registrar abono
-                    </button>
-                    <details>
-                      <summary>
-                        Historial de abonos ({d.payments.length})
-                      </summary>
-                      {d.payments.length ? (
-                        d.payments.map((p) => (
-                          <div className="payment" key={p.id}>
-                            <span>
-                              {dateLabel(p.date)} · {money(p.amount)}
-                            </span>
-                            <button
-                              aria-label={`Revertir abono de ${d.creditor}`}
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    "¿Revertir este abono? Se eliminará también su gasto vinculado.",
+                      {d.notes && <p className="helper">{d.notes}</p>}
+                      <button
+                        className="button secondary"
+                        disabled={balance(d) === 0}
+                        onClick={() => setModal({ kind: "payment", debt: d })}
+                      >
+                        <Plus size={17} /> Registrar abono
+                      </button>
+                      <details>
+                        <summary>
+                          Historial de abonos ({d.payments.length})
+                        </summary>
+                        {d.payments.length ? (
+                          d.payments.map((p) => (
+                            <div className="payment" key={p.id}>
+                              <span>
+                                {dateLabel(p.date)} · {money(p.amount)}
+                              </span>
+                              <button
+                                aria-label={`Revertir abono de ${d.creditor}`}
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      "¿Revertir este abono? Se eliminará también su gasto vinculado.",
+                                    )
                                   )
-                                )
-                                  void mutate((data) =>
-                                    removeMovement(data, p.movementId),
-                                  );
-                              }}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <p>Aún no hay abonos registrados.</p>
-                      )}
-                    </details>
-                  </section>
-                ))}
+                                    void mutate((data) =>
+                                      removeMovement(data, p.movementId),
+                                    );
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p>Aún no hay abonos registrados.</p>
+                        )}
+                      </details>
+                    </section>
+                  );
+                })}
               </div>
               {!data.debts.length && (
                 <div className="panel empty">
@@ -781,6 +989,19 @@ export default function App() {
           )}
           {tab === "Reportes" && (
             <section className="panel full-panel">
+              <BudgetPanel
+                onEditing={setPlanningEditing}
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                categories={[
+                  ...new Set([
+                    ...categories,
+                    "Pago de deuda",
+                    ...data.movements.map((m) => m.category),
+                  ]),
+                ]}
+              />
               {filters}
               <Field label="Agrupar por">
                 <select
@@ -859,6 +1080,19 @@ export default function App() {
           )}
           {tab === "Respaldos" && (
             <div className="backup-grid">
+              <div className="panel backup backup-history">
+                <h2>Tu último respaldo</h2>
+                <p>
+                  {data.lastBackupAt
+                    ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
+                    : "Todavía no has exportado un respaldo."}
+                </p>
+                <p>
+                  {backupOverdue(data.lastBackupAt)
+                    ? "Te recomendamos exportar un respaldo cada semana."
+                    : "Tu respaldo está al día. Comprueba que guardaste el archivo."}
+                </p>
+              </div>
               <section className="panel backup">
                 <ShieldCheck size={30} />
                 <h2>Un respaldo, más tranquilidad</h2>
@@ -868,14 +1102,8 @@ export default function App() {
                 </p>
                 <button
                   className="button"
-                  disabled={!loaded}
-                  onClick={() =>
-                    download(
-                      JSON.stringify(data, null, 2),
-                      `mi-dinero-${today()}.json`,
-                      "application/json",
-                    )
-                  }
+                  disabled={!loaded || busy}
+                  onClick={() => void exportBackup()}
                 >
                   <Download size={18} /> Exportar respaldo JSON
                 </button>
@@ -904,7 +1132,7 @@ export default function App() {
                         );
                         if (
                           confirm(
-                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos y ${backup.debts.length} deudas?`,
+                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes?`,
                           )
                         )
                           await mutate(() => backup);
@@ -1012,7 +1240,9 @@ export default function App() {
                     ? "Editar movimiento"
                     : "Nuevo movimiento"
                   : modal.kind === "debt"
-                    ? "Nueva deuda"
+                    ? modal.debt
+                      ? "Editar deuda"
+                      : "Nueva deuda"
                     : `Abonar a ${modal.debt.creditor}`}
               </h2>
               <button
@@ -1034,15 +1264,18 @@ export default function App() {
                       name="type"
                       value={movementType}
                       onChange={(e) =>
-                        setMovementType(e.target.value as Movement["type"])
+                        setMovementType(
+                          e.target.value as
+                            Movement["type"] | "credit" | "payment",
+                        )
                       }
                     >
-                      <option value="expense">
-                        {movementMethod === "Tarjeta de crédito"
-                          ? "Compra con tarjeta"
-                          : "Gasto"}
-                      </option>
+                      <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
+                      <option value="credit">Compra con TDC</option>
+                      {!modal.movement && (
+                        <option value="payment">Abono a deuda</option>
+                      )}
                     </select>
                   </Field>
                   <div className="form-grid">
@@ -1067,111 +1300,154 @@ export default function App() {
                       />
                     </Field>
                   </div>
-                  <Field label="Establecimiento o concepto">
-                    <input
-                      name="merchant"
-                      required
-                      maxLength={120}
-                      defaultValue={modal.movement?.merchant}
-                      placeholder="¿Dónde o de quién?"
-                    />
-                  </Field>
-                  <div className="form-grid">
-                    <Field label="Categoría">
-                      <select
-                        name="category"
-                        defaultValue={modal.movement?.category ?? categories[0]}
-                      >
-                        {[
-                          ...new Set([
-                            ...categories,
-                            ...(modal.movement
-                              ? [modal.movement.category]
-                              : []),
-                          ]),
-                        ].map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Método de pago">
-                      <select
-                        name="method"
-                        value={movementMethod}
-                        onChange={(e) => setMovementMethod(e.target.value)}
-                      >
-                        {[
-                          "Efectivo",
-                          "Tarjeta de débito",
-                          "Tarjeta de crédito",
-                          "Transferencia",
-                          "Otro",
-                        ].map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  </div>
-                  {movementType === "expense" &&
-                    movementMethod === "Tarjeta de crédito" && (
-                      <>
-                        <Field label="Tarjeta o deuda vinculada">
+                  {movementType === "payment" ? (
+                    <>
+                      <Field label="Deuda a abonar">
+                        <select name="debtId" required defaultValue="">
+                          <option value="" disabled>
+                            Selecciona una deuda pendiente
+                          </option>
+                          {data.debts
+                            .filter((d) => balance(d) > 0)
+                            .map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.creditor} · {money(balance(d))}
+                              </option>
+                            ))}
+                        </select>
+                      </Field>
+                      <p className="helper">
+                        El abono se registra como gasto mediante transferencia y
+                        reduce la deuda en una sola operación. No lo registres
+                        por separado.
+                        {!data.debts.some((d) => balance(d) > 0) &&
+                          " No hay deudas pendientes; registra primero una deuda."}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Establecimiento o concepto">
+                        <input
+                          name="merchant"
+                          required
+                          maxLength={120}
+                          defaultValue={modal.movement?.merchant}
+                          placeholder="¿Dónde o de quién?"
+                        />
+                      </Field>
+                      <div className="form-grid">
+                        <Field label="Categoría">
                           <select
-                            name="creditDebtId"
-                            required={
-                              !!modal.movement?.creditDebtId ||
-                              modal.movement?.method !== "Tarjeta de crédito" ||
-                              modal.movement?.type !== "expense"
-                            }
+                            name="category"
                             defaultValue={
-                              modal.movement?.creditDebtId ??
-                              (modal.movement?.method === "Tarjeta de crédito"
-                                ? ""
-                                : creditDebts.length === 1
-                                  ? creditDebts[0].id
-                                  : "")
+                              modal.movement?.category ?? categories[0]
                             }
                           >
-                            <option
-                              value=""
-                              disabled={
+                            {[
+                              ...new Set([
+                                ...categories,
+                                ...(modal.movement
+                                  ? [modal.movement.category]
+                                  : []),
+                              ]),
+                            ].map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Método de pago">
+                          <select
+                            name="method"
+                            value={
+                              movementType === "credit"
+                                ? "Tarjeta de crédito"
+                                : movementMethod
+                            }
+                            onChange={(e) => {
+                              setMovementMethod(e.target.value);
+                              if (
+                                movementType === "credit" &&
+                                e.target.value !== "Tarjeta de crédito"
+                              )
+                                setMovementType("expense");
+                            }}
+                          >
+                            {[
+                              "Efectivo",
+                              "Tarjeta de débito",
+                              "Tarjeta de crédito",
+                              "Transferencia",
+                              "Otro",
+                            ].map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+                      {(movementType === "credit" ||
+                        (movementType === "expense" &&
+                          movementMethod === "Tarjeta de crédito")) && (
+                        <>
+                          <Field label="Tarjeta o deuda vinculada">
+                            <select
+                              name="creditDebtId"
+                              required={
                                 !!modal.movement?.creditDebtId ||
                                 modal.movement?.method !==
                                   "Tarjeta de crédito" ||
                                 modal.movement?.type !== "expense"
                               }
+                              defaultValue={
+                                modal.movement?.creditDebtId ??
+                                (modal.movement?.method === "Tarjeta de crédito"
+                                  ? ""
+                                  : creditDebts.length === 1
+                                    ? creditDebts[0].id
+                                    : "")
+                              }
                             >
-                              {modal.movement?.method ===
-                                "Tarjeta de crédito" &&
-                              !modal.movement.creditDebtId
-                                ? "Mantener sin vincular (registro anterior)"
-                                : "Selecciona tu tarjeta o deuda"}
-                            </option>
-                            {data.debts.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.creditor} · {money(balance(d))}
+                              <option
+                                value=""
+                                disabled={
+                                  !!modal.movement?.creditDebtId ||
+                                  modal.movement?.method !==
+                                    "Tarjeta de crédito" ||
+                                  modal.movement?.type !== "expense"
+                                }
+                              >
+                                {modal.movement?.method ===
+                                  "Tarjeta de crédito" &&
+                                !modal.movement.creditDebtId
+                                  ? "Mantener sin vincular (registro anterior)"
+                                  : "Selecciona tu tarjeta o deuda"}
                               </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <p className="helper">
-                          La compra solo aumenta la deuda; no suma al gasto ni
-                          reduce el saldo disponible. El gasto se registra al
-                          abonar a la tarjeta. Los abonos anteriores se
-                          conservan tal como fueron registrados.
-                          {!data.debts.length &&
-                            " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
-                        </p>
-                      </>
-                    )}
-                  <Field label="Notas (opcional)">
-                    <textarea
-                      name="notes"
-                      maxLength={2000}
-                      defaultValue={modal.movement?.notes}
-                      placeholder="Algo que quieras recordar"
-                    />
-                  </Field>
+                              {data.debts.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {d.creditor} · {money(balance(d))}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <p className="helper">
+                            La compra solo aumenta la deuda; no suma al gasto ni
+                            reduce el saldo disponible. El gasto se registra al
+                            abonar a la tarjeta. Los abonos anteriores se
+                            conservan tal como fueron registrados.
+                            {!data.debts.length &&
+                              " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
+                          </p>
+                        </>
+                      )}
+                      <Field label="Notas (opcional)">
+                        <textarea
+                          name="notes"
+                          maxLength={2000}
+                          defaultValue={modal.movement?.notes}
+                          placeholder="Algo que quieras recordar"
+                        />
+                      </Field>
+                    </>
+                  )}
                 </>
               )}
               {modal.kind === "debt" && (
@@ -1179,6 +1455,7 @@ export default function App() {
                   <Field label="Tipo de deuda">
                     <select
                       value={debtKind}
+                      disabled={!!modal.debt}
                       onChange={(e) => setDebtKind(e.target.value)}
                     >
                       <option value="normal">Otra deuda</option>
@@ -1192,11 +1469,14 @@ export default function App() {
                       required
                       maxLength={120}
                       placeholder="Persona o establecimiento"
+                      defaultValue={modal.debt?.creditor}
                     />
                   </Field>
                   <Field label="Importe original (MXN)">
                     <input
                       name="original"
+                      readOnly={!!modal.debt}
+                      defaultValue={modal.debt?.original}
                       type="number"
                       min={debtKind === "credit" ? "0" : "0.01"}
                       max="999999999"
@@ -1208,6 +1488,8 @@ export default function App() {
                   <Field label="Saldo pendiente actual (MXN)">
                     <input
                       name="balance"
+                      readOnly={!!modal.debt}
+                      defaultValue={modal.debt?.initialBalance}
                       type="number"
                       min="0"
                       max="999999999"
@@ -1217,8 +1499,51 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Fecha de vencimiento">
-                    <DatePicker name="due" required defaultValue={today()} />
+                    <DatePicker
+                      name="due"
+                      required
+                      defaultValue={modal.debt?.due ?? today()}
+                    />
                   </Field>
+                  {debtKind === "credit" && (
+                    <div className="form-grid">
+                      <Field label="Día de corte (opcional)">
+                        <input
+                          name="cutDay"
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          max="31"
+                          step="1"
+                          defaultValue={modal.debt?.cutDay}
+                        />
+                      </Field>
+                      <Field label="Día límite de pago (opcional)">
+                        <input
+                          name="paymentDay"
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          max="31"
+                          step="1"
+                          defaultValue={modal.debt?.paymentDay}
+                        />
+                      </Field>
+                    </div>
+                  )}
+                  <Field label="Notas de deuda (opcional)">
+                    <textarea
+                      name="debtNotes"
+                      maxLength={2000}
+                      defaultValue={modal.debt?.notes}
+                    />
+                  </Field>
+                  {modal.debt && (
+                    <p className="helper">
+                      Los importes de apertura no se editan para conservar el
+                      historial. El saldo cambia con compras y abonos.
+                    </p>
+                  )}
                   <p className="helper">
                     El saldo actual permite registrar deudas que ya has empezado
                     a pagar. No se generarán gastos por pagos anteriores.{" "}
