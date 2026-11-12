@@ -10,11 +10,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Mi dinero" />
-    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
-    <link rel="icon" href="%BASE_URL%icon.svg" />
+    <script src="/theme.js"></script>
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon-v2.png" />
+    <link rel="icon" href="%BASE_URL%icon-v2.svg" />
     <title>Mi dinero · Tus finanzas personales</title>
   </head>
-  <body style="margin: 0; background: #f5f7f4; color: #243d32">
+  <body
+    style="
+      margin: 0;
+      background: var(--page-bg, #f5f7f4);
+      color: var(--page-text, #243d32);
+    "
+  >
     <section
       id="startup-shell"
       style="
