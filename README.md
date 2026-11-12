@@ -140,7 +140,7 @@ También puedes aportar desde **Nuevo movimiento → Tipo → Apartado**: selecc
 
 ## Privacidad visual de los apartados
 
-Los ahorros empiezan ocultos al abrir la app: Inicio muestra `••••` para el total apartado y el saldo libre; en Apartados se ocultan nombres, metas, importes e historial. El ojo alterna directamente entre **Mostrar ahorros** y **Ocultar ahorros**, sin activar el bloqueo ni pedir verificación, tanto si el bloqueo general está configurado como si no.
+Los ahorros empiezan ocultos al abrir la app: Inicio no muestra resumen de apartados ni ojo; en Apartados se ocultan nombres, metas, importes e historial. El ojo está al extremo derecho, alineado con el título Apartados. El ojo alterna directamente entre **Mostrar ahorros** y **Ocultar ahorros**, sin activar el bloqueo ni pedir verificación, tanto si el bloqueo general está configurado como si no.
 
 En **Nuevo movimiento → Apartado** puedes elegir el nombre y aportar sin revelar los saldos ocultos. También permite crear una meta si todavía no tienes apartados. Al salir de la app, los ahorros vuelven a ocultarse. El bloqueo opcional de toda la aplicación funciona por separado. Los borradores se conservan mientras la sección permanezca abierta. Esta es privacidad visual; los JSON conservan todos los datos.
 

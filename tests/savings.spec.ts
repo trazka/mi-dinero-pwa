@@ -44,7 +44,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await expect(page.locator(".report-totals")).toContainText("$700.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await expect(page.locator(".balance-number")).toContainText("$1,000.00");
-  await expect(page.locator(".savings-summary")).toContainText("$700.00");
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await page
     .getByRole("button", { name: "Editar Emergencias", exact: true })
@@ -86,6 +86,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
       exact: true,
     })
     .click();
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await page
     .getByRole("button", { name: "Mostrar ahorros", exact: true })
     .click();
@@ -170,7 +171,7 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
   ).toBeVisible();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await expect(page.locator(".balance-number")).toContainText("$1,000.00");
-  await expect(page.locator(".savings-summary")).toContainText("$750.00");
+  await expect(page.locator(".savings-summary")).toHaveCount(0);
 });
 
 test("Nuevo movimiento permite crear un apartado cuando no hay metas", async ({
