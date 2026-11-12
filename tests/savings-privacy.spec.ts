@@ -40,7 +40,7 @@ async function seed(page: import("@playwright/test").Page) {
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
 }
-test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", async ({
+test("el ojo muestra y oculta sin bloqueo y conserva los importes en el respaldo", async ({
   page,
 }) => {
   await seed(page);
@@ -49,7 +49,7 @@ test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", asy
   await expect(page.locator(".savings-summary")).not.toContainText("$350.00");
   await expect(
     page.getByRole("button", { name: "Mostrar ahorros", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Meta confidencial", exact: true }),
@@ -57,6 +57,19 @@ test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", asy
   await expect(
     page.getByRole("button", { name: "Nuevo apartado", exact: true }),
   ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".report-totals")).toContainText("$350.00");
+  await page
+    .getByRole("button", { name: "Ocultar ahorros", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+  ).toBeHidden();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   const download = page.waitForEvent("download");
@@ -69,7 +82,7 @@ test("sin bloqueo no revela ahorros y conserva los importes en el respaldo", asy
   expect(backup.savings).toEqual(fixture.savings);
   expect(backup.movements).toEqual(fixture.movements);
 });
-test("el ojo exige verificación manual y vuelve a ocultar al salir", async ({
+test("el ojo no pide verificación con bloqueo activo y vuelve a ocultar al salir", async ({
   page,
   context,
 }) => {
@@ -99,22 +112,15 @@ test("el ojo exige verificación manual y vuelve a ocultar al salir", async ({
     .getByRole("button", { name: "Mostrar ahorros", exact: true })
     .click();
   await expect(
+    page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("heading", {
       name: "Mi dinero está bloqueado",
       exact: true,
     }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).verificationCalls)).toBe(0);
-  await page
-    .getByRole("button", {
-      name: "Desbloquear con el dispositivo",
-      exact: true,
-    })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Meta confidencial", exact: true }),
-  ).toBeVisible();
-  expect(await page.evaluate(() => (window as any).verificationCalls)).toBe(1);
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", {
       configurable: true,
@@ -127,7 +133,7 @@ test("el ojo exige verificación manual y vuelve a ocultar al salir", async ({
     Reflect.deleteProperty(document, "hidden");
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  expect(await page.evaluate(() => (window as any).verificationCalls)).toBe(1);
+  expect(await page.evaluate(() => (window as any).verificationCalls)).toBe(0);
   await page
     .getByRole("button", {
       name: "Desbloquear con el dispositivo",

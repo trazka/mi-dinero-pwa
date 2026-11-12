@@ -36,18 +36,6 @@ export async function enableSavingsPrivacy(
     .getByRole("button", { name: "Mostrar ahorros", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", {
-      name: "Mi dinero está bloqueado",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", {
-      name: "Desbloquear con el dispositivo",
-      exact: true,
-    })
-    .click();
-  await expect(
     page.getByRole("button", { name: "Ocultar ahorros", exact: true }),
   ).toBeVisible();
 }
