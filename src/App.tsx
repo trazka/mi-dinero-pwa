@@ -491,6 +491,33 @@ export default function App() {
       (!methodFilter || m.method === methodFilter) &&
       (!debtFilter || movementDebtId(data, m) === debtFilter),
   );
+  const reportColumns = (
+    [
+      {
+        key: "income",
+        label: "Ingresos",
+        summary: "Ingresos filtrados",
+        total: filtered
+          .filter((m) => m.type === "income")
+          .reduce((total, m) => total + m.amount, 0),
+      },
+      {
+        key: "expense",
+        label: "Egresos",
+        summary: "Egresos filtrados",
+        total: filtered.reduce((total, m) => total + expenseAmount(m), 0),
+      },
+      {
+        key: "acquired",
+        label: "Deuda adquirida",
+        summary: "Deuda adquirida",
+        total: filtered.reduce((total, m) => total + acquiredDebtAmount(m), 0),
+      },
+    ] as const
+  ).filter((column) => column.total > 0);
+  const showBalance = reportColumns.some(
+    (column) => column.key === "income" || column.key === "expense",
+  );
   const recent = newestFirst.slice(0, 5);
   const acquired = data.movements.reduce(
     (total, m) => total + acquiredDebtAmount(m),
@@ -1232,7 +1259,7 @@ export default function App() {
                   Exportar CSV <Download size={16} />
                 </button>
               </div>
-              {typeFilter !== "all" && (
+              {typeFilter !== "all" && filtered.length > 0 && (
                 <p className="filtered-total">
                   {typeFilter === "credit"
                     ? "Deuda adquirida"
@@ -1454,45 +1481,32 @@ export default function App() {
                 ]}
               />
               {filters}
-              <div className="report-totals credit-report-totals">
-                <div>
-                  <span>Ingresos filtrados</span>
-                  <strong className="positive">
-                    {money(
-                      filtered
-                        .filter((m) => m.type === "income")
-                        .reduce((s, m) => s + m.amount, 0),
-                    )}
-                  </strong>
+              {reportColumns.length > 0 && (
+                <div className="report-totals credit-report-totals">
+                  {reportColumns.map((column) => (
+                    <div key={column.key}>
+                      <span>{column.summary}</span>
+                      <strong
+                        className={
+                          column.key === "income" ? "positive" : undefined
+                        }
+                      >
+                        {money(column.total)}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <span>Egresos filtrados</span>
-                  <strong>
-                    {money(filtered.reduce((s, m) => s + expenseAmount(m), 0))}
-                  </strong>
-                </div>
-                <div>
-                  <span>Deuda adquirida</span>
-                  <strong>
-                    {money(
-                      filtered.reduce(
-                        (total, m) => total + acquiredDebtAmount(m),
-                        0,
-                      ),
-                    )}
-                  </strong>
-                </div>
-              </div>
+              )}
               {groupTotals.size ? (
                 <div className="table-scroll">
                   <table>
                     <thead>
                       <tr>
                         <th>Periodo</th>
-                        <th>Ingresos</th>
-                        <th>Egresos</th>
-                        <th>Deuda adquirida</th>
-                        <th>Balance</th>
+                        {reportColumns.map((column) => (
+                          <th key={column.key}>{column.label}</th>
+                        ))}
+                        {showBalance && <th>Balance</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -1511,10 +1525,21 @@ export default function App() {
                                   })
                                 : dateLabel(key) + " " + key.slice(0, 4)}
                             </td>
-                            <td className="positive">{money(g.income)}</td>
-                            <td>{money(g.expense)}</td>
-                            <td>{money(g.acquired)}</td>
-                            <td>{money(g.income - g.expense)}</td>
+                            {reportColumns.map((column) => (
+                              <td
+                                key={column.key}
+                                className={
+                                  column.key === "income"
+                                    ? "positive"
+                                    : undefined
+                                }
+                              >
+                                {money(g[column.key])}
+                              </td>
+                            ))}
+                            {showBalance && (
+                              <td>{money(g.income - g.expense)}</td>
+                            )}
                           </tr>
                         ))}
                     </tbody>

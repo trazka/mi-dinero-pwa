@@ -108,6 +108,13 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).toContain("Ingreso reciente");
   expect(csv).not.toContain("Ingreso antiguo");
   expect(csv).not.toContain("Gasto reciente");
+  await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await expect(page.locator("thead th")).toHaveText([
+    "Periodo",
+    "Ingresos",
+    "Balance",
+  ]);
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page.getByRole("button", { name: "Ver egresos", exact: true }).click();
   await expect(
@@ -136,12 +143,40 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).not.toContain("Ingreso reciente");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody td").nth(1)).toHaveText("$0.00");
-  await expect(page.locator("tbody td").nth(2)).toHaveText("$70.00");
+  await expect(page.locator("thead th")).toHaveText([
+    "Periodo",
+    "Egresos",
+    "Balance",
+  ]);
+  await expect(page.locator("tbody td").nth(1)).toHaveText("$70.00");
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page.getByRole("button", { name: "Ver todos", exact: true }).click();
   await expect(
     page.getByLabel("Tipo de movimiento", { exact: true }),
   ).toHaveValue("all");
   await expect(names).toHaveCount(6);
+  await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await page
+    .getByLabel("Buscar movimientos", { exact: true })
+    .fill("No existe este concepto");
+  await expect(page.locator(".credit-report-totals")).toHaveCount(0);
+  await expect(page.locator("table")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      name: "Aún no hay datos para este periodo",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Limpiar filtros", exact: true })
+    .click();
+  await expect(page.locator("thead th")).toHaveText([
+    "Periodo",
+    "Ingresos",
+    "Egresos",
+    "Deuda adquirida",
+    "Balance",
+  ]);
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(3);
 });
