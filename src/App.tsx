@@ -233,18 +233,35 @@ export default function App() {
     const mobile = matchMedia("(max-width: 800px)");
     let frame = 0;
     let resumeTimer = 0;
+    let settleTimer = 0;
     let viewportWidth = window.innerWidth;
     let fullHeight = window.innerHeight;
     const resize = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (document.hidden) return;
-        const height = window.visualViewport?.height ?? window.innerHeight;
-        if (height <= 0) return;
+        const viewport = window.visualViewport;
         const active = document.activeElement as HTMLElement | null;
         const editing = !!active?.matches(
           'textarea, input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="color"]), select',
         );
+        // Safari can retain landscape visual-viewport dimensions while its
+        // layout and touch coordinates have already returned to portrait.
+        // Only use it for a focused field when its width matches the layout.
+        const matchingViewport =
+          !viewport || Math.abs(viewport.width - window.innerWidth) < 2;
+        const height =
+          editing && matchingViewport
+            ? (viewport?.height ?? window.innerHeight)
+            : window.innerHeight;
+        if (height <= 0) return;
+        if (
+          mobile.matches &&
+          !editing &&
+          (viewport?.scale ?? 1) === 1 &&
+          window.scrollY !== 0
+        )
+          window.scrollTo(0, 0);
         if (window.innerWidth !== viewportWidth) {
           viewportWidth = window.innerWidth;
           fullHeight = window.innerHeight;
@@ -262,7 +279,7 @@ export default function App() {
         );
         document.documentElement.style.setProperty(
           "--app-top",
-          `${editing ? (window.visualViewport?.offsetTop ?? 0) : 0}px`,
+          `${editing && matchingViewport ? (viewport?.offsetTop ?? 0) : 0}px`,
         );
         if (mobile.matches && editing && active) {
           const scroller = active.closest<HTMLElement>(".modal, .page");
@@ -285,9 +302,12 @@ export default function App() {
       swipe.current = null;
       if (document.hidden) return;
       resetDocument();
-      // iOS can settle the visual viewport after the foreground event.
+      // Rotation/foreground events can arrive before Safari finishes updating
+      // the layout and document offset. Recover again after those transitions.
       window.clearTimeout(resumeTimer);
-      resumeTimer = window.setTimeout(resize, 150);
+      window.clearTimeout(settleTimer);
+      resumeTimer = window.setTimeout(resetDocument, 150);
+      settleTimer = window.setTimeout(resetDocument, 500);
     };
     const layoutChanges = new MutationObserver(() => {
       if (
@@ -302,7 +322,9 @@ export default function App() {
     document.addEventListener("visibilitychange", resume);
     window.addEventListener("pageshow", resume);
     window.addEventListener("focus", resume);
-    mobile.addEventListener("change", resetDocument);
+    mobile.addEventListener("change", resume);
+    window.addEventListener("orientationchange", resume);
+    window.screen.orientation?.addEventListener("change", resume);
     window.addEventListener("resize", resize);
     window.visualViewport?.addEventListener("resize", resize);
     window.visualViewport?.addEventListener("scroll", resize);
@@ -312,10 +334,13 @@ export default function App() {
       cancelAnimationFrame(frame);
       layoutChanges.disconnect();
       window.clearTimeout(resumeTimer);
+      window.clearTimeout(settleTimer);
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("pageshow", resume);
       window.removeEventListener("focus", resume);
-      mobile.removeEventListener("change", resetDocument);
+      mobile.removeEventListener("change", resume);
+      window.removeEventListener("orientationchange", resume);
+      window.screen.orientation?.removeEventListener("change", resume);
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("scroll", resize);
