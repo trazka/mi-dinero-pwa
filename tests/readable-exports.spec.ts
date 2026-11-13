@@ -125,6 +125,8 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(pdf.suggestedFilename()).toMatch(/^ingresos-.*\.pdf$/);
   const text = (await readFile((await pdf.path())!)).toString("latin1");
   expect(text.startsWith("%PDF-")).toBe(true);
+  expect(text).toContain("12-nov-2026");
+  expect(text).not.toContain("2026-11-12");
   expect(text).toContain("Ingreso seleccionado");
   expect(text).not.toContain("Gasto seleccionado");
   expect(text).not.toContain("Ingreso anterior");

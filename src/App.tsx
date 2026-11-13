@@ -1,5 +1,6 @@
 import {
   excelBlob,
+  exportDate,
   pdfBlob,
   movementExport,
   saveExport,
@@ -891,7 +892,7 @@ export default function App() {
     credit: tdcView ? "TDC: compras y abonos" : "Deuda adquirida",
   };
   const exportFilters = [
-    `Desde: ${from || "sin límite"} · Hasta: ${to || "sin límite"}`,
+    `Desde: ${from ? exportDate(from) : "sin límite"} · Hasta: ${to ? exportDate(to) : "sin límite"}`,
     search && `Búsqueda: ${search}`,
     methodFilter && `Método: ${methodFilter}`,
     debtFilter &&
@@ -921,7 +922,7 @@ export default function App() {
           month: "long",
           year: "numeric",
         })
-      : `${period === "weekly" ? "Semana del " : ""}${dateLabel(key)} ${key.slice(0, 4)}`;
+      : `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
   const reportDocument: ExportTable = {
     title: `Reporte: ${exportTitles[typeFilter]}`,
     filters: [
