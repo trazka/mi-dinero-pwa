@@ -99,10 +99,18 @@ const dateLabel = (d: string) =>
     day: "numeric",
     month: "short",
   });
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
   const id = useId();
   return (
-    <div className="field">
+    <div className={`field ${className}`}>
       <label htmlFor={id}>{label}</label>
       {cloneElement(children as ReactElement<{ id: string }>, { id })}
     </div>
@@ -763,10 +771,10 @@ export default function App() {
           ))}
         </select>
       </Field>
-      <Field label="Desde">
+      <Field label="Desde" className="date-filter">
         <DatePicker value={from} onChange={setFrom} />
       </Field>
-      <Field label="Hasta">
+      <Field label="Hasta" className="date-filter">
         <DatePicker value={to} min={from || undefined} onChange={setTo} />
       </Field>
       <Field label="Categoría">
@@ -791,7 +799,7 @@ export default function App() {
         />
       </Field>
       {tab === "Reportes" && (
-        <Field label="Agrupar por">
+        <Field label="Agrupar por" className="group-filter">
           <select value={period} onChange={(e) => setPeriod(e.target.value)}>
             <option value="daily">Día</option>
             <option value="weekly">Semana (lunes a domingo)</option>
@@ -803,7 +811,11 @@ export default function App() {
         <p role="alert">La fecha inicial debe ser anterior a la final.</p>
       )}
       <div className="filter-actions">
-        <button type="button" className="text-button" onClick={clearFilters}>
+        <button
+          type="button"
+          className="button secondary clear-filters"
+          onClick={clearFilters}
+        >
           Limpiar filtros
         </button>
       </div>

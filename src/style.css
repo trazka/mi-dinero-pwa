@@ -2471,3 +2471,123 @@ li {
 .credit-report-totals > div:last-child {
   text-align: left;
 }
+
+/* Shared portrait layout: readable controls and a distinct final reset action. */
+.filters > .group-filter {
+  grid-column: 1 / -1;
+}
+.filter-actions {
+  padding-top: 4px;
+}
+.clear-filters {
+  min-height: 46px;
+}
+.backup-grid > .security-panel,
+.debt-grid > .debt-detail:only-child {
+  grid-column: 1 / -1;
+}
+@media (max-width: 800px) {
+  .page :is(h2, h3),
+  .planning-item,
+  .cycle-info {
+    overflow-wrap: anywhere;
+  }
+  .stat {
+    min-width: 0;
+  }
+  .stat > strong {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .full-panel > .panel-heading,
+  .debt-detail .panel-heading {
+    flex-wrap: wrap;
+  }
+  .full-panel > .panel-heading h2,
+  .debt-detail .panel-heading h2 {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+  .debt-meta {
+    gap: 12px;
+  }
+  .debt-meta > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .payment {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .planning-actions button,
+  .planning-heading button,
+  .row-actions button {
+    min-height: 44px;
+  }
+  .planning-actions .button {
+    white-space: normal;
+  }
+  .filter-actions .clear-filters {
+    width: 100%;
+    min-height: 48px;
+  }
+  .filters :is(input, select) {
+    font-size: 16px;
+    min-height: 48px;
+  }
+}
+@media (max-width: 600px) {
+  .filters > .field:not(.date-filter) {
+    grid-column: 1 / -1;
+  }
+  .filters > .field {
+    margin-bottom: 0;
+  }
+  .filters {
+    gap: 16px 12px;
+  }
+}
+@media (max-width: 359px) {
+  .filters > .date-filter {
+    grid-column: 1 / -1;
+  }
+  .modal form .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .debt-meta {
+    flex-direction: column;
+  }
+}
+@media (max-width: 800px) {
+  .planning-actions > button {
+    white-space: normal;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .row-actions button {
+    min-width: 44px;
+  }
+  .stat > strong {
+    font-size: clamp(20px, 6vw, 24px);
+  }
+}
+@media (max-width: 359px) {
+  .overview {
+    grid-template-columns: 1fr;
+  }
+  .savings-panel .report-totals,
+  .credit-report-totals {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .savings-panel .report-totals > div:last-child {
+    text-align: left;
+  }
+  .summary-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
