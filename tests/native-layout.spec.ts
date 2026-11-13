@@ -10,7 +10,7 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
     page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
   ).toBeEnabled();
   // The in-app wallet and the installed launcher are intentionally different.
-  await expect(page.locator(".app-identity img")).toHaveAttribute(
+  await expect(page.locator(".app-identity img:visible")).toHaveAttribute(
     "src",
     "/mi-dinero-pwa/icon-v2.svg",
   );
@@ -129,6 +129,9 @@ test("el menú horizontal se oculta y se muestra sin perder sección ni navegaci
     .getByRole("button", { name: "Apartados", exact: true })
     .click();
   const toggle = page.locator(".sidebar-toggle");
+  await expect(toggle.locator("img")).toBeVisible();
+  await expect(toggle.locator("svg")).toHaveCount(0);
+  await expect(page.locator(".wallet-static")).toBeHidden();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   const before = await page.locator("main").boundingBox();
   await page

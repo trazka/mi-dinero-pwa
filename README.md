@@ -179,3 +179,5 @@ El resumen de Movimientos mantiene contador, exportaciones y totales próximos. 
 Las exportaciones Excel y PDF presentan las fechas completas como **12-nov-2026**, incluidos los criterios Desde/Hasta y los periodos diarios o semanales. Los grupos mensuales conservan el nombre del mes y año.
 
 Los avisos de acciones se ocultan automáticamente a los 4 segundos y los errores de acciones a los 6 segundos. Se pueden cerrar antes y se limpian al cambiar de sección; repetir una acción renueva el tiempo del mensaje, aunque el texto sea idéntico. Los errores que impiden abrir el almacenamiento conservan su explicación visible.
+
+En horizontal, la billetera de la cabecera muestra u oculta el menú lateral. En vertical se muestra como logotipo sin acción de menú.
