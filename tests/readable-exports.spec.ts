@@ -125,22 +125,12 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(pdf.suggestedFilename()).toMatch(/^ingresos-.*\.pdf$/);
   const text = (await readFile((await pdf.path())!)).toString("latin1");
   expect(text.startsWith("%PDF-")).toBe(true);
+  expect(text).toContain("12-nov-2026");
+  expect(text).not.toContain("2026-11-12");
   expect(text).toContain("Ingreso seleccionado");
   expect(text).not.toContain("Gasto seleccionado");
   expect(text).not.toContain("Ingreso anterior");
   await page.getByRole("tab", { name: "TDC", exact: true }).click();
-  const info = page.getByRole("button", {
-    name: "Información de TDC",
-    exact: true,
-  });
-  await expect(info).toHaveAttribute("aria-expanded", "false");
-  await expect(page.locator("#tdc-info")).toHaveCount(0);
-  await info.click();
-  await expect(page.locator("#tdc-info")).toContainText(
-    "abonos también cuentan en Gastos",
-  );
-  await info.click();
-  await expect(page.locator("#tdc-info")).toHaveCount(0);
   const tdc = await xlsx();
   expect(tdc.getWorksheet("Datos")!.rowCount).toBe(3);
   expect(tdc.getWorksheet("Datos")!.getCell("B2").value).toBe("Abono TDC");

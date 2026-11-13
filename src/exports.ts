@@ -1,5 +1,24 @@
 import { expenseAmount, type Movement } from "./data";
 
+export function exportDate(iso: string) {
+  const [year, month, day] = iso.split("-");
+  const months = [
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
+  ];
+  return `${day}-${months[Number(month) - 1]}-${year}`;
+}
+
 export type ExportTable = {
   title: string;
   filters: string[];
@@ -73,7 +92,7 @@ export function movementExport(
       "Notas",
     ],
     rows: movements.map((m) => [
-      m.date,
+      exportDate(m.date),
       kind(m),
       m.merchant,
       m.category,
@@ -85,7 +104,7 @@ export function movementExport(
     moneyColumns: [5, 6],
     pdfColumns: ["Fecha", "Concepto", "Tipo", "Importe MXN"],
     pdfRows: movements.map((m) => [
-      m.date,
+      exportDate(m.date),
       [
         m.merchant,
         `${m.category} · ${m.method}`,

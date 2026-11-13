@@ -31,17 +31,18 @@ describe("exportaciones legibles", () => {
   });
   it("genera XLSX real con importes numéricos, filtros y texto sin fórmulas", async () => {
     const blob = await excelBlob(
-      movementExport([base], "Gastos", ["Desde: 2026-11-12"]),
+      movementExport([base], "Gastos", ["Desde: 12-nov-2026"]),
     );
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await blob.arrayBuffer());
     const sheet = workbook.getWorksheet("Datos")!;
+    expect(sheet.getCell("A2").value).toBe("12-nov-2026");
     expect(sheet.getCell("C2").value).toBe("=1+1");
     expect(sheet.getCell("F2").value).toBe(12.5);
     expect(sheet.getCell("F2").numFmt).toContain("0.00");
     expect(sheet.autoFilter).toBeTruthy();
     expect(workbook.getWorksheet("Resumen")!.getCell("B3").value).toBe(
-      "Desde: 2026-11-12",
+      "Desde: 12-nov-2026",
     );
   });
   it("genera PDF paginado con todos los movimientos y encabezados repetidos", async () => {
@@ -51,12 +52,12 @@ describe("exportaciones legibles", () => {
       id: String(i),
     }));
     const blob = await pdfBlob(
-      movementExport(rows, "Gastos", ["Desde: 2026-11-12"]),
+      movementExport(rows, "Gastos", ["Desde: 12-nov-2026"]),
     );
     const text = await blob.text();
     expect(text.startsWith("%PDF-")).toBe(true);
     expect(text).toContain("Concepto 89");
     expect(text.match(/\/Type \/Page\b/g)!.length).toBeGreaterThan(1);
-    expect(text).toContain("Desde: 2026-11-12");
+    expect(text).toContain("Desde: 12-nov-2026");
   });
 });
