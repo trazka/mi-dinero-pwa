@@ -51,8 +51,6 @@ import {
   ChevronRight,
   Leaf,
   PiggyBank,
-  PanelLeftClose,
-  PanelLeftOpen,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -1153,13 +1151,15 @@ export default function App() {
               aria-expanded={!sidebarCollapsed}
               onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
             >
-              {sidebarCollapsed ? (
-                <PanelLeftOpen size={22} />
-              ) : (
-                <PanelLeftClose size={22} />
-              )}
+              <img
+                src={`${import.meta.env.BASE_URL}icon-v2.svg`}
+                alt=""
+                width="32"
+                height="32"
+              />
             </button>
             <img
+              className="wallet-static"
               src={`${import.meta.env.BASE_URL}icon-v2.svg`}
               alt=""
               width="32"
