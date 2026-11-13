@@ -687,33 +687,43 @@ export default function App() {
               )}
             </div>
             <div className="movement-info">
-              {tdcView && (
-                <small
-                  className={`tdc-entry-kind ${m.creditDebtId ? "charge" : "repayment"}`}
-                >
-                  {m.creditDebtId ? "Compra" : "Abono"}
-                </small>
+              {tdcView && m.creditDebtId && (
+                <small className="tdc-entry-kind charge">Compra</small>
               )}
-              <strong>{m.merchant}</strong>
-              <small>
-                {m.category} <span>·</span> {dateLabel(m.date)}
-              </small>
-              <small>
-                {m.method}
-                {m.notes ? ` · ${m.notes}` : ""}
-              </small>
-              {m.creditDebtId && (
+              <strong>
+                {cardPaymentAmount(m) > 0
+                  ? `Abono · ${m.merchant}`
+                  : m.merchant}
+              </strong>
+              {cardPaymentAmount(m) > 0 ? (
                 <small>
-                  Compra a deuda · No suma al gasto · Tarjeta:{" "}
-                  {data.debts.find((d) => d.id === m.creditDebtId)?.creditor}
+                  {dateLabel(m.date)} <span>·</span> {m.method}
+                  {m.notes && m.notes !== "Abono vinculado a deuda"
+                    ? ` · ${m.notes}`
+                    : ""}
                 </small>
-              )}
-              {m.paymentId && (
-                <small>
-                  {cardPaymentAmount(m) > 0
-                    ? "Abono de tarjeta · Cuenta como gasto"
-                    : "Abono vinculado · elimina para revertir"}
-                </small>
+              ) : (
+                <>
+                  <small>
+                    {m.category} <span>·</span> {dateLabel(m.date)}
+                  </small>
+                  <small>
+                    {m.method}
+                    {m.notes ? ` · ${m.notes}` : ""}
+                  </small>
+                  {m.creditDebtId && (
+                    <small>
+                      Compra a deuda · No suma al gasto · Tarjeta:{" "}
+                      {
+                        data.debts.find((d) => d.id === m.creditDebtId)
+                          ?.creditor
+                      }
+                    </small>
+                  )}
+                  {m.paymentId && (
+                    <small>Abono vinculado · elimina para revertir</small>
+                  )}
+                </>
               )}
             </div>
             <div className="movement-right">

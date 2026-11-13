@@ -121,17 +121,19 @@ test("TDC reúne compras y abonos sin duplicar gastos ni incluir pagos de otros 
   await page.getByRole("tab", { name: "TDC", exact: true }).click();
   const names = page.locator(".movement-info > strong");
   await expect(names).toHaveText([
-    "Abono reciente",
+    "Abono · Abono reciente",
     "Compra reciente",
-    "Abono anterior",
+    "Abono · Abono anterior",
     "Compra anterior",
   ]);
   await expect(page.locator(".tdc-entry-kind")).toHaveText([
-    "Abono",
     "Compra",
-    "Abono",
     "Compra",
   ]);
+  const paymentInfo = page.locator(".movement-info").first();
+  await expect(paymentInfo.locator(":scope > *")).toHaveCount(2);
+  await expect(paymentInfo.locator("small")).toContainText("12 nov");
+  await expect(paymentInfo.locator("small")).toContainText("Transferencia");
   await expect(page.locator(".tdc-totals")).toContainText("Compras: $300.00");
   await expect(page.locator(".tdc-totals")).toContainText("Abonos: $120.00");
   await expect(
@@ -151,7 +153,7 @@ test("TDC reúne compras y abonos sin duplicar gastos ni incluir pagos de otros 
   expect(csv).not.toContain("Abono préstamo");
   await chooseDate(page, "Desde", "2026-11-12");
   await chooseDate(page, "Hasta", "2026-11-12");
-  await expect(names).toHaveText(["Abono reciente", "Compra reciente"]);
+  await expect(names).toHaveText(["Abono · Abono reciente", "Compra reciente"]);
   await expect(page.locator(".tdc-totals")).toContainText("$200.00");
   await expect(page.locator(".tdc-totals")).toContainText("$70.00");
   await page
@@ -161,8 +163,8 @@ test("TDC reúne compras y abonos sin duplicar gastos ni incluir pagos de otros 
   await expect(names).toHaveText([
     "Gasto efectivo",
     "Abono préstamo",
-    "Abono reciente",
-    "Abono anterior",
+    "Abono · Abono reciente",
+    "Abono · Abono anterior",
   ]);
   await expect(page.locator(".filtered-total")).toContainText("$170.00");
   await page.getByRole("tab", { name: "Todos", exact: true }).click();

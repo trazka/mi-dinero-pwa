@@ -67,7 +67,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(page.locator(".movement")).toHaveCount(2);
   await expect(
-    page.getByText("Abono de tarjeta · Cuenta como gasto"),
+    page.locator(".movement-info > strong").filter({ hasText: "Abono ·" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Editar Compra ficticia" }).click();
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("20");
