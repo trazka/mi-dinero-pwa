@@ -478,6 +478,15 @@ export default function App() {
     if (tab !== "Apartados") setSavingCreating(false);
   }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
+  const cardPaymentIds = new Set(
+    creditDebts.flatMap((debt) =>
+      debt.payments.map((payment) => payment.movementId),
+    ),
+  );
+  const cardPaymentAmount = (movement: Movement) =>
+    movement.paymentId && cardPaymentIds.has(movement.id) ? movement.amount : 0;
+  const tdcView = tab === "Movimientos" && typeFilter === "credit";
+
   // Reverse registration order first; stable date sorting keeps the latest
   // registered movement first when several share the same date.
   const newestFirst = [...data.movements]
@@ -489,7 +498,7 @@ export default function App() {
       (typeFilter === "income"
         ? m.type === "income"
         : typeFilter === "credit"
-          ? acquiredDebtAmount(m) > 0
+          ? acquiredDebtAmount(m) > 0 || (tdcView && cardPaymentAmount(m) > 0)
           : expenseAmount(m) > 0),
   );
   const filterMerchantOptions = [
@@ -548,8 +557,12 @@ export default function App() {
     all: ["movimiento", "movimientos"],
     income: ["ingreso", "ingresos"],
     expense: ["gasto", "gastos"],
-    credit: ["compra con TDC", "compras con TDC"],
+    credit: ["movimiento TDC", "movimientos TDC"],
   };
+  const filteredCardPayments = filtered.reduce(
+    (total, m) => total + cardPaymentAmount(m),
+    0,
+  );
   const filteredLabel = typeLabels[typeFilter][filtered.length === 1 ? 0 : 1];
   const filteredTotal = filtered.reduce(
     (total, m) =>
@@ -661,14 +674,26 @@ export default function App() {
       <div className="movement-list">
         {items.map((m) => (
           <article className="movement" key={m.id}>
-            <div className={"movement-icon " + m.type}>
-              {m.type === "income" ? (
+            <div
+              className={
+                "movement-icon " +
+                (tdcView && cardPaymentAmount(m) > 0 ? "income" : m.type)
+              }
+            >
+              {m.type === "income" || (tdcView && cardPaymentAmount(m) > 0) ? (
                 <ArrowDownLeft size={20} />
               ) : (
                 <ArrowUpRight size={20} />
               )}
             </div>
             <div className="movement-info">
+              {tdcView && (
+                <small
+                  className={`tdc-entry-kind ${m.creditDebtId ? "charge" : "repayment"}`}
+                >
+                  {m.creditDebtId ? "Compra" : "Abono"}
+                </small>
+              )}
               <strong>{m.merchant}</strong>
               <small>
                 {m.category} <span>·</span> {dateLabel(m.date)}
@@ -685,15 +710,27 @@ export default function App() {
               )}
               {m.paymentId && (
                 <small>
-                  {m.creditPaymentDebtId
+                  {cardPaymentAmount(m) > 0
                     ? "Abono de tarjeta · Cuenta como gasto"
                     : "Abono vinculado · elimina para revertir"}
                 </small>
               )}
             </div>
             <div className="movement-right">
-              <strong className={m.type === "income" ? "positive" : ""}>
-                {m.type === "income" ? "+" : m.creditDebtId ? "" : "−"}
+              <strong
+                className={
+                  m.type === "income" || (tdcView && cardPaymentAmount(m) > 0)
+                    ? "positive"
+                    : ""
+                }
+              >
+                {m.type === "income"
+                  ? "+"
+                  : m.creditDebtId
+                    ? tdcView
+                      ? "+"
+                      : ""
+                    : "−"}
                 {money(m.amount)}
               </strong>
               <div className="row-actions">
@@ -821,7 +858,7 @@ export default function App() {
               placeholder="Concepto, notas o importe"
             />
           </Field>
-          {typeFilter !== "credit" && (
+          {!(tab === "Reportes" && typeFilter === "credit") && (
             <Field label="Filtrar método">
               <select
                 value={methodFilter}
@@ -829,14 +866,20 @@ export default function App() {
               >
                 <option value="">Todos los métodos</option>
                 {[
-                  ...new Set([
-                    "Efectivo",
-                    "Tarjeta de débito",
-                    ...(typeFilter === "all" ? ["Tarjeta de crédito"] : []),
-                    "Transferencia",
-                    "Otro",
-                    ...typeMovements.map((m) => m.method),
-                  ]),
+                  ...new Set(
+                    typeFilter === "credit"
+                      ? typeMovements.map((m) => m.method)
+                      : [
+                          "Efectivo",
+                          "Tarjeta de débito",
+                          ...(typeFilter === "all"
+                            ? ["Tarjeta de crédito"]
+                            : []),
+                          "Transferencia",
+                          "Otro",
+                          ...typeMovements.map((m) => m.method),
+                        ],
+                  ),
                 ].map((method) => (
                   <option key={method}>{method}</option>
                 ))}
@@ -1303,7 +1346,7 @@ export default function App() {
                     ["all", "Todos"],
                     ["income", "Ingresos"],
                     ["expense", "Gastos"],
-                    ["credit", "Compras con TDC"],
+                    ["credit", "TDC"],
                   ] as const
                 ).map(([type, label], index, options) => (
                   <button
@@ -1349,8 +1392,21 @@ export default function App() {
                     className="text-button"
                     onClick={() =>
                       download(
-                        csv(filtered),
-                        `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "gastos" : typeFilter === "credit" ? "deuda-adquirida" : "movimientos"}-${today()}.csv`,
+                        csv(
+                          tdcView
+                            ? filtered.map((m) =>
+                                cardPaymentAmount(m) > 0
+                                  ? {
+                                      ...m,
+                                      creditPaymentDebtId:
+                                        m.creditPaymentDebtId ??
+                                        movementDebtId(data, m),
+                                    }
+                                  : m,
+                              )
+                            : filtered,
+                        ),
+                        `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "gastos" : typeFilter === "credit" ? "tdc" : "movimientos"}-${today()}.csv`,
                         "text/csv;charset=utf-8",
                       )
                     }
@@ -1372,18 +1428,33 @@ export default function App() {
                     ))}
                   </div>
                 )}
-                {typeFilter !== "all" && filtered.length > 0 && (
-                  <p className="filtered-total">
-                    {typeFilter === "credit"
-                      ? "Deuda adquirida"
-                      : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
-                    : <strong>{money(filteredTotal)}</strong>
-                  </p>
+                {typeFilter !== "all" &&
+                  typeFilter !== "credit" &&
+                  filtered.length > 0 && (
+                    <p className="filtered-total">
+                      Total de {typeFilter === "income" ? "ingresos" : "gastos"}
+                      : <strong>{money(filteredTotal)}</strong>
+                    </p>
+                  )}
+                {tdcView && filtered.length > 0 && (
+                  <div className="filtered-total movement-totals tdc-totals">
+                    {filteredTotal > 0 && (
+                      <span>
+                        Compras: <strong>{money(filteredTotal)}</strong>
+                      </span>
+                    )}
+                    {filteredCardPayments > 0 && (
+                      <span>
+                        Abonos: <strong>{money(filteredCardPayments)}</strong>
+                      </span>
+                    )}
+                  </div>
                 )}
-                {typeFilter === "credit" && (
+                {tdcView && (
                   <p className="helper">
-                    Compras con TDC del periodo. Los pagos no reducen este
-                    total; el saldo pendiente se consulta en Deudas.
+                    Las compras aumentan tu deuda y los abonos la reducen. Los
+                    abonos también cuentan en Gastos. Consulta el saldo
+                    pendiente en Deudas.
                   </p>
                 )}
                 {movementList(filtered)}

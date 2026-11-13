@@ -97,26 +97,28 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
     .getByRole("button", { name: "Ver deuda adquirida", exact: true })
     .click();
   await expect(
-    page.getByRole("tab", { name: "Compras con TDC", exact: true }),
+    page.getByRole("tab", { name: "TDC", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".movement-info > strong")).toHaveText([
+    "Pago tarjeta",
     "Compra del periodo",
     "Compra anterior",
   ]);
   await chooseDate(page, "Desde", "2026-11-12");
   await chooseDate(page, "Hasta", "2026-11-12");
   await expect(page.locator(".movement-info > strong")).toHaveText([
+    "Pago tarjeta",
     "Compra del periodo",
   ]);
   await expect(page.locator(".filtered-total")).toContainText("$200.00");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toMatch(/^deuda-adquirida-/);
+  expect(file.suggestedFilename()).toMatch(/^tdc-/);
   const csv = await readFile((await file.path())!, "utf8");
   expect(csv).toContain("Compra del periodo");
   expect(csv).not.toContain("Compra anterior");
-  expect(csv).not.toContain("Pago tarjeta");
+  expect(csv).toContain("Pago tarjeta");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator("thead th")).toHaveText([
     "Periodo",

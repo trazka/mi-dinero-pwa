@@ -2668,3 +2668,25 @@ li {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.movement-info .tdc-entry-kind {
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 650;
+}
+.movement-info .tdc-entry-kind.charge {
+  background: #ac893724;
+  color: #927333;
+}
+.movement-info .tdc-entry-kind.repayment {
+  background: #7bb67224;
+  color: #39724b;
+}
+:root[data-theme="dark"] .movement-info .tdc-entry-kind.charge {
+  color: #dec189;
+}
+:root[data-theme="dark"] .movement-info .tdc-entry-kind.repayment {
+  color: #abd6b6;
+}
