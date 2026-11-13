@@ -1,6 +1,6 @@
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
 
@@ -102,10 +102,10 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await expect(names).toHaveText(["Ingreso reciente"]);
   await expect(page.locator(".filtered-total")).toContainText("$600.00");
   let pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+  await page.getByRole("button", { name: "Excel", exact: true }).click();
   let file = await pending;
   expect(file.suggestedFilename()).toMatch(/^ingresos-/);
-  let csv = await readFile((await file.path())!, "utf8");
+  let csv = await exportText(file);
   expect(csv).toContain("Ingreso reciente");
   expect(csv).not.toContain("Ingreso antiguo");
   expect(csv).not.toContain("Gasto reciente");
@@ -135,10 +135,10 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await expect(names).toHaveText(["Abono · Pago de tarjeta", "Gasto reciente"]);
   await expect(page.locator(".filtered-total")).toContainText("$70.00");
   pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+  await page.getByRole("button", { name: "Excel", exact: true }).click();
   file = await pending;
   expect(file.suggestedFilename()).toMatch(/^gastos-/);
-  csv = await readFile((await file.path())!, "utf8");
+  csv = await exportText(file);
   expect(csv).toContain("Pago de tarjeta");
   expect(csv).not.toContain("Compra pendiente");
   expect(csv).not.toContain("Ingreso reciente");

@@ -86,13 +86,14 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Exportar CSV", exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("tab", { name: "Ingresos", exact: true }).click();
   await chooseDate(page, "Desde", "2026-11-12");
   async function xlsx() {
     const promise = page.waitForEvent("download");
-    await page
-      .getByRole("button", { name: "Exportar Excel", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Excel", exact: true }).click();
     const file = await promise;
     expect(file.suggestedFilename()).toMatch(/\.xlsx$/);
     const book = new ExcelJS.Workbook();
@@ -118,7 +119,7 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   });
   await context.setOffline(true);
   const pdfPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar PDF", exact: true }).click();
+  await page.getByRole("button", { name: "PDF", exact: true }).click();
   const pdf = await pdfPromise;
   await pdf.saveAs(testInfo.outputPath("ingresos.pdf"));
   expect(pdf.suggestedFilename()).toMatch(/^ingresos-.*\.pdf$/);
@@ -128,6 +129,18 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(text).not.toContain("Gasto seleccionado");
   expect(text).not.toContain("Ingreso anterior");
   await page.getByRole("tab", { name: "TDC", exact: true }).click();
+  const info = page.getByRole("button", {
+    name: "Información de TDC",
+    exact: true,
+  });
+  await expect(info).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#tdc-info")).toHaveCount(0);
+  await info.click();
+  await expect(page.locator("#tdc-info")).toContainText(
+    "abonos también cuentan en Gastos",
+  );
+  await info.click();
+  await expect(page.locator("#tdc-info")).toHaveCount(0);
   const tdc = await xlsx();
   expect(tdc.getWorksheet("Datos")!.rowCount).toBe(3);
   expect(tdc.getWorksheet("Datos")!.getCell("B2").value).toBe("Abono TDC");
