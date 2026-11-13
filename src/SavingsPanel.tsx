@@ -167,7 +167,7 @@ export default function SavingsPanel({
               max={s.target}
               value={Math.min(s.target, savedAmount(s))}
             />
-            <div className="planning-actions">
+            <div className="planning-actions saving-money-actions">
               <button
                 className="button secondary"
                 disabled={busy || open}
@@ -182,6 +182,8 @@ export default function SavingsPanel({
               >
                 Retirar de {s.name}
               </button>
+            </div>
+            <div className="planning-actions">
               <button disabled={busy || open} onClick={() => setEditing(s)}>
                 Editar {s.name}
               </button>
