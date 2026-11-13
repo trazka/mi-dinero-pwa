@@ -1,4 +1,10 @@
-import { useId, useRef, useState, type InputHTMLAttributes } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+} from "react";
 
 import { normalizeConcept } from "./concepts";
 
@@ -17,6 +23,30 @@ export default function ConceptInput({
   const listId = useId();
   const root = useRef<HTMLDivElement>(null);
   const press = useRef<{ id: number; x: number; y: number } | null>(null);
+  const clearClickGuard = useRef<(() => void) | null>(null);
+  useEffect(() => () => clearClickGuard.current?.(), []);
+  function suppressGestureClick() {
+    clearClickGuard.current?.();
+    // Closing suggestions on pointerup can expose the category select beneath
+    // the finger before Safari dispatches the same gesture's compatibility click.
+    const cleanup = () => {
+      document.removeEventListener("click", blockClick, true);
+      document.removeEventListener("pointerdown", cleanup, true);
+      window.clearTimeout(timer);
+      clearClickGuard.current = null;
+    };
+    const blockClick = (event: MouseEvent) => {
+      if (!event.detail) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      cleanup();
+    };
+    const timer = window.setTimeout(cleanup, 500);
+    document.addEventListener("click", blockClick, true);
+    // A fresh gesture must always be allowed, even immediately after selection.
+    document.addEventListener("pointerdown", cleanup, true);
+    clearClickGuard.current = cleanup;
+  }
   const [text, setText] = useState(String(defaultValue ?? ""));
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -123,6 +153,7 @@ export default function ConceptInput({
                     Math.hypot(e.screenX - start.x, e.screenY - start.y) < 10
                   ) {
                     e.preventDefault();
+                    suppressGestureClick();
                     choose(item);
                   } else if (!root.current?.contains(document.activeElement)) {
                     setOpen(false);

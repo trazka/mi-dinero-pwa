@@ -20,6 +20,9 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Nuevo apartado", exact: true })
     .click();
   await page.getByLabel("Nombre del apartado").fill("Emergencias");
@@ -46,6 +49,9 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await expect(page.locator(".balance-number")).toContainText("$1,000.00");
   await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Editar Emergencias", exact: true })
     .click();
@@ -161,6 +167,9 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".movement")).toHaveCount(1);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
   await expect(page.getByLabel("Progreso de Vacaciones")).toHaveAttribute(
     "value",
     "250",

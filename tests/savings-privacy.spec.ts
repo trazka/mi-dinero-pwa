@@ -88,6 +88,9 @@ test("el ojo no pide verificación con bloqueo activo y vuelve a ocultar al sali
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Mostrar ahorros", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Meta confidencial", exact: true }),
   ).toBeVisible();
@@ -228,4 +231,37 @@ test("Apartados permite aportar directamente sin desbloquear", async ({
       exact: true,
     }),
   ).toHaveCount(0);
+});
+
+test("salir de Apartados oculta sus detalles al volver desde otra sección", async ({
+  page,
+}) => {
+  await seed(page);
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  for (const destination of [
+    "Inicio",
+    "Movimientos",
+    "Deudas",
+    "Reportes",
+    "Respaldos",
+  ]) {
+    await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Mostrar ahorros", exact: true }),
+    ).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+    ).toBeHidden();
+    await page
+      .getByRole("button", { name: "Mostrar ahorros", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+    ).toBeVisible();
+    await nav.getByRole("button", { name: destination, exact: true }).click();
+  }
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Meta confidencial", exact: true }),
+  ).toBeHidden();
 });

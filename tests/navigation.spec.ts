@@ -72,6 +72,33 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
     clientY: 50,
   });
   await expect(concept).toHaveValue("Tienda de prueba");
+  const clickRouting = await page
+    .getByRole("dialog")
+    .getByLabel("Categoría", { exact: true })
+    .evaluate((el) => {
+      let clicks = 0;
+      const listener = () => clicks++;
+      el.addEventListener("click", listener);
+      const blocked = !el.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true, detail: 1 }),
+      );
+      el.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          pointerType: "touch",
+        }),
+      );
+      const freshAllowed = el.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true, detail: 1 }),
+      );
+      el.removeEventListener("click", listener);
+      return { blocked, freshAllowed, clicks };
+    });
+  expect(clickRouting).toEqual({
+    blocked: true,
+    freshAllowed: true,
+    clicks: 1,
+  });
   await concept.fill("ti");
   await option.dispatchEvent("pointerdown", {
     pointerId: 2,

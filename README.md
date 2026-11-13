@@ -181,3 +181,7 @@ Las exportaciones Excel y PDF presentan las fechas completas como **12-nov-2026*
 Los avisos de acciones se ocultan automáticamente a los 4 segundos y los errores de acciones a los 6 segundos. Se pueden cerrar antes y se limpian al cambiar de sección; repetir una acción renueva el tiempo del mensaje, aunque el texto sea idéntico. Los errores que impiden abrir el almacenamiento conservan su explicación visible.
 
 En horizontal, la billetera de la cabecera muestra u oculta el menú lateral. En vertical se muestra como logotipo sin acción de menú.
+
+Al salir de Apartados, los nombres y saldos vuelven a ocultarse. Cada regreso a la sección requiere pulsar el ojo para mostrarlos; no depende del bloqueo del dispositivo.
+
+Al seleccionar un concepto se cierra su lista y se carga la categoría registrada, sin transferir el clic del mismo gesto a los campos de debajo. Elegir manualmente otra categoría cierra el selector al confirmar el cambio.
