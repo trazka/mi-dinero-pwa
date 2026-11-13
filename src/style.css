@@ -2712,12 +2712,33 @@ li {
   container-type: inline-size;
 }
 .movement-results > .panel-heading {
-  padding: 12px 0 0;
+  padding: 12px 0 16px;
   margin: 0;
   min-height: 0;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
-.movement-results > .export-actions {
-  margin: 12px 0 16px;
+.movement-results > .panel-heading h2 {
+  flex: 1 1 auto;
+}
+.movement-results > .panel-heading > .export-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 0;
+}
+.movement-results > .panel-heading > .export-actions .button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 38px;
+  padding: 7px 9px;
+  gap: 5px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+.movement-results > .panel-heading > .export-actions svg {
+  width: 14px;
+  height: 14px;
 }
 .movement-results .movement-totals {
   display: grid;
