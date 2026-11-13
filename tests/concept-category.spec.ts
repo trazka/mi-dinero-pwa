@@ -59,7 +59,13 @@ test("elegir concepto carga la última categoría, admite cambiarla y sirve en r
   await concept.fill("cafe");
   await page.getByRole("option", { name: "Café Luna", exact: true }).tap();
   await expect(category).toHaveValue("Restaurantes");
+  await expect(concept).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    page.getByRole("listbox", { name: "Conceptos registrados" }),
+  ).toHaveCount(0);
+  await category.focus();
   await category.selectOption("Hogar");
+  await expect(category).not.toBeFocused();
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("25");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

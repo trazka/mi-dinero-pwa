@@ -536,7 +536,10 @@ export default function App() {
   useEffect(() => {
     pageRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 });
-    if (tab !== "Apartados") setSavingCreating(false);
+    if (tab !== "Apartados") {
+      setSavingCreating(false);
+      setSavingsVisible(false);
+    }
   }, [tab]);
   const creditDebts = data.debts.filter((d) => d.kind === "credit");
   const cardPaymentIds = new Set(
@@ -2221,9 +2224,10 @@ export default function App() {
                           <select
                             name="category"
                             value={movementCategory}
-                            onChange={(e) =>
-                              setMovementCategory(e.target.value)
-                            }
+                            onChange={(e) => {
+                              setMovementCategory(e.target.value);
+                              e.currentTarget.blur();
+                            }}
                           >
                             {[
                               ...new Set([
