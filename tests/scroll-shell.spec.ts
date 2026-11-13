@@ -83,9 +83,15 @@ test("rotar con desplazamiento de escritorio restaura encabezado y altura vertic
   await expect(page.locator(".topbar")).toBeVisible();
   for (let rotation = 0; rotation < 2; rotation++) {
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.locator(".app")).toHaveCSS("position", "static");
     await expect
-      .poll(() => page.evaluate(() => window.scrollY))
+      .poll(() =>
+        page.evaluate(() => {
+          // WebKit applies the landscape scrolling layout asynchronously.
+          window.scrollTo(0, document.body.scrollHeight);
+          return window.scrollY;
+        }),
+      )
       .toBeGreaterThan(0);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
@@ -205,6 +211,108 @@ test("capturar con teclado oculta navegación y sigue el área visual sin perder
       page.locator(".app").evaluate((el) => el.getBoundingClientRect().top),
     )
     .toBe(0);
+  await nav.getByRole("button", { name: "Deudas", exact: true }).tap();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
+});
+
+test("rotación con viewport visual atrasado conserva las zonas de toque de ambas barras", async ({
+  page,
+}) => {
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  for (const width of [844, 740, 844]) {
+    await page.setViewportSize({ width, height: 390 });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => {
+      // Safari can retain the landscape visual viewport after the layout has
+      // returned to portrait. No keyboard is open in this scenario.
+      for (const [key, value] of Object.entries({
+        width: 844,
+        height: 390,
+        offsetTop: 100,
+      }))
+        Object.defineProperty(window.visualViewport!, key, {
+          configurable: true,
+          value,
+        });
+      document.documentElement.style.setProperty("--app-height", "390px");
+      window.dispatchEvent(new Event("orientationchange"));
+      window.visualViewport!.dispatchEvent(new Event("resize"));
+    });
+    await expect
+      .poll(() =>
+        page
+          .locator(".app")
+          .evaluate((el) => el.getBoundingClientRect().height),
+      )
+      .toBe(844);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    const appearance = page.getByRole("button", {
+      name: "Apariencia",
+      exact: true,
+    });
+    expect(
+      await appearance.evaluate((button) => {
+        const box = button.getBoundingClientRect();
+        return button.contains(
+          document.elementFromPoint(
+            box.x + box.width / 2,
+            box.y + box.height / 2,
+          ),
+        );
+      }),
+    ).toBe(true);
+    await appearance.tap();
+    await page
+      .getByRole("dialog", { name: "Apariencia", exact: true })
+      .getByRole("button", { name: "Oscuro", exact: true })
+      .tap();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    for (const name of [
+      "Movimientos",
+      "Deudas",
+      "Apartados",
+      "Reportes",
+      "Respaldos",
+      "Inicio",
+    ]) {
+      const button = nav.getByRole("button", { name, exact: true });
+      expect(
+        await button.evaluate((button) => {
+          const box = button.getBoundingClientRect();
+          return button.contains(
+            document.elementFromPoint(
+              box.x + box.width / 2,
+              box.y + box.height / 2,
+            ),
+          );
+        }),
+      ).toBe(true);
+      await button.tap();
+      await expect(page.locator(".page h1")).toHaveText(
+        name === "Inicio" ? "Tu resumen" : name,
+      );
+    }
+    await page.evaluate(() => {
+      for (const key of ["width", "height", "offsetTop"])
+        Reflect.deleteProperty(window.visualViewport!, key);
+      window.visualViewport!.dispatchEvent(new Event("resize"));
+    });
+  }
+  await page
+    .getByRole("button", { name: "Nuevo movimiento", exact: true })
+    .tap();
+  await page
+    .getByLabel("Establecimiento o concepto", { exact: true })
+    .fill("Borrador al rotar");
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByLabel("Establecimiento o concepto", { exact: true }),
+  ).toHaveValue("Borrador al rotar");
+  await page
+    .getByRole("button", { name: "Cerrar formulario", exact: true })
+    .tap();
   await nav.getByRole("button", { name: "Deudas", exact: true }).tap();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
 });
