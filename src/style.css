@@ -2774,3 +2774,18 @@ li {
 .saving-money-actions > button:last-child {
   margin-left: auto;
 }
+
+.transient-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.transient-alert > button {
+  flex: 0 0 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
