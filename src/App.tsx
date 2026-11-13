@@ -53,7 +53,6 @@ import {
   PanelLeftOpen,
   Eye,
   EyeOff,
-  Info,
 } from "lucide-react";
 import {
   balance,
@@ -161,7 +160,6 @@ function ExportButtons({
 export default function App() {
   const security = useSecurity();
   const [exporting, setExporting] = useState(false);
-  const [showTdcInfo, setShowTdcInfo] = useState(false);
   async function exportReadable(
     table: ExportTable,
     filename: string,
@@ -439,7 +437,6 @@ export default function App() {
     setMerchant("");
   }
   function selectMovementType(type: MovementFilter) {
-    setShowTdcInfo(false);
     setTypeFilter(type);
     setSearch("");
     setMethodFilter("");
@@ -1525,17 +1522,6 @@ export default function App() {
                   <h2>
                     {filtered.length} {filteredLabel}
                   </h2>
-                  {tdcView && (
-                    <button
-                      className="tdc-info-toggle"
-                      aria-label="Información de TDC"
-                      aria-expanded={showTdcInfo}
-                      aria-controls="tdc-info"
-                      onClick={() => setShowTdcInfo((open) => !open)}
-                    >
-                      <Info size={21} />
-                    </button>
-                  )}
                 </div>
                 <ExportButtons
                   disabled={exporting || !filtered.length}
@@ -1587,13 +1573,6 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                )}
-                {tdcView && showTdcInfo && (
-                  <p className="helper tdc-info" id="tdc-info">
-                    Las compras aumentan tu deuda y los abonos la reducen. Los
-                    abonos también cuentan en Gastos. Consulta el saldo
-                    pendiente en Deudas.
-                  </p>
                 )}
                 {movementList(filtered)}
               </div>
