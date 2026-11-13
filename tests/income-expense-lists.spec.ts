@@ -125,14 +125,14 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
     "Elegir fecha",
   );
   await expect(names).toHaveText([
-    "Pago de tarjeta",
+    "Abono · Pago de tarjeta",
     "Gasto reciente",
     "Gasto antiguo",
   ]);
   await expect(page.locator(".filtered-total")).toContainText("$90.00");
   await chooseDate(page, "Desde", "2026-11-12");
   await chooseDate(page, "Hasta", "2026-11-12");
-  await expect(names).toHaveText(["Pago de tarjeta", "Gasto reciente"]);
+  await expect(names).toHaveText(["Abono · Pago de tarjeta", "Gasto reciente"]);
   await expect(page.locator(".filtered-total")).toContainText("$70.00");
   pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();

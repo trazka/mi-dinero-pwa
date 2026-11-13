@@ -100,14 +100,14 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
     page.getByRole("tab", { name: "TDC", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".movement-info > strong")).toHaveText([
-    "Pago tarjeta",
+    "Abono · Pago tarjeta",
     "Compra del periodo",
     "Compra anterior",
   ]);
   await chooseDate(page, "Desde", "2026-11-12");
   await chooseDate(page, "Hasta", "2026-11-12");
   await expect(page.locator(".movement-info > strong")).toHaveText([
-    "Pago tarjeta",
+    "Abono · Pago tarjeta",
     "Compra del periodo",
   ]);
   await expect(page.locator(".filtered-total")).toContainText("$200.00");
