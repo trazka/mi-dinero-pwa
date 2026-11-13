@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
 
@@ -112,10 +112,10 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
   ]);
   await expect(page.locator(".filtered-total")).toContainText("$200.00");
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+  await page.getByRole("button", { name: "Excel", exact: true }).click();
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/^tdc-/);
-  const csv = await readFile((await file.path())!, "utf8");
+  const csv = await exportText(file);
   expect(csv).toContain("Compra del periodo");
   expect(csv).not.toContain("Compra anterior");
   expect(csv).toContain("Pago tarjeta");

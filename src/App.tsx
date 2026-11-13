@@ -53,6 +53,7 @@ import {
   PanelLeftOpen,
   Eye,
   EyeOff,
+  Info,
 } from "lucide-react";
 import {
   balance,
@@ -145,14 +146,14 @@ function ExportButtons({
         disabled={disabled}
         onClick={() => onExport("xlsx")}
       >
-        <Download size={16} /> Exportar Excel
+        <Download size={16} /> Excel
       </button>
       <button
         className="button secondary"
         disabled={disabled}
         onClick={() => onExport("pdf")}
       >
-        <Download size={16} /> Exportar PDF
+        <Download size={16} /> PDF
       </button>
     </div>
   );
@@ -160,6 +161,7 @@ function ExportButtons({
 export default function App() {
   const security = useSecurity();
   const [exporting, setExporting] = useState(false);
+  const [showTdcInfo, setShowTdcInfo] = useState(false);
   async function exportReadable(
     table: ExportTable,
     filename: string,
@@ -437,6 +439,7 @@ export default function App() {
     setMerchant("");
   }
   function selectMovementType(type: MovementFilter) {
+    setShowTdcInfo(false);
     setTypeFilter(type);
     setSearch("");
     setMethodFilter("");
@@ -1522,31 +1525,17 @@ export default function App() {
                   <h2>
                     {filtered.length} {filteredLabel}
                   </h2>
-                  <button
-                    className="text-button"
-                    onClick={() =>
-                      download(
-                        csv(
-                          tdcView
-                            ? filtered.map((m) =>
-                                cardPaymentAmount(m) > 0
-                                  ? {
-                                      ...m,
-                                      creditPaymentDebtId:
-                                        m.creditPaymentDebtId ??
-                                        movementDebtId(data, m),
-                                    }
-                                  : m,
-                              )
-                            : filtered,
-                        ),
-                        `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "gastos" : typeFilter === "credit" ? "tdc" : "movimientos"}-${today()}.csv`,
-                        "text/csv;charset=utf-8",
-                      )
-                    }
-                  >
-                    Exportar CSV <Download size={16} />
-                  </button>
+                  {tdcView && (
+                    <button
+                      className="tdc-info-toggle"
+                      aria-label="Información de TDC"
+                      aria-expanded={showTdcInfo}
+                      aria-controls="tdc-info"
+                      onClick={() => setShowTdcInfo((open) => !open)}
+                    >
+                      <Info size={21} />
+                    </button>
+                  )}
                 </div>
                 <ExportButtons
                   disabled={exporting || !filtered.length}
@@ -1561,7 +1550,12 @@ export default function App() {
                 {typeFilter === "all" && filtered.length > 0 && (
                   <div className="movement-totals">
                     {reportColumns.map((column) => (
-                      <span key={column.key}>
+                      <span
+                        key={column.key}
+                        className={
+                          column.key === "acquired" ? "total-wide" : undefined
+                        }
+                      >
                         {column.key === "expense"
                           ? "Gastos"
                           : column.key === "acquired"
@@ -1594,8 +1588,8 @@ export default function App() {
                     )}
                   </div>
                 )}
-                {tdcView && (
-                  <p className="helper">
+                {tdcView && showTdcInfo && (
+                  <p className="helper tdc-info" id="tdc-info">
                     Las compras aumentan tu deuda y los abonos la reducen. Los
                     abonos también cuentan en Gastos. Consulta el saldo
                     pendiente en Deudas.

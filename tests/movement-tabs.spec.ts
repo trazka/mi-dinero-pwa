@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
 import { openAdvancedFilters } from "./filter-utils";
 
-test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros", async ({
+test("pestañas filtran listado, total y exportación, conservan fechas y adaptan filtros", async ({
   page,
 }) => {
   await page.goto("./");
@@ -113,10 +113,10 @@ test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros
   await expect(names).toHaveText(["Gasto reciente", "Gasto anterior"]);
   await expect(page.locator(".filtered-total")).toContainText("$15.00");
   const pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+  await page.getByRole("button", { name: "Excel", exact: true }).click();
   const file = await pending;
   expect(file.suggestedFilename()).toMatch(/^gastos-/);
-  const csv = await readFile((await file.path())!, "utf8");
+  const csv = await exportText(file);
   expect(csv).toContain("Gasto reciente");
   expect(csv).not.toContain("Ingreso reciente");
   expect(csv).not.toContain("Compra reciente");
