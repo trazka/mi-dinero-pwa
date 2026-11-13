@@ -118,11 +118,12 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
   expect(csv).not.toContain("Compra anterior");
   expect(csv).not.toContain("Pago tarjeta");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
-  await expect(page.locator("thead")).toContainText("Deuda adquirida");
-  await expect(page.locator("tbody td").nth(1)).toHaveText("$0.00");
-  await expect(page.locator("tbody td").nth(2)).toHaveText("$0.00");
-  await expect(page.locator("tbody td").nth(3)).toHaveText("$200.00");
-  await expect(page.locator("tbody td").nth(4)).toHaveText("$0.00");
+  await expect(page.locator("thead th")).toHaveText([
+    "Periodo",
+    "Deuda adquirida",
+  ]);
+  await expect(page.locator("tbody td").nth(1)).toHaveText("$200.00");
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await page
     .getByLabel("Tipo de movimiento", { exact: true })
     .selectOption("all");
