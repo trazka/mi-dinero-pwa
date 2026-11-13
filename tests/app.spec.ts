@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
 import { test, expect, type Page } from "@playwright/test";
@@ -77,6 +78,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByRole("button", { name: "Movimientos", exact: true })
     .click();
   await expect(page.locator(".movement")).toHaveCount(3);
+  await openAdvancedFilters(page);
   await page.getByLabel("Establecimiento", { exact: true }).fill("Tienda");
   await expect(page.locator(".movement")).toHaveCount(1);
   page.once("dialog", (d) => d.accept());
@@ -266,6 +268,7 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
   await chooseDate(page, "Desde", "2026-11-01");
   await chooseDate(page, "Hasta", "2026-11-02");
   await expect(page.locator("tbody tr")).toHaveCount(2);
+  await openAdvancedFilters(page);
   await page
     .getByLabel("Categoría", { exact: true })
     .selectOption("Alimentación");

@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { setBackupFile } from "./backup-utils";
@@ -92,8 +93,8 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await page.getByRole("button", { name: "Ver ingresos", exact: true }).click();
   const names = page.locator(".movement-info > strong");
   await expect(
-    page.getByLabel("Tipo de movimiento", { exact: true }),
-  ).toHaveValue("income");
+    page.getByRole("tab", { name: "Ingresos", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(names).toHaveText(["Ingreso reciente", "Ingreso antiguo"]);
   await expect(page.locator(".filtered-total")).toContainText("$1,100.00");
   await chooseDate(page, "Desde", "2026-11-12");
@@ -118,8 +119,8 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page.getByRole("button", { name: "Ver egresos", exact: true }).click();
   await expect(
-    page.getByLabel("Tipo de movimiento", { exact: true }),
-  ).toHaveValue("expense");
+    page.getByRole("tab", { name: "Gastos", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel("Desde", { exact: true })).toContainText(
     "Elegir fecha",
   );
@@ -136,7 +137,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
   file = await pending;
-  expect(file.suggestedFilename()).toMatch(/^egresos-/);
+  expect(file.suggestedFilename()).toMatch(/^gastos-/);
   csv = await readFile((await file.path())!, "utf8");
   expect(csv).toContain("Pago de tarjeta");
   expect(csv).not.toContain("Compra pendiente");
@@ -153,10 +154,11 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page.getByRole("button", { name: "Ver todos", exact: true }).click();
   await expect(
-    page.getByLabel("Tipo de movimiento", { exact: true }),
-  ).toHaveValue("all");
+    page.getByRole("tab", { name: "Todos", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(names).toHaveCount(6);
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openAdvancedFilters(page);
   await page
     .getByLabel("Buscar movimientos", { exact: true })
     .fill("No existe este concepto");

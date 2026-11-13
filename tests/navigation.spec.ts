@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 
 test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
@@ -128,6 +129,7 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Movimientos", exact: true })
     .click();
+  await openAdvancedFilters(page);
   const filter = page.getByLabel("Establecimiento", { exact: true });
   await filter.fill("tienda");
   await page

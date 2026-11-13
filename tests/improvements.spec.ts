@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
 const base = {
@@ -72,6 +73,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await page.locator("summary").click();
   await expect(page.locator(".payment")).toHaveCount(1);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await openAdvancedFilters(page);
   await page.getByLabel("Buscar movimientos").fill("$40.00");
   await page.getByLabel("Filtrar método").selectOption("Transferencia");
   await page.getByLabel("Filtrar tarjeta o deuda").selectOption("card");

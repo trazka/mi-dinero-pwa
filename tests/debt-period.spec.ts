@@ -97,8 +97,8 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
     .getByRole("button", { name: "Ver deuda adquirida", exact: true })
     .click();
   await expect(
-    page.getByLabel("Tipo de movimiento", { exact: true }),
-  ).toHaveValue("credit");
+    page.getByRole("tab", { name: "Compras con TDC", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".movement-info > strong")).toHaveText([
     "Compra del periodo",
     "Compra anterior",
