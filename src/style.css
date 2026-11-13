@@ -2136,7 +2136,12 @@ li {
     bottom: calc(82px + env(safe-area-inset-bottom));
   }
   .page {
-    padding-bottom: calc(165px + env(safe-area-inset-bottom));
+    /* Navigation already occupies its own row, including the safe area. */
+    padding-bottom: 24px;
+  }
+  .page:has(.page-heading > .section-add) {
+    /* Let the last content scroll above the floating 56px add button. */
+    padding-bottom: 80px;
   }
 }
 
