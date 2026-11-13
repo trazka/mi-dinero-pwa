@@ -1523,17 +1523,17 @@ export default function App() {
                   <h2>
                     {filtered.length} {filteredLabel}
                   </h2>
+                  <ExportButtons
+                    disabled={exporting || !filtered.length}
+                    onExport={(format) =>
+                      void exportReadable(
+                        movementDocument,
+                        exportNames[typeFilter],
+                        format,
+                      )
+                    }
+                  />
                 </div>
-                <ExportButtons
-                  disabled={exporting || !filtered.length}
-                  onExport={(format) =>
-                    void exportReadable(
-                      movementDocument,
-                      exportNames[typeFilter],
-                      format,
-                    )
-                  }
-                />
                 {typeFilter === "all" && filtered.length > 0 && (
                   <div className="movement-totals">
                     {reportColumns.map((column) => (
