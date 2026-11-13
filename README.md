@@ -177,3 +177,5 @@ Movimientos ofrece los botones **Excel** (.xlsx) y **PDF**. El CSV se conserva �
 El resumen de Movimientos mantiene contador, exportaciones y totales próximos. Ingresos y Gastos usan dos columnas iguales con etiqueta e importe en la misma línea y letra mayor; en pantallas estrechas se apilan sin recortar los importes.
 
 Las exportaciones Excel y PDF presentan las fechas completas como **12-nov-2026**, incluidos los criterios Desde/Hasta y los periodos diarios o semanales. Los grupos mensuales conservan el nombre del mes y año.
+
+Los avisos de acciones se ocultan automáticamente a los 4 segundos y los errores de acciones a los 6 segundos. Se pueden cerrar antes y se limpian al cambiar de sección; repetir una acción renueva el tiempo del mensaje, aunque el texto sea idéntico. Los errores que impiden abrir el almacenamiento conservan su explicación visible.

@@ -1,3 +1,4 @@
+import useTimedMessage from "./useTimedMessage";
 import {
   excelBlob,
   exportDate,
@@ -215,11 +216,15 @@ export default function App() {
 
   const [data, setData] = useState<Data>(empty),
     [loaded, setLoaded] = useState(false),
-    [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
     [tab, setTab] = useState<Tab>("Inicio"),
     [modal, setModal] = useState<Modal>(null),
     [busy, setBusy] = useState(false);
+  const [error, setError] = useTimedMessage(6000, loaded);
+  const [notice, setNotice] = useTimedMessage(4000);
+  useEffect(() => {
+    setError("");
+    setNotice("");
+  }, [tab, setError, setNotice]);
   const [updateAvailable, setUpdateAvailable] = useState(
     !!window.__miDineroUpdate,
   );
@@ -1291,8 +1296,13 @@ export default function App() {
             )}
           </div>
           {error && (
-            <div className="alert" role="alert">
-              {error}
+            <div className="alert transient-alert" role="alert">
+              <span>{error}</span>
+              {loaded && (
+                <button aria-label="Cerrar error" onClick={() => setError("")}>
+                  <X size={16} />
+                </button>
+              )}
             </div>
           )}
           {updateAvailable && (
