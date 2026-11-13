@@ -370,12 +370,20 @@ export default function App() {
     [methodFilter, setMethodFilter] = useState(""),
     [debtFilter, setDebtFilter] = useState("");
   function clearFilters() {
-    setTypeFilter("all");
+    if (tab === "Reportes") setTypeFilter("all");
     setSearch("");
     setMethodFilter("");
     setDebtFilter("");
     setFrom("");
     setTo("");
+    setCategory("");
+    setMerchant("");
+  }
+  function selectMovementType(type: MovementFilter) {
+    setTypeFilter(type);
+    setSearch("");
+    setMethodFilter("");
+    setDebtFilter("");
     setCategory("");
     setMerchant("");
   }
@@ -475,14 +483,27 @@ export default function App() {
   const newestFirst = [...data.movements]
     .reverse()
     .sort((a, b) => b.date.localeCompare(a.date));
-  const filtered = newestFirst.filter(
+  const typeMovements = newestFirst.filter(
     (m) =>
-      (typeFilter === "all" ||
-        (typeFilter === "income"
-          ? m.type === "income"
-          : typeFilter === "credit"
-            ? acquiredDebtAmount(m) > 0
-            : expenseAmount(m) > 0)) &&
+      typeFilter === "all" ||
+      (typeFilter === "income"
+        ? m.type === "income"
+        : typeFilter === "credit"
+          ? acquiredDebtAmount(m) > 0
+          : expenseAmount(m) > 0),
+  );
+  const filterMerchantOptions = [
+    ...new Set(typeMovements.map((m) => m.merchant)),
+  ].sort((a, b) => a.localeCompare(b, "es"));
+  const advancedFilterCount = [
+    search,
+    methodFilter,
+    debtFilter,
+    category,
+    merchant,
+  ].filter(Boolean).length;
+  const filtered = typeMovements.filter(
+    (m) =>
       (!from || m.date >= from) &&
       (!to || m.date <= to) &&
       (!category || m.category === category) &&
@@ -526,7 +547,7 @@ export default function App() {
   const typeLabels = {
     all: ["movimiento", "movimientos"],
     income: ["ingreso", "ingresos"],
-    expense: ["egreso", "egresos"],
+    expense: ["gasto", "gastos"],
     credit: ["compra con TDC", "compras con TDC"],
   };
   const filteredLabel = typeLabels[typeFilter][filtered.length === 1 ? 0 : 1];
@@ -710,16 +731,24 @@ export default function App() {
     ) : (
       <div className="empty">
         <Wallet size={32} />
-        <h3>Tu historia financiera empieza aquí</h3>
+        <h3>
+          {data.movements.length
+            ? `No hay ${filteredLabel} con estos filtros`
+            : "Tu historia financiera empieza aquí"}
+        </h3>
         <p>
-          Registra un movimiento para comenzar a ver tus finanzas con claridad.
+          {data.movements.length
+            ? "Cambia las fechas o limpia los filtros para ver tus registros."
+            : "Registra un movimiento para comenzar a ver tus finanzas con claridad."}
         </p>
-        <button
-          className="button secondary"
-          onClick={() => setModal({ kind: "movement" })}
-        >
-          Registrar movimiento
-        </button>
+        {!data.movements.length && (
+          <button
+            className="button secondary"
+            onClick={() => setModal({ kind: "movement" })}
+          >
+            Registrar movimiento
+          </button>
+        )}
       </div>
     );
   }
@@ -747,83 +776,26 @@ export default function App() {
   }
   const filters = (
     <div className="filters">
-      <Field label="Tipo de movimiento">
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as MovementFilter)}
-        >
-          <option value="all">Todos los movimientos</option>
-          <option value="income">Solo ingresos</option>
-          <option value="expense">Solo egresos</option>
-          <option value="credit">Deuda adquirida (TDC)</option>
-        </select>
-      </Field>
-      <Field label="Buscar movimientos">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Concepto, notas o importe"
-        />
-      </Field>
-      <Field label="Filtrar método">
-        <select
-          value={methodFilter}
-          onChange={(e) => setMethodFilter(e.target.value)}
-        >
-          <option value="">Todos los métodos</option>
-          {[
-            ...new Set([
-              "Efectivo",
-              "Tarjeta de débito",
-              "Tarjeta de crédito",
-              "Transferencia",
-              "Otro",
-              ...data.movements.map((m) => m.method),
-            ]),
-          ].map((method) => (
-            <option key={method}>{method}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Filtrar tarjeta o deuda">
-        <select
-          value={debtFilter}
-          onChange={(e) => setDebtFilter(e.target.value)}
-        >
-          <option value="">Todas las deudas</option>
-          {data.debts.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.creditor}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {tab === "Reportes" && (
+        <Field label="Tipo de movimiento">
+          <select
+            value={typeFilter}
+            onChange={(e) =>
+              selectMovementType(e.target.value as MovementFilter)
+            }
+          >
+            <option value="all">Todos los movimientos</option>
+            <option value="income">Solo ingresos</option>
+            <option value="expense">Solo egresos</option>
+            <option value="credit">Deuda adquirida (TDC)</option>
+          </select>
+        </Field>
+      )}
       <Field label="Desde" className="date-filter">
         <DatePicker value={from} onChange={setFrom} />
       </Field>
       <Field label="Hasta" className="date-filter">
         <DatePicker value={to} min={from || undefined} onChange={setTo} />
-      </Field>
-      <Field label="Categoría">
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="">Todas las categorías</option>
-          {[
-            ...new Set([
-              ...categories,
-              ...data.movements.map((m) => m.category),
-            ]),
-          ].map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Establecimiento">
-        <ConceptInput
-          suggestions={merchantOptions}
-          value={merchant}
-          onValueChange={setMerchant}
-          placeholder="Buscar establecimiento"
-        />
       </Field>
       {tab === "Reportes" && (
         <Field label="Agrupar por" className="group-filter">
@@ -834,6 +806,93 @@ export default function App() {
           </select>
         </Field>
       )}
+      <details className="advanced-filters">
+        <summary>
+          <span>
+            Más filtros{advancedFilterCount > 0 && ` (${advancedFilterCount})`}
+          </span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </summary>
+        <div className="advanced-filter-fields">
+          <Field label="Buscar movimientos">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Concepto, notas o importe"
+            />
+          </Field>
+          {typeFilter !== "credit" && (
+            <Field label="Filtrar método">
+              <select
+                value={methodFilter}
+                onChange={(e) => setMethodFilter(e.target.value)}
+              >
+                <option value="">Todos los métodos</option>
+                {[
+                  ...new Set([
+                    "Efectivo",
+                    "Tarjeta de débito",
+                    ...(typeFilter === "all" ? ["Tarjeta de crédito"] : []),
+                    "Transferencia",
+                    "Otro",
+                    ...typeMovements.map((m) => m.method),
+                  ]),
+                ].map((method) => (
+                  <option key={method}>{method}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          {typeFilter !== "income" && (
+            <Field
+              label={
+                typeFilter === "credit"
+                  ? "Filtrar tarjeta"
+                  : "Filtrar tarjeta o deuda"
+              }
+            >
+              <select
+                value={debtFilter}
+                onChange={(e) => setDebtFilter(e.target.value)}
+              >
+                <option value="">
+                  {typeFilter === "credit"
+                    ? "Todas las tarjetas"
+                    : "Todas las deudas"}
+                </option>
+                {data.debts
+                  .filter((d) => typeFilter !== "credit" || d.kind === "credit")
+                  .map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.creditor}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Categoría">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">Todas las categorías</option>
+              {[...new Set([...typeMovements.map((m) => m.category)])].map(
+                (c) => (
+                  <option key={c}>{c}</option>
+                ),
+              )}
+            </select>
+          </Field>
+          <Field label="Establecimiento">
+            <ConceptInput
+              suggestions={filterMerchantOptions}
+              value={merchant}
+              onValueChange={setMerchant}
+              placeholder="Buscar establecimiento"
+            />
+          </Field>
+        </div>
+      </details>
       {from && to && from > to && (
         <p role="alert">La fecha inicial debe ser anterior a la final.</p>
       )}
@@ -1233,6 +1292,102 @@ export default function App() {
           )}
           {tab === "Movimientos" && (
             <section className="panel full-panel">
+              {filters}
+              <div
+                className="movement-type-tabs"
+                role="tablist"
+                aria-label="Mostrar movimientos"
+              >
+                {(
+                  [
+                    ["all", "Todos"],
+                    ["income", "Ingresos"],
+                    ["expense", "Gastos"],
+                    ["credit", "Compras con TDC"],
+                  ] as const
+                ).map(([type, label], index, options) => (
+                  <button
+                    key={type}
+                    id={`movement-tab-${type}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={typeFilter === type}
+                    aria-controls="movement-results"
+                    tabIndex={typeFilter === type ? 0 : -1}
+                    onClick={() => selectMovementType(type)}
+                    onKeyDown={(e) => {
+                      let next = index;
+                      if (e.key === "ArrowRight")
+                        next = (index + 1) % options.length;
+                      else if (e.key === "ArrowLeft")
+                        next = (index + options.length - 1) % options.length;
+                      else if (e.key === "Home") next = 0;
+                      else if (e.key === "End") next = options.length - 1;
+                      else return;
+                      e.preventDefault();
+                      selectMovementType(options[next][0]);
+                      e.currentTarget.parentElement
+                        ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                        [next]?.focus();
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div
+                id="movement-results"
+                className="movement-results"
+                role="tabpanel"
+                aria-labelledby={`movement-tab-${typeFilter}`}
+              >
+                <div className="panel-heading">
+                  <h2>
+                    {filtered.length} {filteredLabel}
+                  </h2>
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      download(
+                        csv(filtered),
+                        `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "gastos" : typeFilter === "credit" ? "deuda-adquirida" : "movimientos"}-${today()}.csv`,
+                        "text/csv;charset=utf-8",
+                      )
+                    }
+                  >
+                    Exportar CSV <Download size={16} />
+                  </button>
+                </div>
+                {typeFilter === "all" && filtered.length > 0 && (
+                  <div className="movement-totals">
+                    {reportColumns.map((column) => (
+                      <span key={column.key}>
+                        {column.key === "expense"
+                          ? "Gastos"
+                          : column.key === "acquired"
+                            ? "Compras TDC"
+                            : "Ingresos"}
+                        : <strong>{money(column.total)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {typeFilter !== "all" && filtered.length > 0 && (
+                  <p className="filtered-total">
+                    {typeFilter === "credit"
+                      ? "Deuda adquirida"
+                      : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
+                    : <strong>{money(filteredTotal)}</strong>
+                  </p>
+                )}
+                {typeFilter === "credit" && (
+                  <p className="helper">
+                    Compras con TDC del periodo. Los pagos no reducen este
+                    total; el saldo pendiente se consulta en Deudas.
+                  </p>
+                )}
+                {movementList(filtered)}
+              </div>
               <RecurringPanel
                 onEditing={setPlanningEditing}
                 data={data}
@@ -1241,39 +1396,6 @@ export default function App() {
                 busy={busy}
                 categories={[...categories, "Pago de deuda"]}
               />
-              {filters}
-              <div className="panel-heading">
-                <h2>
-                  {filtered.length} {filteredLabel}
-                </h2>
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    download(
-                      csv(filtered),
-                      `${typeFilter === "income" ? "ingresos" : typeFilter === "expense" ? "egresos" : typeFilter === "credit" ? "deuda-adquirida" : "movimientos"}-${today()}.csv`,
-                      "text/csv;charset=utf-8",
-                    )
-                  }
-                >
-                  Exportar CSV <Download size={16} />
-                </button>
-              </div>
-              {typeFilter !== "all" && filtered.length > 0 && (
-                <p className="filtered-total">
-                  {typeFilter === "credit"
-                    ? "Deuda adquirida"
-                    : `Total de ${typeFilter === "income" ? "ingresos" : "egresos"}`}
-                  : <strong>{money(filteredTotal)}</strong>
-                </p>
-              )}
-              {typeFilter === "credit" && (
-                <p className="helper">
-                  Compras con TDC del periodo. Los pagos no reducen este total;
-                  el saldo pendiente se consulta en Deudas.
-                </p>
-              )}
-              {movementList(filtered)}
             </section>
           )}
           {tab === "Deudas" && (

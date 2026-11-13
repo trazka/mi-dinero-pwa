@@ -165,3 +165,6 @@ En vertical, los filtros largos usan todo el ancho en pantallas de teléfono; De
 
 
 Reportes oculta los totales y las columnas de ingresos, egresos o deuda adquirida sin datos en el resultado de los filtros. Si solo hay compras con TDC, se muestran Periodo y Deuda adquirida; el balance de efectivo aparece cuando hay ingresos o egresos. Sin resultados se conserva únicamente el aviso de que no hay datos, sin totales ni tabla vacíos.
+
+
+Movimientos se organiza con **Todos · Ingresos · Gastos · Compras con TDC** encima del contador. Las pestañas sustituyen su selector de tipo y cambian listado, contador, totales y CSV. Desde/Hasta siempre están visibles; **Más filtros** contiene búsqueda, método, tarjeta/deuda, categoría y establecimiento según el tipo elegido. Ingresos oculta deuda; Compras con TDC muestra tarjeta y omite el método fijo. Categorías y conceptos se limitan al tipo elegido. Cambiar pestaña conserva las fechas y limpia filtros avanzados para evitar criterios ocultos; **Limpiar filtros** conserva la pestaña de Movimientos. Reportes mantiene su selector de tipo y agrupación visibles, con los demás criterios en Más filtros. Los recurrentes aparecen después del listado.

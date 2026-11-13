@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 test("en iPhone solo desplaza contenido y conserva encabezado, pestañas y acceso al final", async ({
   page,
@@ -164,6 +165,7 @@ test("capturar con teclado oculta navegación y sigue el área visual sin perder
   await page.goto("./");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await openAdvancedFilters(page);
   const search = page.getByLabel("Buscar movimientos", { exact: true });
   await search.fill("Texto conservado");
   // Hide immediately, even before the visual viewport reports a keyboard.
