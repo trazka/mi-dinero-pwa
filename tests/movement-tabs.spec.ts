@@ -99,7 +99,7 @@ test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros
     "Todos",
     "Ingresos",
     "Gastos",
-    "Compras con TDC",
+    "TDC",
   ]);
   await expect(
     page.getByLabel("Tipo de movimiento", { exact: true }),
@@ -132,13 +132,11 @@ test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros
     page.getByLabel("Categoría", { exact: true }).locator("option"),
   ).toHaveText(["Todas las categorías", "Sueldo"]);
   await page.getByLabel("Categoría", { exact: true }).selectOption("Sueldo");
-  await types
-    .getByRole("tab", { name: "Compras con TDC", exact: true })
-    .click();
+  await types.getByRole("tab", { name: "TDC", exact: true }).click();
   await expect(names).toHaveText(["Compra reciente"]);
-  await expect(page.getByLabel("Filtrar método", { exact: true })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByLabel("Filtrar método", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByLabel("Filtrar tarjeta", { exact: true }),
   ).toBeVisible();
@@ -148,7 +146,7 @@ test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();
   await expect(
-    types.getByRole("tab", { name: "Compras con TDC", exact: true }),
+    types.getByRole("tab", { name: "TDC", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".filtered-total")).toContainText("$50.00");
   await types.getByRole("tab", { name: "Todos", exact: true }).click();
@@ -160,11 +158,9 @@ test("pestañas filtran listado, total y CSV, conservan fechas y adaptan filtros
   ).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "Ingresos", exact: true }).press("End");
   await expect(
-    types.getByRole("tab", { name: "Compras con TDC", exact: true }),
+    types.getByRole("tab", { name: "TDC", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await page
-    .getByRole("tab", { name: "Compras con TDC", exact: true })
-    .press("Home");
+  await page.getByRole("tab", { name: "TDC", exact: true }).press("Home");
   await expect(names).toHaveCount(6);
   await expect(page.locator(".movement-totals")).toContainText("$70.00");
   await expect(page.locator(".movement-totals")).toContainText("$15.00");
