@@ -2695,3 +2695,14 @@ li {
 :root[data-theme="dark"] .movement-info .tdc-entry-kind.repayment {
   color: #abd6b6;
 }
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 24px;
+}
+.export-actions .button {
+  flex: 1 1 140px;
+  min-width: 0;
+}

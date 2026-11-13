@@ -1,3 +1,10 @@
+import {
+  excelBlob,
+  pdfBlob,
+  movementExport,
+  saveExport,
+  type ExportTable,
+} from "./exports";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
@@ -124,8 +131,58 @@ function download(content: string, name: string, type: string) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+function ExportButtons({
+  onExport,
+  disabled,
+}: {
+  onExport: (format: "xlsx" | "pdf") => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="export-actions" aria-label="Exportar listado">
+      <button
+        className="button secondary"
+        disabled={disabled}
+        onClick={() => onExport("xlsx")}
+      >
+        <Download size={16} /> Exportar Excel
+      </button>
+      <button
+        className="button secondary"
+        disabled={disabled}
+        onClick={() => onExport("pdf")}
+      >
+        <Download size={16} /> Exportar PDF
+      </button>
+    </div>
+  );
+}
 export default function App() {
   const security = useSecurity();
+  const [exporting, setExporting] = useState(false);
+  async function exportReadable(
+    table: ExportTable,
+    filename: string,
+    format: "xlsx" | "pdf",
+  ) {
+    if (exporting) return;
+    setExporting(true);
+    setError("");
+    try {
+      const blob = await (format === "xlsx"
+        ? excelBlob(table)
+        : pdfBlob(table));
+      saveExport(blob, `${filename}-${today()}.${format}`);
+      setNotice(
+        "Archivo generado. Puedes abrirlo o guardarlo desde las descargas.",
+      );
+    } catch {
+      setError("No se pudo generar el archivo. Vuelve a intentarlo.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const [savingsVisible, setSavingsVisible] = useState(false);
   const canSeeSavings = savingsVisible;
   useEffect(() => {
@@ -821,6 +878,73 @@ export default function App() {
       m.type === "income" ? m.amount : expenseAmount(m);
     groupTotals.set(key, group);
   }
+  const exportNames = {
+    all: "movimientos",
+    income: "ingresos",
+    expense: "gastos",
+    credit: tdcView ? "tdc" : "deuda-adquirida",
+  };
+  const exportTitles = {
+    all: "Todos los movimientos",
+    income: "Ingresos",
+    expense: "Gastos",
+    credit: tdcView ? "TDC: compras y abonos" : "Deuda adquirida",
+  };
+  const exportFilters = [
+    `Desde: ${from || "sin límite"} · Hasta: ${to || "sin límite"}`,
+    search && `Búsqueda: ${search}`,
+    methodFilter && `Método: ${methodFilter}`,
+    debtFilter &&
+      `Tarjeta o deuda: ${data.debts.find((d) => d.id === debtFilter)?.creditor ?? debtFilter}`,
+    category && `Categoría: ${category}`,
+    merchant && `Establecimiento: ${merchant}`,
+  ].filter(Boolean) as string[];
+  const normalizeExports = (items: Movement[]) =>
+    items.map((m) =>
+      cardPaymentAmount(m) > 0
+        ? {
+            ...m,
+            creditPaymentDebtId:
+              m.creditPaymentDebtId ?? movementDebtId(data, m),
+          }
+        : m,
+    );
+  const movementDocument = movementExport(
+    normalizeExports(filtered),
+    exportTitles[typeFilter],
+    exportFilters,
+    tdcView,
+  );
+  const periodLabel = (key: string) =>
+    period === "monthly"
+      ? new Date(key + "-01T12:00:00").toLocaleDateString("es-MX", {
+          month: "long",
+          year: "numeric",
+        })
+      : `${period === "weekly" ? "Semana del " : ""}${dateLabel(key)} ${key.slice(0, 4)}`;
+  const reportDocument: ExportTable = {
+    title: `Reporte: ${exportTitles[typeFilter]}`,
+    filters: [
+      ...exportFilters,
+      `Agrupado por: ${period === "monthly" ? "mes" : period === "weekly" ? "semana" : "día"}`,
+    ],
+    totals: reportColumns.map((c) => [c.label, c.total]),
+    columns: [
+      "Periodo",
+      ...reportColumns.map((c) => c.label),
+      ...(showBalance ? ["Balance"] : []),
+    ],
+    rows: [...groupTotals]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, g]) => [
+        periodLabel(key),
+        ...reportColumns.map((c) => g[c.key]),
+        ...(showBalance ? [g.income - g.expense] : []),
+      ]),
+    moneyColumns: reportColumns
+      .map((_, i) => i + 1)
+      .concat(showBalance ? [reportColumns.length + 1] : []),
+  };
   const filters = (
     <div className="filters">
       {tab === "Reportes" && (
@@ -1424,6 +1548,16 @@ export default function App() {
                     Exportar CSV <Download size={16} />
                   </button>
                 </div>
+                <ExportButtons
+                  disabled={exporting || !filtered.length}
+                  onExport={(format) =>
+                    void exportReadable(
+                      movementDocument,
+                      exportNames[typeFilter],
+                      format,
+                    )
+                  }
+                />
                 {typeFilter === "all" && filtered.length > 0 && (
                   <div className="movement-totals">
                     {reportColumns.map((column) => (
@@ -1684,6 +1818,16 @@ export default function App() {
                 ]}
               />
               {filters}
+              <ExportButtons
+                disabled={exporting || !filtered.length}
+                onExport={(format) =>
+                  void exportReadable(
+                    reportDocument,
+                    `reporte-${exportNames[typeFilter]}`,
+                    format,
+                  )
+                }
+              />
               {reportColumns.length > 0 && (
                 <div className="report-totals credit-report-totals">
                   {reportColumns.map((column) => (
@@ -1830,11 +1974,25 @@ export default function App() {
                   />
                 </label>
                 <div className="divider" />
-                <h3>Para tu hoja de cálculo</h3>
+                <h3>Para consultar y compartir</h3>
                 <p>
-                  Exporta todos tus movimientos en un archivo compatible con
-                  Excel y Numbers.
+                  Descarga tus movimientos en Excel, PDF o CSV. Estos archivos
+                  son para consultar; usa JSON para restaurar tus datos.
                 </p>
+                <ExportButtons
+                  disabled={exporting || !data.movements.length}
+                  onExport={(format) =>
+                    void exportReadable(
+                      movementExport(
+                        normalizeExports(newestFirst),
+                        "Todos los movimientos",
+                        ["Todos los registros"],
+                      ),
+                      "movimientos",
+                      format,
+                    )
+                  }
+                />
                 <button
                   className="button secondary"
                   onClick={() =>

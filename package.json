@@ -12,7 +12,10 @@
     "test:pages": "node scripts/check-pages.mjs"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "idb": "^8.0.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
