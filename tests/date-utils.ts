@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 export async function chooseDate(page: Page, label: string, date: string) {
+  await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   await page.getByLabel(label, { exact: true }).click();
   const calendar = page.getByRole("dialog", {
     name: "Seleccionar fecha",

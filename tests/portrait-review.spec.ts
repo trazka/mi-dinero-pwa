@@ -65,6 +65,7 @@ test("todas las vistas y formularios verticales conservan controles y textos den
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   async function fits() {
+    await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
     const overflow = await page.evaluate(() => {
       const root = document.querySelector(".page")!,
         bounds = root.getBoundingClientRect();

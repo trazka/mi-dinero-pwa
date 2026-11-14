@@ -29,6 +29,7 @@ export function usePageSwipe<T extends string>(config: Config<T>) {
   const latest = useRef(config);
   latest.current = config;
   const cancelRef = useRef<() => void>(() => {});
+  const navigateRef = useRef<(next: T) => boolean>(() => false);
   useEffect(() => {
     const page = latest.current.pageRef.current;
     if (!page) return;
@@ -59,6 +60,46 @@ export function usePageSwipe<T extends string>(config: Config<T>) {
         old.drag?.cleanup();
         if (old.next) latest.current.clear();
       }
+    };
+    navigateRef.current = (next: T) => {
+      abort();
+      const cfg = latest.current;
+      if (
+        next === cfg.tab ||
+        cfg.blocked ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+        typeof page.animate !== "function"
+      )
+        return false;
+      const direction =
+        cfg.tabs.indexOf(next) > cfg.tabs.indexOf(cfg.tab) ? 1 : -1;
+      cfg.prepare(next);
+      const frame = cfg.previewFrameRef.current,
+        content = cfg.previewContentRef.current;
+      if (!frame || !content) {
+        cfg.clear();
+        return false;
+      }
+      const drag = createPageDrag(page, frame, content, direction);
+      gesture = {
+        x: 0,
+        y: 0,
+        origin: page,
+        mode: "horizontal",
+        next,
+        direction,
+        drag,
+        distance: 0,
+        samples: [],
+        settling: true,
+        complete: true,
+      };
+      drag.settle(true, () => finish(true), 320);
+      return true;
+    };
+    const interrupt = () => {
+      if (gesture?.settling && gesture.complete) finish(true);
+      else abort();
     };
     const hasNativeScroll = (origin: Element, dx: number) => {
       let element: Element | null = origin;
@@ -213,22 +254,25 @@ export function usePageSwipe<T extends string>(config: Config<T>) {
     page.addEventListener("touchcancel", abort, options);
     page.addEventListener("click", click, true);
     page.addEventListener("pointerdown", pointer, true);
-    window.addEventListener("resize", abort);
-    window.addEventListener("orientationchange", abort);
-    document.addEventListener("visibilitychange", abort);
+    window.addEventListener("resize", interrupt);
+    window.addEventListener("orientationchange", interrupt);
+    document.addEventListener("visibilitychange", interrupt);
     return () => {
       abort();
       cancelRef.current = () => {};
+      navigateRef.current = () => false;
       page.removeEventListener("touchstart", start, true);
       page.removeEventListener("touchmove", move, true);
       page.removeEventListener("touchend", end, true);
       page.removeEventListener("touchcancel", abort, true);
       page.removeEventListener("click", click, true);
       page.removeEventListener("pointerdown", pointer, true);
-      window.removeEventListener("resize", abort);
-      window.removeEventListener("orientationchange", abort);
-      document.removeEventListener("visibilitychange", abort);
+      window.removeEventListener("resize", interrupt);
+      window.removeEventListener("orientationchange", interrupt);
+      document.removeEventListener("visibilitychange", interrupt);
     };
   }, [config.pageRef]);
-  return useCallback(() => cancelRef.current(), []);
+  const cancel = useCallback(() => cancelRef.current(), []);
+  const goTo = useCallback((next: T) => navigateRef.current(next), []);
+  return { cancel, goTo };
 }
