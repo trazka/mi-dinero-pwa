@@ -1,5 +1,4 @@
 import {
-  Plus,
   ArrowLeftRight,
   HandCoins,
   PiggyBank,
@@ -9,14 +8,12 @@ import {
 } from "lucide-react";
 export default function HomeLanding({
   disabled,
-  onMovement,
   onMovements,
   onPayment,
   onSavings,
   onSummary,
 }: {
   disabled: boolean;
-  onMovement: () => void;
   onMovements: () => void;
   onPayment: () => void;
   onSavings: () => void;
@@ -24,13 +21,6 @@ export default function HomeLanding({
 }) {
   return (
     <section className="home-landing" aria-label="Accesos de Inicio">
-      <button
-        className="button home-primary"
-        disabled={disabled}
-        onClick={onMovement}
-      >
-        <Plus size={24} /> Nuevo movimiento
-      </button>
       <div className="home-shortcuts">
         <button disabled={disabled} onClick={onMovements}>
           <ArrowLeftRight size={23} />

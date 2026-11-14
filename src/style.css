@@ -2801,12 +2801,6 @@ li {
   max-width: 680px;
   margin: 0 auto;
 }
-.home-primary {
-  width: 100%;
-  min-height: 58px;
-  font-size: 17px;
-  border-radius: 18px;
-}
 .home-shortcuts {
   display: grid;
   gap: 10px;
