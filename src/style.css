@@ -2898,3 +2898,17 @@ li {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.page-preview-frame {
+  position: fixed;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 17;
+}
+.page-preview-content {
+  position: absolute;
+  inset: 0 auto auto 0;
+  box-sizing: border-box;
+  will-change: transform;
+}
