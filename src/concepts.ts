@@ -15,7 +15,10 @@ export function categoryForConcept(
   return (
     [...data.movements]
       .reverse()
-      .find((item) => normalizeConcept(item.merchant) === key)?.category ??
+      .find(
+        (item) =>
+          item.type !== "transfer" && normalizeConcept(item.merchant) === key,
+      )?.category ??
     [...(data.recurrents ?? [])]
       .reverse()
       .find((item) => normalizeConcept(item.merchant) === key)?.category

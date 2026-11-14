@@ -100,6 +100,7 @@ test("pestañas filtran listado, total y exportación, conservan fechas y adapta
     "Ingresos",
     "Gastos",
     "TDC",
+    "Traspasos",
   ]);
   await expect(
     page.getByLabel("Tipo de movimiento", { exact: true }),
@@ -158,9 +159,9 @@ test("pestañas filtran listado, total y exportación, conservan fechas y adapta
   ).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "Ingresos", exact: true }).press("End");
   await expect(
-    types.getByRole("tab", { name: "TDC", exact: true }),
+    types.getByRole("tab", { name: "Traspasos", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("tab", { name: "TDC", exact: true }).press("Home");
+  await page.getByRole("tab", { name: "Traspasos", exact: true }).press("Home");
   await expect(names).toHaveCount(6);
   await expect(page.locator(".movement-totals")).toContainText("$70.00");
   await expect(page.locator(".movement-totals")).toContainText("$15.00");

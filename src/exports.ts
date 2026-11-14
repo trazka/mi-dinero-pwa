@@ -1,4 +1,4 @@
-import { expenseAmount, type Movement } from "./data";
+import { expenseAmount, transferRoute, type Movement } from "./data";
 
 export function exportDate(iso: string) {
   const [year, month, day] = iso.split("-");
@@ -56,19 +56,32 @@ export function movementExport(
     (s, m) => s + (m.creditPaymentDebtId ? m.amount : 0),
     0,
   );
+  const transfers = movements.reduce(
+    (s, m) => s + (m.type === "transfer" ? m.amount : 0),
+    0,
+  );
   const kind = (m: Movement) =>
-    m.creditPaymentDebtId
-      ? "Abono TDC"
-      : m.creditDebtId
-        ? "Compra TDC"
-        : m.type === "income"
-          ? "Ingreso"
-          : "Gasto";
+    m.type === "transfer"
+      ? "Traspaso"
+      : m.creditPaymentDebtId
+        ? "Abono TDC"
+        : m.creditDebtId
+          ? "Compra TDC"
+          : m.type === "income"
+            ? "Ingreso"
+            : "Gasto";
   return {
     title,
     filters,
     note:
-      payments > 0 ? "Los abonos TDC ya están incluidos en Gastos." : undefined,
+      [
+        payments > 0 ? "Los abonos TDC ya están incluidos en Gastos." : "",
+        transfers > 0
+          ? "Los traspasos no son ingresos ni gastos y no cambian el dinero total."
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined,
     totals: (
       [
         ...(!onlyTdc
@@ -79,6 +92,7 @@ export function movementExport(
           : []),
         ["Compras TDC", purchases],
         [onlyTdc ? "Abonos TDC" : "Abonos TDC (incluidos en gastos)", payments],
+        ["Traspasos (sin ingreso ni gasto)", transfers],
       ] as [string, number][]
     ).filter(([, n]) => n > 0),
     columns: [
@@ -90,6 +104,8 @@ export function movementExport(
       "Importe MXN",
       "Gasto contabilizado MXN",
       "Notas",
+      "Origen del traspaso",
+      "Destino del traspaso",
     ],
     rows: movements.map((m) => [
       exportDate(m.date),
@@ -100,6 +116,8 @@ export function movementExport(
       m.amount,
       expenseAmount(m),
       m.notes,
+      m.type === "transfer" ? transferRoute(m).from : "",
+      m.type === "transfer" ? transferRoute(m).to : "",
     ]),
     moneyColumns: [5, 6],
     pdfColumns: ["Fecha", "Concepto", "Tipo", "Importe MXN"],
