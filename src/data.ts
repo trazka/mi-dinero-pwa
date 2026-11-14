@@ -1,13 +1,14 @@
 import { openDB } from "idb";
 export type Movement = {
   id: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "transfer";
   date: string;
   merchant: string;
   category: string;
   amount: number;
   method: string;
   notes: string;
+  transferDirection?: "bank-to-cash" | "cash-to-bank";
   paymentId?: string;
   creditDebtId?: string;
   creditPaymentDebtId?: string;
@@ -88,6 +89,50 @@ export const cents = (v: number) =>
 export const expenseAmount = (m: Movement) =>
   m.type === "expense" && !m.creditDebtId ? m.amount : 0;
 
+export function walletBalances(data: Data) {
+  const totals = { bank: 0, cash: 0, unassigned: 0 };
+  for (const movement of data.movements) {
+    const amount = Math.round(movement.amount * 100);
+    if (movement.type === "transfer") {
+      const sign = movement.transferDirection === "bank-to-cash" ? 1 : -1;
+      totals.bank -= sign * amount;
+      totals.cash += sign * amount;
+      continue;
+    }
+    const value =
+      movement.type === "income"
+        ? amount
+        : -Math.round(expenseAmount(movement) * 100);
+    const method = movement.method.trim().toLocaleLowerCase("es");
+    const wallet =
+      method === "efectivo"
+        ? "cash"
+        : ["transferencia", "tarjeta de débito"].includes(method)
+          ? "bank"
+          : "unassigned";
+    totals[wallet] += value;
+  }
+  return {
+    bank: totals.bank / 100,
+    cash: totals.cash / 100,
+    unassigned: totals.unassigned / 100,
+  };
+}
+export const transferRoute = (m: Movement) =>
+  m.transferDirection === "bank-to-cash"
+    ? { from: "Banco", to: "Efectivo", label: "Retiro a efectivo" }
+    : { from: "Efectivo", to: "Banco", label: "Depósito al banco" };
+function validTransfer(m: Movement) {
+  return m.type === "transfer"
+    ? ["bank-to-cash", "cash-to-bank"].includes(m.transferDirection ?? "") &&
+        !m.paymentId &&
+        !m.creditDebtId &&
+        !m.creditPaymentDebtId &&
+        !m.recurringId &&
+        !m.recurringDate
+    : m.transferDirection === undefined;
+}
+
 export function payDebt(
   data: Data,
   id: string,
@@ -145,9 +190,30 @@ export function saveMovement(data: Data, movement: Movement): Data {
   if (
     !cents(movement.amount) ||
     !validDate(movement.date) ||
-    !["income", "expense"].includes(movement.type)
+    !["income", "expense", "transfer"].includes(movement.type)
   )
     throw Error("Revisa los datos del movimiento.");
+  if (
+    !validTransfer(movement) ||
+    (movement.type === "transfer" && old?.recurringId)
+  )
+    throw Error(
+      "Revisa el origen y destino del traspaso. No puede vincularse a una deuda o recurrente.",
+    );
+  if (movement.type === "transfer") {
+    const available = walletBalances({
+      ...data,
+      movements: data.movements.filter((m) => m.id !== movement.id),
+    });
+    const source =
+      movement.transferDirection === "bank-to-cash"
+        ? available.bank
+        : available.cash;
+    if (Math.round(movement.amount * 100) > Math.round(source * 100))
+      throw Error(
+        "El importe supera el saldo de origen. Revisa los métodos registrados o agrega los movimientos anteriores que falten.",
+      );
+  }
   const linked =
     movement.type === "expense" && movement.method === "Tarjeta de crédito";
   const legacyUnlinked =
@@ -231,7 +297,8 @@ export function validateBackup(input: unknown): Data {
   for (const m of d.movements) {
     if (
       !m ||
-      !["income", "expense"].includes(m.type) ||
+      !["income", "expense", "transfer"].includes(m.type) ||
+      !validTransfer(m) ||
       !validDate(m.date) ||
       !cents(m.amount) ||
       ![m.merchant, m.category, m.method, m.notes].every(str)
@@ -482,16 +549,20 @@ export function csv(movements: Movement[]) {
         "ID deuda de compra",
         "ID deuda de abono",
         "Gasto contabilizado MXN",
+        "Origen del traspaso",
+        "Destino del traspaso",
       ],
       ...movements.map((m) => [
         m.date,
-        m.creditPaymentDebtId
-          ? "Abono de tarjeta"
-          : m.creditDebtId
-            ? "Compra con tarjeta (a deuda)"
-            : m.type === "income"
-              ? "Ingreso"
-              : "Gasto",
+        m.type === "transfer"
+          ? "Traspaso"
+          : m.creditPaymentDebtId
+            ? "Abono de tarjeta"
+            : m.creditDebtId
+              ? "Compra con tarjeta (a deuda)"
+              : m.type === "income"
+                ? "Ingreso"
+                : "Gasto",
         m.merchant,
         m.category,
         m.amount.toFixed(2),
@@ -500,6 +571,8 @@ export function csv(movements: Movement[]) {
         m.creditDebtId ?? "",
         m.creditPaymentDebtId ?? "",
         expenseAmount(m).toFixed(2),
+        m.type === "transfer" ? transferRoute(m).from : "",
+        m.type === "transfer" ? transferRoute(m).to : "",
       ]),
     ]
       .map((r) => r.map(cell).join(","))

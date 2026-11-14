@@ -58,6 +58,8 @@ import {
 import {
   balance,
   expenseAmount,
+  walletBalances,
+  transferRoute,
   saveMovement,
   cents,
   changeData,
@@ -75,7 +77,7 @@ import {
 } from "./data";
 type Tab =
   "Inicio" | "Movimientos" | "Deudas" | "Reportes" | "Respaldos" | "Apartados";
-type MovementFilter = "all" | "income" | "expense" | "credit";
+type MovementFilter = "all" | "income" | "expense" | "credit" | "transfer";
 const acquiredDebtAmount = (movement: Movement) =>
   movement.creditDebtId ? movement.amount : 0;
 type Modal =
@@ -259,6 +261,8 @@ export default function App() {
     categories[0],
   );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
+  const [transferDirection, setTransferDirection] =
+    useState<NonNullable<Movement["transferDirection"]>>("bank-to-cash");
   const [debtKind, setDebtKind] = useState("normal");
   useEffect(() => {
     if (modal?.kind === "movement") {
@@ -268,6 +272,7 @@ export default function App() {
           : (modal.movement?.type ?? modal.initialType ?? "expense"),
       );
       setMovementMethod(modal.movement?.method ?? "Efectivo");
+      setTransferDirection(modal.movement?.transferDirection ?? "bank-to-cash");
       setMovementCategory(modal.movement?.category ?? categories[0]);
     }
     if (modal?.kind === "debt") setDebtKind(modal.debt?.kind ?? "normal");
@@ -276,13 +281,17 @@ export default function App() {
   const pageRef = useRef<HTMLDivElement>(null);
   function navigate(section: Tab) {
     setHomeSummaryVisible(false);
+    if (section === "Reportes" && typeFilter === "transfer")
+      setTypeFilter("all");
     setTab(section);
     pageRef.current?.scrollTo({ top: 0 });
   }
   const swipe = useRef<{ x: number; y: number; time: number } | null>(null);
   const merchantOptions = [
     ...new Set([
-      ...data.movements.map((m) => m.merchant),
+      ...data.movements
+        .filter((m) => m.type !== "transfer")
+        .map((m) => m.merchant),
       ...(data.recurrents ?? []).map((r) => r.merchant),
     ]),
   ]
@@ -583,14 +592,26 @@ export default function App() {
   const newestFirst = [...data.movements]
     .reverse()
     .sort((a, b) => b.date.localeCompare(a.date));
+  const wallets = walletBalances(data);
+  const transferSourceWallets =
+    modal?.kind === "movement" && modal.movement
+      ? walletBalances({
+          ...data,
+          movements: data.movements.filter((m) => m.id !== modal.movement?.id),
+        })
+      : wallets;
   const typeMovements = newestFirst.filter(
     (m) =>
-      typeFilter === "all" ||
-      (typeFilter === "income"
-        ? m.type === "income"
-        : typeFilter === "credit"
-          ? acquiredDebtAmount(m) > 0 || (tdcView && cardPaymentAmount(m) > 0)
-          : expenseAmount(m) > 0),
+      !(tab === "Reportes" && m.type === "transfer") &&
+      (typeFilter === "all" ||
+        (typeFilter === "income"
+          ? m.type === "income"
+          : typeFilter === "transfer"
+            ? m.type === "transfer"
+            : typeFilter === "credit"
+              ? acquiredDebtAmount(m) > 0 ||
+                (tdcView && cardPaymentAmount(m) > 0)
+              : expenseAmount(m) > 0)),
   );
   const filterMerchantOptions = [
     ...new Set(typeMovements.map((m) => m.merchant)),
@@ -649,6 +670,7 @@ export default function App() {
     income: ["ingreso", "ingresos"],
     expense: ["gasto", "gastos"],
     credit: ["movimiento TDC", "movimientos TDC"],
+    transfer: ["traspaso", "traspasos"],
   };
   const filteredCardPayments = filtered.reduce(
     (total, m) => total + cardPaymentAmount(m),
@@ -658,7 +680,7 @@ export default function App() {
   const filteredTotal = filtered.reduce(
     (total, m) =>
       total +
-      (typeFilter === "income"
+      (typeFilter === "income" || typeFilter === "transfer"
         ? m.amount
         : typeFilter === "credit"
           ? acquiredDebtAmount(m)
@@ -682,6 +704,32 @@ export default function App() {
       if (movementType === "payment") {
         void mutate((d) =>
           payDebt(d, get("debtId"), num("amount"), get("date")),
+        );
+        return;
+      }
+      if (movementType === "transfer") {
+        const direction = get(
+          "transferDirection",
+        ) as Movement["transferDirection"];
+        const route =
+          direction === "bank-to-cash"
+            ? "Retiro a efectivo"
+            : "Depósito al banco";
+        void mutate((d) =>
+          saveMovement(d, {
+            id: modal.movement?.id ?? crypto.randomUUID(),
+            type: "transfer",
+            date: get("date"),
+            amount: num("amount"),
+            merchant: get("transferConcept") || route,
+            category: "Traspaso",
+            method:
+              direction === "bank-to-cash"
+                ? "Banco → Efectivo"
+                : "Efectivo → Banco",
+            notes: get("notes"),
+            transferDirection: direction,
+          }),
         );
         return;
       }
@@ -771,7 +819,10 @@ export default function App() {
                 (tdcView && cardPaymentAmount(m) > 0 ? "income" : m.type)
               }
             >
-              {m.type === "income" || (tdcView && cardPaymentAmount(m) > 0) ? (
+              {m.type === "transfer" ? (
+                <ArrowLeftRight size={20} />
+              ) : m.type === "income" ||
+                (tdcView && cardPaymentAmount(m) > 0) ? (
                 <ArrowDownLeft size={20} />
               ) : (
                 <ArrowUpRight size={20} />
@@ -786,7 +837,13 @@ export default function App() {
                   ? `Abono · ${m.merchant}`
                   : m.merchant}
               </strong>
-              {cardPaymentAmount(m) > 0 ? (
+              {m.type === "transfer" ? (
+                <small>
+                  {dateLabel(m.date)} · {transferRoute(m).from} →{" "}
+                  {transferRoute(m).to}
+                  {m.notes ? ` · ${m.notes}` : ""}
+                </small>
+              ) : cardPaymentAmount(m) > 0 ? (
                 <small>
                   {dateLabel(m.date)} <span>·</span> {m.method}
                   {m.notes && m.notes !== "Abono vinculado a deuda"
@@ -825,13 +882,15 @@ export default function App() {
                     : ""
                 }
               >
-                {m.type === "income"
-                  ? "+"
-                  : m.creditDebtId
-                    ? tdcView
-                      ? "+"
-                      : ""
-                    : "−"}
+                {m.type === "transfer"
+                  ? ""
+                  : m.type === "income"
+                    ? "+"
+                    : m.creditDebtId
+                      ? tdcView
+                        ? "+"
+                        : ""
+                      : "−"}
                 {money(m.amount)}
               </strong>
               <div className="row-actions">
@@ -895,6 +954,7 @@ export default function App() {
     { income: number; expense: number; acquired: number }
   >();
   for (const m of filtered) {
+    if (m.type === "transfer") continue;
     let key = m.date;
     if (period === "monthly") key = m.date.slice(0, 7);
     if (period === "weekly") {
@@ -917,12 +977,14 @@ export default function App() {
     income: "ingresos",
     expense: "gastos",
     credit: tdcView ? "tdc" : "deuda-adquirida",
+    transfer: "traspasos",
   };
   const exportTitles = {
     all: "Todos los movimientos",
     income: "Ingresos",
     expense: "Gastos",
     credit: tdcView ? "TDC: compras y abonos" : "Deuda adquirida",
+    transfer: "Traspasos entre banco y efectivo",
   };
   const exportFilters = [
     `Desde: ${from ? exportDate(from) : "sin límite"} · Hasta: ${to ? exportDate(to) : "sin límite"}`,
@@ -1035,7 +1097,7 @@ export default function App() {
                 <option value="">Todos los métodos</option>
                 {[
                   ...new Set(
-                    typeFilter === "credit"
+                    typeFilter === "credit" || typeFilter === "transfer"
                       ? typeMovements.map((m) => m.method)
                       : [
                           "Efectivo",
@@ -1054,7 +1116,7 @@ export default function App() {
               </select>
             </Field>
           )}
-          {typeFilter !== "income" && (
+          {typeFilter !== "income" && typeFilter !== "transfer" && (
             <Field
               label={
                 typeFilter === "credit"
@@ -1533,6 +1595,29 @@ export default function App() {
           )}
           {tab === "Movimientos" && (
             <section className="panel full-panel">
+              <div className="wallet-balances" aria-label="Banco y efectivo">
+                <div>
+                  <span>Banco</span>
+                  <strong>{money(wallets.bank)}</strong>
+                </div>
+                <div>
+                  <span>Efectivo</span>
+                  <strong>{money(wallets.cash)}</strong>
+                </div>
+                {wallets.unassigned !== 0 && (
+                  <div>
+                    <span>Sin clasificar</span>
+                    <strong>{money(wallets.unassigned)}</strong>
+                  </div>
+                )}
+              </div>
+              <p className="helper wallet-help">
+                Saldos según los métodos registrados. Los apartados reservan
+                parte de este dinero; no son otra cuenta.
+                {wallets.unassigned !== 0
+                  ? " Revisa los movimientos con método Otro o no reconocido para asignarlos."
+                  : ""}
+              </p>
               {filters}
               <div
                 className="movement-type-tabs"
@@ -1545,6 +1630,7 @@ export default function App() {
                     ["income", "Ingresos"],
                     ["expense", "Gastos"],
                     ["credit", "TDC"],
+                    ["transfer", "Traspasos"],
                   ] as const
                 ).map(([type, label], index, options) => (
                   <button
@@ -1620,7 +1706,9 @@ export default function App() {
                   typeFilter !== "credit" &&
                   filtered.length > 0 && (
                     <p className="filtered-total">
-                      Total de {typeFilter === "income" ? "ingresos" : "gastos"}
+                      {typeFilter === "transfer"
+                        ? "Total trasladado"
+                        : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
                       : <strong>{money(filteredTotal)}</strong>
                     </p>
                   )}
@@ -1637,6 +1725,13 @@ export default function App() {
                       </span>
                     )}
                   </div>
+                )}
+                {typeFilter === "transfer" && (
+                  <p className="helper">
+                    Un retiro pasa dinero del banco al efectivo; un depósito
+                    hace lo contrario. No son ingresos ni gastos y no cambian tu
+                    disponible total.
+                  </p>
                 )}
                 {movementList(filtered)}
               </div>
@@ -2151,6 +2246,9 @@ export default function App() {
                       <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
                       <option value="credit">Compra con TDC</option>
+                      <option value="transfer">
+                        Traspaso / retiro a efectivo
+                      </option>
                       {!modal.movement && (
                         <>
                           <option value="payment">Abono a deuda</option>
@@ -2181,7 +2279,58 @@ export default function App() {
                       />
                     </Field>
                   </div>
-                  {movementType === "saving" ? (
+                  {movementType === "transfer" ? (
+                    <>
+                      <Field label="Tipo de traspaso">
+                        <select
+                          name="transferDirection"
+                          value={transferDirection}
+                          onChange={(e) =>
+                            setTransferDirection(
+                              e.target.value as NonNullable<
+                                Movement["transferDirection"]
+                              >,
+                            )
+                          }
+                        >
+                          <option value="bank-to-cash">
+                            Retiro a efectivo (Banco → Efectivo)
+                          </option>
+                          <option value="cash-to-bank">
+                            Depósito al banco (Efectivo → Banco)
+                          </option>
+                        </select>
+                      </Field>
+                      <p className="helper">
+                        Saldo de origen:{" "}
+                        {money(
+                          transferDirection === "bank-to-cash"
+                            ? transferSourceWallets.bank
+                            : transferSourceWallets.cash,
+                        )}
+                        . El total no cambia; solo cambia dónde está tu dinero.
+                      </p>
+                      <Field label="Concepto del traspaso (opcional)">
+                        <input
+                          name="transferConcept"
+                          maxLength={120}
+                          defaultValue={modal.movement?.merchant}
+                          placeholder={
+                            transferDirection === "bank-to-cash"
+                              ? "Retiro a efectivo"
+                              : "Depósito al banco"
+                          }
+                        />
+                      </Field>
+                      <Field label="Notas (opcional)">
+                        <textarea
+                          name="notes"
+                          maxLength={2000}
+                          defaultValue={modal.movement?.notes}
+                        />
+                      </Field>
+                    </>
+                  ) : movementType === "saving" ? (
                     <>
                       <div>
                         <Field label="Apartado de ahorro">
