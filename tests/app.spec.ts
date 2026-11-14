@@ -96,6 +96,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
+  await expect(page.locator(".page h1")).toHaveText("Reportes");
   await page.getByLabel("Agrupar por").focus();
   await page.getByLabel("Agrupar por").selectOption("daily");
   await expect(page.locator("tbody tr")).toHaveCount(1);

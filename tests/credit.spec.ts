@@ -10,6 +10,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
     page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
   ).toBeEnabled();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await page.getByRole("button", { name: "Nueva deuda", exact: true }).click();
   await page.getByLabel("Tipo de deuda").selectOption("credit");
   await page.getByLabel("Acreedor", { exact: true }).fill("Tarjeta ficticia");
@@ -31,6 +32,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
@@ -39,6 +41,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
     page.locator(".stat").filter({ hasText: "Egresos" }),
   ).toContainText("$0.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
@@ -66,6 +69,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await setBackupFile(page, file!);
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(page.locator(".movement")).toHaveCount(2);
@@ -84,6 +88,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await expect(page.locator(".debt-number")).toHaveText("$80.00");
   await page.locator("summary").click();
   page.once("dialog", (d) => d.accept());
@@ -99,5 +104,6 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await page.getByRole("button", { name: "Eliminar Compra ficticia" }).click();
   await expect(page.locator(".movement")).toHaveCount(0);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
   await expect(page.locator(".debt-number")).toHaveText("$0.00");
 });

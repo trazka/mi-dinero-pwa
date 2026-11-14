@@ -3,6 +3,7 @@ export async function enableSavingsPrivacy(
   page: Page,
   context: BrowserContext,
 ) {
+  await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   const cdp = await context.newCDPSession(page);
   await cdp.send("WebAuthn.enable");
   await cdp.send("WebAuthn.addVirtualAuthenticator", {

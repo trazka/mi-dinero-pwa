@@ -1,6 +1,6 @@
 export type PageDrag = {
   update: (distance: number) => void;
-  settle: (complete: boolean, done: () => void) => void;
+  settle: (complete: boolean, done: () => void, duration?: number) => void;
   cleanup: () => void;
 };
 
@@ -78,12 +78,12 @@ export function createPageDrag(
     content.style.transform = "none";
     if (main) main.style.overflowX = overflow;
   };
-  const settle = (complete: boolean, done: () => void) => {
+  const settle = (complete: boolean, done: () => void, duration?: number) => {
     if (disposed) return;
     const end = complete ? -direction * bounds.width : 0;
     const remaining = Math.abs(end - distance) / bounds.width;
     const options: KeyframeAnimationOptions = {
-      duration: Math.max(100, Math.min(240, remaining * 280)),
+      duration: duration ?? Math.max(100, Math.min(240, remaining * 280)),
       easing: "cubic-bezier(0.22, 1, 0.36, 1)",
       fill: "forwards",
     };

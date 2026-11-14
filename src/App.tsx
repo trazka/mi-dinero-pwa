@@ -302,7 +302,7 @@ export default function App() {
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewTab, setPreviewTab] = useState<Tab | null>(null);
-  const cancelPageSwipe = usePageSwipe({
+  const { cancel: cancelPageSwipe, goTo: animateNavigation } = usePageSwipe({
     pageRef,
     previewFrameRef,
     previewContentRef,
@@ -314,11 +314,22 @@ export default function App() {
     commit: (next) =>
       flushSync(() => {
         setPreviewTab(null);
-        navigate(next);
+        commitNavigation(next);
       }),
   });
   function navigate(section: Tab) {
+    if (section !== tab) {
+      setHomeSummaryVisible(false);
+      if (tab === "Apartados") {
+        setSavingsVisible(false);
+        setSavingCreating(false);
+      }
+    }
+    if (animateNavigation(section)) return;
     cancelPageSwipe();
+    commitNavigation(section);
+  }
+  function commitNavigation(section: Tab) {
     setHomeSummaryVisible(false);
     if (section === "Reportes" && typeFilter === "transfer")
       setTypeFilter("all");
