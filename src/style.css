@@ -2947,3 +2947,12 @@ li {
   box-sizing: border-box;
   will-change: transform;
 }
+
+.movement-selection-prompt {
+  margin-top: 16px;
+}
+
+.sidebar nav button,
+.mobile-nav button {
+  transition-property: transform;
+}

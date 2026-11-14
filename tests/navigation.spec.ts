@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { openSidebar } from "./layout-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
@@ -157,6 +158,7 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Movimientos", exact: true })
     .click();
+  await selectAllMovements(page);
   await openAdvancedFilters(page);
   const filter = page.getByLabel("Establecimiento", { exact: true });
   await filter.fill("tienda");

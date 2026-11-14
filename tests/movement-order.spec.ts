@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -33,6 +34,7 @@ test("movimientos recientes primero, con último registro arriba en la misma fec
   await revealHomeSummary(page);
   await expect(names).toHaveText(order);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await expect(names).toHaveText(order);
   await page
     .getByRole("button", { name: "Editar Primero del día", exact: true })
@@ -43,5 +45,6 @@ test("movimientos recientes primero, con último registro arriba en la misma fec
   await expect(names).toHaveText(order);
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await expect(names).toHaveText(order);
 });

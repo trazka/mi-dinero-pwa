@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
@@ -82,6 +83,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Movimientos", exact: true })
     .click();
+  await selectAllMovements(page);
   await expect(page.locator(".movement")).toHaveCount(3);
   await openAdvancedFilters(page);
   await page.getByLabel("Establecimiento", { exact: true }).fill("Tienda");

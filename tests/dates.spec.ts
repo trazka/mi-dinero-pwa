@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { chooseDate } from "./date-utils";
@@ -57,6 +58,7 @@ test("fechas de deuda y abono se seleccionan sin confirmación y filtros respeta
   await page.locator("summary").click();
   await expect(page.locator(".payment")).toContainText("1 feb");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await chooseDate(page, "Desde", "2027-02-01");
   await page.getByLabel("Hasta", { exact: true }).click();
   const calendar = page.getByRole("dialog", {

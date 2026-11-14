@@ -95,6 +95,11 @@ test("pestañas filtran listado, total y exportación, conservan fechas y adapta
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   const types = page.getByRole("tablist", { name: "Mostrar movimientos" });
+  await expect(types.locator('[aria-selected="true"]')).toHaveCount(0);
+  await expect(page.locator(".movement-results .movement")).toHaveCount(0);
+  await expect(page.locator(".movement-results .export-actions")).toHaveCount(
+    0,
+  );
   await expect(types.getByRole("tab")).toHaveText([
     "Todos",
     "Ingresos",

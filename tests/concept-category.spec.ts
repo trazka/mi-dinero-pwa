@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 
@@ -71,6 +72,7 @@ test("elegir concepto carga la última categoría, admite cambiarla y sirve en r
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Editar Café Luna", exact: true })
     .first()

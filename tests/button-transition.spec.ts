@@ -21,6 +21,15 @@ test("Apartados a Inicio desliza directamente hacia atrás al tocar la barra", a
   const bounds = await nav.boundingBox();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await expect(
+    nav.getByRole("button", { name: "Inicio", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    nav.getByRole("button", { name: "Apartados", exact: true }),
+  ).not.toHaveAttribute("aria-current");
+  await expect(
+    page.locator(".sidebar button").filter({ hasText: "Inicio" }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".page-preview-content h1")).toHaveText(
     "Tu espacio",
   );
@@ -45,6 +54,9 @@ test("el último botón elegido gana y Reducir movimiento permite el cambio inme
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await expect(
+    nav.getByRole("button", { name: "Reportes", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".page h1")).toHaveText("Reportes");
   await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -75,4 +87,37 @@ test("la navegación lateral horizontal también anima y deja operativo el botó
   await expect(
     page.getByRole("dialog", { name: "Nuevo movimiento", exact: true }),
   ).toBeVisible();
+});
+
+test("el selector lateral marca el destino desde el comienzo de la transición", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("./");
+  await openSidebar(page);
+  const nav = page.locator(".sidebar nav");
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await page.evaluate(() => {
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (frames, options) {
+      const animation = animate.call(this, frames, options);
+      animation.pause();
+      animation.currentTime = 80;
+      return animation;
+    };
+  });
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await expect(
+    nav.getByRole("button", { name: "Inicio", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    nav.getByRole("button", { name: "Apartados", exact: true }),
+  ).not.toHaveAttribute("aria-current");
+  await expect(page.locator(".page h1")).toHaveText("Apartados");
+  await expect(page.locator(".page-preview-content h1")).toHaveText(
+    "Tu espacio",
+  );
+  await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
+  await expect(page.locator(".page h1")).toHaveText("Tu espacio");
 });

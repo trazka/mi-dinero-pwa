@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -69,6 +70,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   const wallets = page.locator(".wallet-balances");
   await expect(wallets).toContainText("$4,800.00");
   async function add(amount: string, direction: string) {
@@ -97,6 +99,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   expect(exported).toContain("Efectivo");
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await expect(wallets).toContainText("$4,100.00");
   await page
     .getByRole("button", { name: "Editar Retiro a efectivo", exact: true })
@@ -120,6 +123,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$4,900.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();

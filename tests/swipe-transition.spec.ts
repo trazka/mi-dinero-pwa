@@ -32,6 +32,12 @@ test("la página sigue al dedo y muestra la vecina antes de soltar; un arrastre 
   await touch(content, "touchmove", 230);
   await expect(content.locator("h1")).toHaveText("Tu espacio");
   await expect(preview.locator("h1")).toHaveText("Movimientos");
+  await expect(
+    nav.getByRole("button", { name: "Movimientos", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    nav.getByRole("button", { name: "Inicio", exact: true }),
+  ).not.toHaveAttribute("aria-current");
   await expect(page.locator(".page-preview-frame")).toHaveAttribute(
     "aria-hidden",
     "true",
@@ -54,6 +60,12 @@ test("la página sigue al dedo y muestra la vecina antes de soltar; un arrastre 
   await touch(content, "touchend", 265);
   await expect(preview.locator("h1")).toHaveCount(0);
   await expect(content.locator("h1")).toHaveText("Tu espacio");
+  await expect(
+    nav.getByRole("button", { name: "Inicio", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    nav.getByRole("button", { name: "Movimientos", exact: true }),
+  ).not.toHaveAttribute("aria-current");
   await expect
     .poll(() =>
       content
