@@ -1547,13 +1547,12 @@ export default function App() {
                 </div>
               )}
             </div>
-            <p className="helper wallet-help">
-              Saldos según los métodos registrados. Los apartados reservan parte
-              de este dinero; no son otra cuenta.
-              {wallets.unassigned !== 0
-                ? " Revisa los movimientos con método Otro o no reconocido para asignarlos."
-                : ""}
-            </p>
+            {wallets.unassigned !== 0 && (
+              <p className="helper wallet-help">
+                Revisa los movimientos con método Otro o no reconocido para
+                asignarlos.
+              </p>
+            )}
             {filters}
             <div
               className="movement-type-tabs"
