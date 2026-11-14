@@ -304,7 +304,8 @@ export default function App() {
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewTab, setPreviewTab] = useState<Tab | null>(null);
-  const navigationTab = previewTab ?? tab;
+  const [navigationTarget, setNavigationTarget] = useState<Tab | null>(null);
+  const navigationTab = navigationTarget ?? tab;
   const { cancel: cancelPageSwipe, goTo: animateNavigation } = usePageSwipe({
     pageRef,
     previewFrameRef,
@@ -313,7 +314,16 @@ export default function App() {
     tabs: tabs.map((item) => item.name),
     blocked: !!modal || planningEditing || !loaded || busy,
     prepare: (next) => flushSync(() => setPreviewTab(next)),
-    clear: () => setPreviewTab(null),
+    confirm: (next) =>
+      flushSync(() => {
+        setNavigationTarget(next);
+        if (tab === "Movimientos" && next !== "Movimientos")
+          setMovementListVisible(false);
+      }),
+    clear: () => {
+      setPreviewTab(null);
+      setNavigationTarget(null);
+    },
     commit: (next) =>
       flushSync(() => {
         setPreviewTab(null);
@@ -333,6 +343,9 @@ export default function App() {
     commitNavigation(section);
   }
   function commitNavigation(section: Tab) {
+    setNavigationTarget(null);
+    if (tab === "Movimientos" && section !== "Movimientos")
+      setMovementListVisible(false);
     setHomeSummaryVisible(false);
     if (section === "Reportes" && typeFilter === "transfer")
       setTypeFilter("all");
