@@ -55,12 +55,13 @@ const transfer = (
   transferDirection: direction,
 });
 describe("traspasos entre banco y efectivo", () => {
-  it("mueve incluso dinero apartado sin crear ingresos/gastos ni cambiar el disponible", () => {
+  it("mueve solo dinero libre sin crear ingresos/gastos ni cambiar el disponible", () => {
     const before = fixture(),
-      after = saveMovement(before, transfer(6000));
+      after = saveMovement(before, transfer(4000));
+    expect(() => saveMovement(before, transfer(6000))).toThrow();
     expect(walletBalances(after)).toEqual({
-      bank: 1000,
-      cash: 6100,
+      bank: 3000,
+      cash: 4100,
       unassigned: 0,
     });
     expect(freeAmount(after)).toBe(freeAmount(before));

@@ -70,7 +70,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   const wallets = page.locator(".wallet-balances");
-  await expect(wallets).toContainText("$6,800.00");
+  await expect(wallets).toContainText("$4,800.00");
   async function add(amount: string, direction: string) {
     await page
       .getByRole("button", { name: "Nuevo movimiento", exact: true })
@@ -82,10 +82,10 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
     await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await add("1000", "bank-to-cash");
-  await expect(wallets).toContainText("$5,800.00");
+  await expect(wallets).toContainText("$3,800.00");
   await expect(wallets).toContainText("$1,100.00");
   await add("300", "cash-to-bank");
-  await expect(wallets).toContainText("$6,100.00");
+  await expect(wallets).toContainText("$4,100.00");
   await expect(wallets).toContainText("$800.00");
   await page.getByRole("tab", { name: "Traspasos", exact: true }).click();
   await expect(page.locator(".movement-info > strong")).toHaveCount(2);
@@ -97,21 +97,21 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   expect(exported).toContain("Efectivo");
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
-  await expect(wallets).toContainText("$6,100.00");
+  await expect(wallets).toContainText("$4,100.00");
   await page
     .getByRole("button", { name: "Editar Retiro a efectivo", exact: true })
     .click();
   await page.getByLabel("Importe (MXN)", { exact: true }).fill("1200");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
-  await expect(wallets).toContainText("$5,900.00");
+  await expect(wallets).toContainText("$3,900.00");
   await expect(wallets).toContainText("$1,000.00");
   page.once("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Eliminar Depósito al banco", exact: true })
     .click();
-  await expect(wallets).toContainText("$5,600.00");
+  await expect(wallets).toContainText("$3,600.00");
   await expect(wallets).toContainText("$1,300.00");
-  await add("5600.01", "bank-to-cash");
+  await add("3600.01", "bank-to-cash");
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "saldo de origen",
   );
@@ -130,7 +130,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
     .fill("Compra en efectivo");
   await dialog.getByLabel("Método de pago").selectOption("Efectivo");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
-  await expect(wallets).toContainText("$5,600.00");
+  await expect(wallets).toContainText("$3,600.00");
   await expect(wallets).toContainText("$1,100.00");
   await page.getByRole("tab", { name: "Traspasos", exact: true }).click();
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
