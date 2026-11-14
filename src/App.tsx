@@ -1,4 +1,5 @@
-import { snapshotPage, slidePages, type PageSnapshot } from "./pageTransition";
+import { usePageSwipe } from "./usePageSwipe";
+import { flushSync } from "react-dom";
 import { recordMovement, recordPayment, recordSaving } from "./pending";
 import { PendingPanel } from "./PendingPanel";
 import HomeLanding from "./HomeLanding";
@@ -31,7 +32,6 @@ import {
   cloneElement,
   useId,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -299,46 +299,32 @@ export default function App() {
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-  const outgoingPage = useRef<{
-    snapshot: PageSnapshot;
-    direction: 1 | -1;
-  } | null>(null);
-  const finishPageTransition = useRef<() => void>(() => {});
-  useLayoutEffect(() => {
-    const outgoing = outgoingPage.current;
-    outgoingPage.current = null;
-    if (!outgoing || !pageRef.current) return;
-    const cleanup = slidePages(
-      pageRef.current,
-      outgoing.snapshot,
-      outgoing.direction,
-    );
-    finishPageTransition.current = cleanup;
-    return cleanup;
-  }, [tab]);
-  function navigate(section: Tab, direction: 1 | -1 | null = null) {
-    finishPageTransition.current();
-    outgoingPage.current?.snapshot.frame.remove();
-    outgoingPage.current = null;
-    if (
-      section !== tab &&
-      direction &&
-      pageRef.current &&
-      typeof pageRef.current.animate === "function" &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      outgoingPage.current = {
-        snapshot: snapshotPage(pageRef.current),
-        direction,
-      };
-    }
+  const previewFrameRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
+  const [previewTab, setPreviewTab] = useState<Tab | null>(null);
+  const cancelPageSwipe = usePageSwipe({
+    pageRef,
+    previewFrameRef,
+    previewContentRef,
+    tab,
+    tabs: tabs.map((item) => item.name),
+    blocked: !!modal || planningEditing || !loaded || busy,
+    prepare: (next) => flushSync(() => setPreviewTab(next)),
+    clear: () => setPreviewTab(null),
+    commit: (next) =>
+      flushSync(() => {
+        setPreviewTab(null);
+        navigate(next);
+      }),
+  });
+  function navigate(section: Tab) {
+    cancelPageSwipe();
     setHomeSummaryVisible(false);
     if (section === "Reportes" && typeFilter === "transfer")
       setTypeFilter("all");
     setTab(section);
     pageRef.current?.scrollTo({ top: 0 });
   }
-  const swipe = useRef<{ x: number; y: number; time: number } | null>(null);
   const merchantOptions = [
     ...new Set([
       ...data.movements
@@ -456,7 +442,6 @@ export default function App() {
       if (mobile.matches) window.scrollTo(0, 0);
     };
     const resume = () => {
-      swipe.current = null;
       if (document.hidden) return;
       resetDocument();
       // Rotation/foreground events can arrive before Safari finishes updating
@@ -637,7 +622,6 @@ export default function App() {
   );
   const cardPaymentAmount = (movement: Movement) =>
     movement.paymentId && cardPaymentIds.has(movement.id) ? movement.amount : 0;
-  const tdcView = tab === "Movimientos" && typeFilter === "credit";
 
   // Reverse registration order first; stable date sorting keeps the latest
   // registered movement first when several share the same date.
@@ -652,94 +636,6 @@ export default function App() {
           movements: data.movements.filter((m) => m.id !== modal.movement?.id),
         })
       : wallets;
-  const typeMovements = newestFirst.filter(
-    (m) =>
-      !(tab === "Reportes" && m.type === "transfer") &&
-      (typeFilter === "all" ||
-        (typeFilter === "income"
-          ? m.type === "income"
-          : typeFilter === "transfer"
-            ? m.type === "transfer"
-            : typeFilter === "credit"
-              ? acquiredDebtAmount(m) > 0 ||
-                (tdcView && cardPaymentAmount(m) > 0)
-              : expenseAmount(m) > 0)),
-  );
-  const filterMerchantOptions = [
-    ...new Set(typeMovements.map((m) => m.merchant)),
-  ].sort((a, b) => a.localeCompare(b, "es"));
-  const advancedFilterCount = [
-    search,
-    methodFilter,
-    debtFilter,
-    category,
-    merchant,
-  ].filter(Boolean).length;
-  const filtered = typeMovements.filter(
-    (m) =>
-      (!from || m.date >= from) &&
-      (!to || m.date <= to) &&
-      (!category || m.category === category) &&
-      m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
-      matchesSearch(m, search) &&
-      (!methodFilter || m.method === methodFilter) &&
-      (!debtFilter || movementDebtId(data, m) === debtFilter),
-  );
-  const reportColumns = (
-    [
-      {
-        key: "income",
-        label: "Ingresos",
-        summary: "Ingresos filtrados",
-        total: filtered
-          .filter((m) => m.type === "income")
-          .reduce((total, m) => total + m.amount, 0),
-      },
-      {
-        key: "expense",
-        label: "Egresos",
-        summary: "Egresos filtrados",
-        total: filtered.reduce((total, m) => total + expenseAmount(m), 0),
-      },
-      {
-        key: "acquired",
-        label: "Deuda adquirida",
-        summary: "Deuda adquirida",
-        total: filtered.reduce((total, m) => total + acquiredDebtAmount(m), 0),
-      },
-    ] as const
-  ).filter((column) => column.total > 0);
-  const showBalance = reportColumns.some(
-    (column) => column.key === "income" || column.key === "expense",
-  );
-  const recent = newestFirst.slice(0, 5);
-  const acquired = data.movements.reduce(
-    (total, m) => total + acquiredDebtAmount(m),
-    0,
-  );
-  const typeLabels = {
-    all: ["movimiento", "movimientos"],
-    income: ["ingreso", "ingresos"],
-    expense: ["gasto", "gastos"],
-    credit: ["movimiento TDC", "movimientos TDC"],
-    transfer: ["traspaso", "traspasos"],
-  };
-  const filteredCardPayments = filtered.reduce(
-    (total, m) => total + cardPaymentAmount(m),
-    0,
-  );
-  const filteredLabel = typeLabels[typeFilter][filtered.length === 1 ? 0 : 1];
-  const filteredTotal = filtered.reduce(
-    (total, m) =>
-      total +
-      (typeFilter === "income" || typeFilter === "transfer"
-        ? m.amount
-        : typeFilter === "credit"
-          ? acquiredDebtAmount(m)
-          : expenseAmount(m)),
-    0,
-  );
-
   function saveForm(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget),
@@ -862,378 +758,1347 @@ export default function App() {
         recordPayment(d, modal.debt.id, num("amount"), get("date")),
       );
   }
-  function movementList(items: Movement[]) {
-    return items.length ? (
-      <div className="movement-list">
-        {items.map((m) => (
-          <article className="movement" key={m.id}>
-            <div
-              className={
-                "movement-icon " +
-                (tdcView && cardPaymentAmount(m) > 0 ? "income" : m.type)
-              }
-            >
-              {m.type === "transfer" ? (
-                <ArrowLeftRight size={20} />
-              ) : m.type === "income" ||
-                (tdcView && cardPaymentAmount(m) > 0) ? (
-                <ArrowDownLeft size={20} />
-              ) : (
-                <ArrowUpRight size={20} />
-              )}
-            </div>
-            <div className="movement-info">
-              {tdcView && m.creditDebtId && (
-                <small className="tdc-entry-kind charge">Compra</small>
-              )}
-              <strong>
-                {cardPaymentAmount(m) > 0
-                  ? `Abono · ${m.merchant}`
-                  : m.merchant}
-              </strong>
-              {m.type === "transfer" ? (
-                <small>
-                  {dateLabel(m.date)} · {transferRoute(m).from} →{" "}
-                  {transferRoute(m).to}
-                  {m.notes ? ` · ${m.notes}` : ""}
-                </small>
-              ) : cardPaymentAmount(m) > 0 ? (
-                <small>
-                  {dateLabel(m.date)} <span>·</span> {m.method}
-                  {m.notes && m.notes !== "Abono vinculado a deuda"
-                    ? ` · ${m.notes}`
-                    : ""}
-                </small>
-              ) : (
-                <>
-                  <small>
-                    {m.category} <span>·</span> {dateLabel(m.date)}
-                  </small>
-                  <small>
-                    {m.method}
-                    {m.notes ? ` · ${m.notes}` : ""}
-                  </small>
-                  {m.creditDebtId && (
-                    <small>
-                      Compra a deuda · No suma al gasto · Tarjeta:{" "}
-                      {
-                        data.debts.find((d) => d.id === m.creditDebtId)
-                          ?.creditor
-                      }
-                    </small>
-                  )}
-                  {m.paymentId && (
-                    <small>Abono vinculado · elimina para revertir</small>
-                  )}
-                </>
-              )}
-            </div>
-            <div className="movement-right">
-              <strong
+  function renderPageContent(
+    tab: Tab,
+    preview = false,
+    selectedType = typeFilter,
+  ) {
+    const typeFilter =
+      tab === "Reportes" && selectedType === "transfer" ? "all" : selectedType;
+    const tdcView = tab === "Movimientos" && typeFilter === "credit";
+    const typeMovements = newestFirst.filter(
+      (m) =>
+        !(tab === "Reportes" && m.type === "transfer") &&
+        (typeFilter === "all" ||
+          (typeFilter === "income"
+            ? m.type === "income"
+            : typeFilter === "transfer"
+              ? m.type === "transfer"
+              : typeFilter === "credit"
+                ? acquiredDebtAmount(m) > 0 ||
+                  (tdcView && cardPaymentAmount(m) > 0)
+                : expenseAmount(m) > 0)),
+    );
+    const filterMerchantOptions = [
+      ...new Set(typeMovements.map((m) => m.merchant)),
+    ].sort((a, b) => a.localeCompare(b, "es"));
+    const advancedFilterCount = [
+      search,
+      methodFilter,
+      debtFilter,
+      category,
+      merchant,
+    ].filter(Boolean).length;
+    const filtered = typeMovements.filter(
+      (m) =>
+        (!from || m.date >= from) &&
+        (!to || m.date <= to) &&
+        (!category || m.category === category) &&
+        m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
+        matchesSearch(m, search) &&
+        (!methodFilter || m.method === methodFilter) &&
+        (!debtFilter || movementDebtId(data, m) === debtFilter),
+    );
+    const reportColumns = (
+      [
+        {
+          key: "income",
+          label: "Ingresos",
+          summary: "Ingresos filtrados",
+          total: filtered
+            .filter((m) => m.type === "income")
+            .reduce((total, m) => total + m.amount, 0),
+        },
+        {
+          key: "expense",
+          label: "Egresos",
+          summary: "Egresos filtrados",
+          total: filtered.reduce((total, m) => total + expenseAmount(m), 0),
+        },
+        {
+          key: "acquired",
+          label: "Deuda adquirida",
+          summary: "Deuda adquirida",
+          total: filtered.reduce(
+            (total, m) => total + acquiredDebtAmount(m),
+            0,
+          ),
+        },
+      ] as const
+    ).filter((column) => column.total > 0);
+    const showBalance = reportColumns.some(
+      (column) => column.key === "income" || column.key === "expense",
+    );
+    const recent = newestFirst.slice(0, 5);
+    const acquired = data.movements.reduce(
+      (total, m) => total + acquiredDebtAmount(m),
+      0,
+    );
+    const typeLabels = {
+      all: ["movimiento", "movimientos"],
+      income: ["ingreso", "ingresos"],
+      expense: ["gasto", "gastos"],
+      credit: ["movimiento TDC", "movimientos TDC"],
+      transfer: ["traspaso", "traspasos"],
+    };
+    const filteredCardPayments = filtered.reduce(
+      (total, m) => total + cardPaymentAmount(m),
+      0,
+    );
+    const filteredLabel = typeLabels[typeFilter][filtered.length === 1 ? 0 : 1];
+    const filteredTotal = filtered.reduce(
+      (total, m) =>
+        total +
+        (typeFilter === "income" || typeFilter === "transfer"
+          ? m.amount
+          : typeFilter === "credit"
+            ? acquiredDebtAmount(m)
+            : expenseAmount(m)),
+      0,
+    );
+
+    function movementList(items: Movement[]) {
+      return items.length ? (
+        <div className="movement-list">
+          {items.map((m) => (
+            <article className="movement" key={m.id}>
+              <div
                 className={
-                  m.type === "income" || (tdcView && cardPaymentAmount(m) > 0)
-                    ? "positive"
-                    : ""
+                  "movement-icon " +
+                  (tdcView && cardPaymentAmount(m) > 0 ? "income" : m.type)
                 }
               >
-                {m.type === "transfer"
-                  ? ""
-                  : m.type === "income"
-                    ? "+"
-                    : m.creditDebtId
-                      ? tdcView
-                        ? "+"
-                        : ""
-                      : "−"}
-                {money(m.amount)}
-              </strong>
-              <div className="row-actions">
-                {!m.paymentId && (
+                {m.type === "transfer" ? (
+                  <ArrowLeftRight size={20} />
+                ) : m.type === "income" ||
+                  (tdcView && cardPaymentAmount(m) > 0) ? (
+                  <ArrowDownLeft size={20} />
+                ) : (
+                  <ArrowUpRight size={20} />
+                )}
+              </div>
+              <div className="movement-info">
+                {tdcView && m.creditDebtId && (
+                  <small className="tdc-entry-kind charge">Compra</small>
+                )}
+                <strong>
+                  {cardPaymentAmount(m) > 0
+                    ? `Abono · ${m.merchant}`
+                    : m.merchant}
+                </strong>
+                {m.type === "transfer" ? (
+                  <small>
+                    {dateLabel(m.date)} · {transferRoute(m).from} →{" "}
+                    {transferRoute(m).to}
+                    {m.notes ? ` · ${m.notes}` : ""}
+                  </small>
+                ) : cardPaymentAmount(m) > 0 ? (
+                  <small>
+                    {dateLabel(m.date)} <span>·</span> {m.method}
+                    {m.notes && m.notes !== "Abono vinculado a deuda"
+                      ? ` · ${m.notes}`
+                      : ""}
+                  </small>
+                ) : (
+                  <>
+                    <small>
+                      {m.category} <span>·</span> {dateLabel(m.date)}
+                    </small>
+                    <small>
+                      {m.method}
+                      {m.notes ? ` · ${m.notes}` : ""}
+                    </small>
+                    {m.creditDebtId && (
+                      <small>
+                        Compra a deuda · No suma al gasto · Tarjeta:{" "}
+                        {
+                          data.debts.find((d) => d.id === m.creditDebtId)
+                            ?.creditor
+                        }
+                      </small>
+                    )}
+                    {m.paymentId && (
+                      <small>Abono vinculado · elimina para revertir</small>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="movement-right">
+                <strong
+                  className={
+                    m.type === "income" || (tdcView && cardPaymentAmount(m) > 0)
+                      ? "positive"
+                      : ""
+                  }
+                >
+                  {m.type === "transfer"
+                    ? ""
+                    : m.type === "income"
+                      ? "+"
+                      : m.creditDebtId
+                        ? tdcView
+                          ? "+"
+                          : ""
+                        : "−"}
+                  {money(m.amount)}
+                </strong>
+                <div className="row-actions">
+                  {!m.paymentId && (
+                    <button
+                      aria-label={`Editar ${m.merchant}`}
+                      onClick={() => {
+                        setError("");
+                        setModal({ kind: "movement", movement: m });
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <button
-                    aria-label={`Editar ${m.merchant}`}
+                    aria-label={`Eliminar ${m.merchant}`}
                     onClick={() => {
-                      setError("");
-                      setModal({ kind: "movement", movement: m });
+                      if (
+                        confirm(
+                          m.paymentId
+                            ? "¿Eliminar este abono y devolver su importe al saldo de la deuda?"
+                            : "¿Eliminar este movimiento?",
+                        )
+                      )
+                        void mutate((d) => removeMovement(d, m.id));
                     }}
                   >
-                    <Pencil size={14} />
+                    <Trash2 size={14} />
                   </button>
-                )}
-                <button
-                  aria-label={`Eliminar ${m.merchant}`}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        m.paymentId
-                          ? "¿Eliminar este abono y devolver su importe al saldo de la deuda?"
-                          : "¿Eliminar este movimiento?",
-                      )
-                    )
-                      void mutate((d) => removeMovement(d, m.id));
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    ) : (
-      <div className="empty">
-        <Wallet size={32} />
-        <h3>
-          {data.movements.length
-            ? `No hay ${filteredLabel} con estos filtros`
-            : "Tu historia financiera empieza aquí"}
-        </h3>
-        <p>
-          {data.movements.length
-            ? "Cambia las fechas o limpia los filtros para ver tus registros."
-            : "Registra un movimiento para comenzar a ver tus finanzas con claridad."}
-        </p>
-        {!data.movements.length && (
-          <button
-            className="button secondary"
-            onClick={() => setModal({ kind: "movement" })}
-          >
-            Registrar movimiento
-          </button>
-        )}
-      </div>
-    );
-  }
-  const groupTotals = new Map<
-    string,
-    { income: number; expense: number; acquired: number }
-  >();
-  for (const m of filtered) {
-    if (m.type === "transfer") continue;
-    let key = m.date;
-    if (period === "monthly") key = m.date.slice(0, 7);
-    if (period === "weekly") {
-      const d = new Date(m.date + "T12:00:00Z");
-      d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-      key = d.toISOString().slice(0, 10);
-    }
-    const group = groupTotals.get(key) ?? {
-      income: 0,
-      expense: 0,
-      acquired: 0,
-    };
-    group.acquired += acquiredDebtAmount(m);
-    group[m.type === "income" ? "income" : "expense"] +=
-      m.type === "income" ? m.amount : expenseAmount(m);
-    groupTotals.set(key, group);
-  }
-  const exportNames = {
-    all: "movimientos",
-    income: "ingresos",
-    expense: "gastos",
-    credit: tdcView ? "tdc" : "deuda-adquirida",
-    transfer: "traspasos",
-  };
-  const exportTitles = {
-    all: "Todos los movimientos",
-    income: "Ingresos",
-    expense: "Gastos",
-    credit: tdcView ? "TDC: compras y abonos" : "Deuda adquirida",
-    transfer: "Traspasos entre banco y efectivo",
-  };
-  const exportFilters = [
-    `Desde: ${from ? exportDate(from) : "sin límite"} · Hasta: ${to ? exportDate(to) : "sin límite"}`,
-    search && `Búsqueda: ${search}`,
-    methodFilter && `Método: ${methodFilter}`,
-    debtFilter &&
-      `Tarjeta o deuda: ${data.debts.find((d) => d.id === debtFilter)?.creditor ?? debtFilter}`,
-    category && `Categoría: ${category}`,
-    merchant && `Establecimiento: ${merchant}`,
-  ].filter(Boolean) as string[];
-  const normalizeExports = (items: Movement[]) =>
-    items.map((m) =>
-      cardPaymentAmount(m) > 0
-        ? {
-            ...m,
-            creditPaymentDebtId:
-              m.creditPaymentDebtId ?? movementDebtId(data, m),
-          }
-        : m,
-    );
-  const movementDocument = movementExport(
-    normalizeExports(filtered),
-    exportTitles[typeFilter],
-    exportFilters,
-    tdcView,
-  );
-  const periodLabel = (key: string) =>
-    period === "monthly"
-      ? new Date(key + "-01T12:00:00").toLocaleDateString("es-MX", {
-          month: "long",
-          year: "numeric",
-        })
-      : `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
-  const reportDocument: ExportTable = {
-    title: `Reporte: ${exportTitles[typeFilter]}`,
-    filters: [
-      ...exportFilters,
-      `Agrupado por: ${period === "monthly" ? "mes" : period === "weekly" ? "semana" : "día"}`,
-    ],
-    totals: reportColumns.map((c) => [c.label, c.total]),
-    columns: [
-      "Periodo",
-      ...reportColumns.map((c) => c.label),
-      ...(showBalance ? ["Balance"] : []),
-    ],
-    rows: [...groupTotals]
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([key, g]) => [
-        periodLabel(key),
-        ...reportColumns.map((c) => g[c.key]),
-        ...(showBalance ? [g.income - g.expense] : []),
-      ]),
-    moneyColumns: reportColumns
-      .map((_, i) => i + 1)
-      .concat(showBalance ? [reportColumns.length + 1] : []),
-  };
-  const filters = (
-    <div className="filters">
-      {tab === "Reportes" && (
-        <Field label="Tipo de movimiento">
-          <select
-            value={typeFilter}
-            onChange={(e) =>
-              selectMovementType(e.target.value as MovementFilter)
-            }
-          >
-            <option value="all">Todos los movimientos</option>
-            <option value="income">Solo ingresos</option>
-            <option value="expense">Solo egresos</option>
-            <option value="credit">Deuda adquirida (TDC)</option>
-          </select>
-        </Field>
-      )}
-      <Field label="Desde" className="date-filter">
-        <DatePicker value={from} onChange={setFrom} />
-      </Field>
-      <Field label="Hasta" className="date-filter">
-        <DatePicker value={to} min={from || undefined} onChange={setTo} />
-      </Field>
-      {tab === "Reportes" && (
-        <Field label="Agrupar por" className="group-filter">
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="daily">Día</option>
-            <option value="weekly">Semana (lunes a domingo)</option>
-            <option value="monthly">Mes</option>
-          </select>
-        </Field>
-      )}
-      <details className="advanced-filters">
-        <summary>
-          <span>
-            Más filtros{advancedFilterCount > 0 && ` (${advancedFilterCount})`}
-          </span>
-          <ChevronRight size={18} aria-hidden="true" />
-        </summary>
-        <div className="advanced-filter-fields">
-          <Field label="Buscar movimientos">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Concepto, notas o importe"
-            />
-          </Field>
-          {!(tab === "Reportes" && typeFilter === "credit") && (
-            <Field label="Filtrar método">
-              <select
-                value={methodFilter}
-                onChange={(e) => setMethodFilter(e.target.value)}
-              >
-                <option value="">Todos los métodos</option>
-                {[
-                  ...new Set(
-                    typeFilter === "credit" || typeFilter === "transfer"
-                      ? typeMovements.map((m) => m.method)
-                      : [
-                          "Efectivo",
-                          "Tarjeta de débito",
-                          ...(typeFilter === "all"
-                            ? ["Tarjeta de crédito"]
-                            : []),
-                          "Transferencia",
-                          "Otro",
-                          ...typeMovements.map((m) => m.method),
-                        ],
-                  ),
-                ].map((method) => (
-                  <option key={method}>{method}</option>
-                ))}
-              </select>
-            </Field>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty">
+          <Wallet size={32} />
+          <h3>
+            {data.movements.length
+              ? `No hay ${filteredLabel} con estos filtros`
+              : "Tu historia financiera empieza aquí"}
+          </h3>
+          <p>
+            {data.movements.length
+              ? "Cambia las fechas o limpia los filtros para ver tus registros."
+              : "Registra un movimiento para comenzar a ver tus finanzas con claridad."}
+          </p>
+          {!data.movements.length && (
+            <button
+              className="button secondary"
+              onClick={() => setModal({ kind: "movement" })}
+            >
+              Registrar movimiento
+            </button>
           )}
-          {typeFilter !== "income" && typeFilter !== "transfer" && (
-            <Field
-              label={
-                typeFilter === "credit"
-                  ? "Filtrar tarjeta"
-                  : "Filtrar tarjeta o deuda"
+        </div>
+      );
+    }
+    const groupTotals = new Map<
+      string,
+      { income: number; expense: number; acquired: number }
+    >();
+    for (const m of filtered) {
+      if (m.type === "transfer") continue;
+      let key = m.date;
+      if (period === "monthly") key = m.date.slice(0, 7);
+      if (period === "weekly") {
+        const d = new Date(m.date + "T12:00:00Z");
+        d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+        key = d.toISOString().slice(0, 10);
+      }
+      const group = groupTotals.get(key) ?? {
+        income: 0,
+        expense: 0,
+        acquired: 0,
+      };
+      group.acquired += acquiredDebtAmount(m);
+      group[m.type === "income" ? "income" : "expense"] +=
+        m.type === "income" ? m.amount : expenseAmount(m);
+      groupTotals.set(key, group);
+    }
+    const exportNames = {
+      all: "movimientos",
+      income: "ingresos",
+      expense: "gastos",
+      credit: tdcView ? "tdc" : "deuda-adquirida",
+      transfer: "traspasos",
+    };
+    const exportTitles = {
+      all: "Todos los movimientos",
+      income: "Ingresos",
+      expense: "Gastos",
+      credit: tdcView ? "TDC: compras y abonos" : "Deuda adquirida",
+      transfer: "Traspasos entre banco y efectivo",
+    };
+    const exportFilters = [
+      `Desde: ${from ? exportDate(from) : "sin límite"} · Hasta: ${to ? exportDate(to) : "sin límite"}`,
+      search && `Búsqueda: ${search}`,
+      methodFilter && `Método: ${methodFilter}`,
+      debtFilter &&
+        `Tarjeta o deuda: ${data.debts.find((d) => d.id === debtFilter)?.creditor ?? debtFilter}`,
+      category && `Categoría: ${category}`,
+      merchant && `Establecimiento: ${merchant}`,
+    ].filter(Boolean) as string[];
+    const normalizeExports = (items: Movement[]) =>
+      items.map((m) =>
+        cardPaymentAmount(m) > 0
+          ? {
+              ...m,
+              creditPaymentDebtId:
+                m.creditPaymentDebtId ?? movementDebtId(data, m),
+            }
+          : m,
+      );
+    const movementDocument = movementExport(
+      normalizeExports(filtered),
+      exportTitles[typeFilter],
+      exportFilters,
+      tdcView,
+    );
+    const periodLabel = (key: string) =>
+      period === "monthly"
+        ? new Date(key + "-01T12:00:00").toLocaleDateString("es-MX", {
+            month: "long",
+            year: "numeric",
+          })
+        : `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
+    const reportDocument: ExportTable = {
+      title: `Reporte: ${exportTitles[typeFilter]}`,
+      filters: [
+        ...exportFilters,
+        `Agrupado por: ${period === "monthly" ? "mes" : period === "weekly" ? "semana" : "día"}`,
+      ],
+      totals: reportColumns.map((c) => [c.label, c.total]),
+      columns: [
+        "Periodo",
+        ...reportColumns.map((c) => c.label),
+        ...(showBalance ? ["Balance"] : []),
+      ],
+      rows: [...groupTotals]
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([key, g]) => [
+          periodLabel(key),
+          ...reportColumns.map((c) => g[c.key]),
+          ...(showBalance ? [g.income - g.expense] : []),
+        ]),
+      moneyColumns: reportColumns
+        .map((_, i) => i + 1)
+        .concat(showBalance ? [reportColumns.length + 1] : []),
+    };
+    const filters = (
+      <div className="filters">
+        {tab === "Reportes" && (
+          <Field label="Tipo de movimiento">
+            <select
+              value={typeFilter}
+              onChange={(e) =>
+                selectMovementType(e.target.value as MovementFilter)
               }
             >
-              <select
-                value={debtFilter}
-                onChange={(e) => setDebtFilter(e.target.value)}
-              >
-                <option value="">
-                  {typeFilter === "credit"
-                    ? "Todas las tarjetas"
-                    : "Todas las deudas"}
-                </option>
-                {data.debts
-                  .filter((d) => typeFilter !== "credit" || d.kind === "credit")
-                  .map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.creditor}
-                    </option>
-                  ))}
-              </select>
-            </Field>
-          )}
-          <Field label="Categoría">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">Todas las categorías</option>
-              {[...new Set([...typeMovements.map((m) => m.category)])].map(
-                (c) => (
-                  <option key={c}>{c}</option>
-                ),
-              )}
+              <option value="all">Todos los movimientos</option>
+              <option value="income">Solo ingresos</option>
+              <option value="expense">Solo egresos</option>
+              <option value="credit">Deuda adquirida (TDC)</option>
             </select>
           </Field>
-          <Field label="Establecimiento">
-            <ConceptInput
-              suggestions={filterMerchantOptions}
-              value={merchant}
-              onValueChange={setMerchant}
-              placeholder="Buscar establecimiento"
-            />
+        )}
+        <Field label="Desde" className="date-filter">
+          <DatePicker value={from} onChange={setFrom} />
+        </Field>
+        <Field label="Hasta" className="date-filter">
+          <DatePicker value={to} min={from || undefined} onChange={setTo} />
+        </Field>
+        {tab === "Reportes" && (
+          <Field label="Agrupar por" className="group-filter">
+            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+              <option value="daily">Día</option>
+              <option value="weekly">Semana (lunes a domingo)</option>
+              <option value="monthly">Mes</option>
+            </select>
           </Field>
+        )}
+        <details className="advanced-filters">
+          <summary>
+            <span>
+              Más filtros
+              {advancedFilterCount > 0 && ` (${advancedFilterCount})`}
+            </span>
+            <ChevronRight size={18} aria-hidden="true" />
+          </summary>
+          <div className="advanced-filter-fields">
+            <Field label="Buscar movimientos">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Concepto, notas o importe"
+              />
+            </Field>
+            {!(tab === "Reportes" && typeFilter === "credit") && (
+              <Field label="Filtrar método">
+                <select
+                  value={methodFilter}
+                  onChange={(e) => setMethodFilter(e.target.value)}
+                >
+                  <option value="">Todos los métodos</option>
+                  {[
+                    ...new Set(
+                      typeFilter === "credit" || typeFilter === "transfer"
+                        ? typeMovements.map((m) => m.method)
+                        : [
+                            "Efectivo",
+                            "Tarjeta de débito",
+                            ...(typeFilter === "all"
+                              ? ["Tarjeta de crédito"]
+                              : []),
+                            "Transferencia",
+                            "Otro",
+                            ...typeMovements.map((m) => m.method),
+                          ],
+                    ),
+                  ].map((method) => (
+                    <option key={method}>{method}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            {typeFilter !== "income" && typeFilter !== "transfer" && (
+              <Field
+                label={
+                  typeFilter === "credit"
+                    ? "Filtrar tarjeta"
+                    : "Filtrar tarjeta o deuda"
+                }
+              >
+                <select
+                  value={debtFilter}
+                  onChange={(e) => setDebtFilter(e.target.value)}
+                >
+                  <option value="">
+                    {typeFilter === "credit"
+                      ? "Todas las tarjetas"
+                      : "Todas las deudas"}
+                  </option>
+                  {data.debts
+                    .filter(
+                      (d) => typeFilter !== "credit" || d.kind === "credit",
+                    )
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.creditor}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            )}
+            <Field label="Categoría">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">Todas las categorías</option>
+                {[...new Set([...typeMovements.map((m) => m.category)])].map(
+                  (c) => (
+                    <option key={c}>{c}</option>
+                  ),
+                )}
+              </select>
+            </Field>
+            <Field label="Establecimiento">
+              <ConceptInput
+                suggestions={filterMerchantOptions}
+                value={merchant}
+                onValueChange={setMerchant}
+                placeholder="Buscar establecimiento"
+              />
+            </Field>
+          </div>
+        </details>
+        {from && to && from > to && (
+          <p role="alert">La fecha inicial debe ser anterior a la final.</p>
+        )}
+        <div className="filter-actions">
+          <button
+            type="button"
+            className="button secondary clear-filters"
+            onClick={clearFilters}
+          >
+            Limpiar filtros
+          </button>
         </div>
-      </details>
-      {from && to && from > to && (
-        <p role="alert">La fecha inicial debe ser anterior a la final.</p>
-      )}
-      <div className="filter-actions">
-        <button
-          type="button"
-          className="button secondary clear-filters"
-          onClick={clearFilters}
-        >
-          Limpiar filtros
-        </button>
       </div>
-    </div>
-  );
+    );
+    return (
+      <>
+        <div className="page-heading">
+          <div className="page-heading-content">
+            <p className="eyebrow">TUS FINANZAS PERSONALES</p>
+            <div className="section-title-row">
+              <h1>
+                {tab === "Inicio"
+                  ? homeSummaryVisible
+                    ? "Tu resumen"
+                    : "Tu espacio"
+                  : tab}
+              </h1>
+              {tab === "Apartados" && savingsPrivacy}
+            </div>
+            <p className="section-description">
+              {tab === "Inicio"
+                ? homeSummaryVisible
+                  ? "Tu dinero, al día."
+                  : "Elige una acción para continuar."
+                : (
+                    {
+                      Movimientos: "Cada ingreso y gasto, en un solo lugar.",
+                      Deudas: "Un paso más cerca de estar al día.",
+                      Reportes: "Entiende a dónde va tu dinero.",
+                      Apartados: "Reserva dinero para tus metas.",
+                      Respaldos: "Cuida lo que llevas registrado.",
+                    } as Record<string, string>
+                  )[tab]}
+            </p>
+          </div>
+          {!preview && tab !== "Respaldos" && (
+            <button
+              className="button section-add"
+              aria-label={
+                tab === "Apartados"
+                  ? "Nuevo apartado"
+                  : tab === "Deudas"
+                    ? "Nueva deuda"
+                    : "Nuevo movimiento"
+              }
+              title={
+                tab === "Apartados"
+                  ? "Nuevo apartado"
+                  : tab === "Deudas"
+                    ? "Nueva deuda"
+                    : "Nuevo movimiento"
+              }
+              disabled={!loaded || !!modal || planningEditing}
+              onClick={() => {
+                setError("");
+                if (tab === "Apartados") {
+                  setSavingCreating(true);
+                  return;
+                }
+                setModal(
+                  tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
+                );
+              }}
+            >
+              <Plus size={26} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        {duePending > 0 && tab !== "Movimientos" && (
+          <div className="notice">
+            <span>
+              Tienes {duePending}{" "}
+              {duePending === 1
+                ? "movimiento pendiente"
+                : "movimientos pendientes"}{" "}
+              por confirmar.
+            </span>
+            <button
+              className="text-button"
+              onClick={() => navigate("Movimientos")}
+            >
+              Revisar pendientes
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="alert transient-alert" role="alert">
+            <span>{error}</span>
+            {loaded && (
+              <button aria-label="Cerrar error" onClick={() => setError("")}>
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
+        {updateAvailable && (
+          <div className="notice" role="status">
+            <span>
+              Hay una nueva versión disponible.
+              {modal || planningEditing
+                ? " Guarda o cierra el formulario antes de actualizar."
+                : ""}
+            </span>
+            <button
+              className="button secondary"
+              disabled={
+                !!modal || planningEditing || busy || updating || !loaded
+              }
+              onClick={async () => {
+                if (!window.__miDineroUpdate) return;
+                setUpdating(true);
+                try {
+                  await window.__miDineroUpdate();
+                } catch {
+                  setError(
+                    "No se pudo actualizar. Revisa la conexión e inténtalo de nuevo.",
+                  );
+                } finally {
+                  setUpdating(false);
+                }
+              }}
+            >
+              {updating ? "Actualizando…" : "Actualizar aplicación"}
+            </button>
+          </div>
+        )}
+        {notice && (
+          <div className="notice" role="status">
+            {notice}
+            <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+        {!loaded && !error && <p>Cargando tus datos…</p>}
+        {tab === "Inicio" && !homeSummaryVisible && (
+          <HomeLanding
+            disabled={!loaded || busy}
+            onMovements={() => showMovements("all")}
+            onPayment={() => {
+              setError("");
+              setModal({ kind: "movement", initialType: "payment" });
+            }}
+            onSavings={() => navigate("Apartados")}
+            onSummary={() => {
+              setHomeSummaryVisible(true);
+              pageRef.current?.scrollTo({ top: 0 });
+            }}
+          />
+        )}
+        {tab === "Inicio" && homeSummaryVisible && (
+          <>
+            {(data.movements.length > 0 ||
+              (data.pendingMovements?.length ?? 0) > 0 ||
+              data.debts.length > 0 ||
+              !!data.budgets?.length ||
+              !!data.recurrents?.length ||
+              !!data.savings?.length) &&
+              backupOverdue(data.lastBackupAt) && (
+                <div className="notice">
+                  <span>
+                    {data.lastBackupAt
+                      ? "Han pasado 7 días desde tu última exportación."
+                      : "Tus registros aún no tienen respaldo."}
+                  </span>
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() => void exportBackup()}
+                  >
+                    Crear respaldo ahora
+                  </button>
+                </div>
+              )}
+            <section className="overview">
+              <div className="balance-card">
+                <div className="balance-label">
+                  <span>Saldo disponible</span>
+                  <Wallet size={23} />
+                </div>
+                <div className="balance-number">
+                  {money(freeAmount(data))}
+                  <span>MXN</span>
+                </div>
+                <p>
+                  <span className="light-dot" /> Ingresos menos gastos y
+                  apartados
+                </p>
+                <div className="balance-decoration" />
+              </div>
+              <button
+                type="button"
+                className="stat stat-link"
+                aria-label="Ver ingresos"
+                onClick={() => showMovements("income")}
+              >
+                <span className="stat-icon income">
+                  <ArrowDownLeft size={20} />
+                </span>
+                <span>Ingresos</span>
+                <strong>{money(incomes)}</strong>
+                <small>Total registrado · Ver listado</small>
+              </button>
+              <button
+                type="button"
+                className="stat stat-link"
+                aria-label="Ver egresos"
+                onClick={() => showMovements("expense")}
+              >
+                <span className="stat-icon expense">
+                  <ArrowUpRight size={20} />
+                </span>
+                <span>Egresos</span>
+                <strong>{money(expenses)}</strong>
+                <small>Pagos y abonos · Ver listado</small>
+              </button>
+              <button
+                type="button"
+                className="stat stat-link stat-credit"
+                aria-label="Ver deuda adquirida"
+                onClick={() => showMovements("credit")}
+              >
+                <span className="stat-icon debt">
+                  <HandCoins size={20} />
+                </span>
+                <span>Deuda adquirida</span>
+                <strong>{money(acquired)}</strong>
+                <small>Compras con TDC · Ver listado</small>
+              </button>
+            </section>
+            <section className="dashboard-grid">
+              <div className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>Últimos movimientos</h2>
+                    <p>Los pequeños detalles de tu día a día</p>
+                  </div>
+                  <button
+                    className="text-button"
+                    onClick={() => showMovements("all")}
+                  >
+                    Ver todos <ChevronRight size={16} />
+                  </button>
+                </div>
+                {movementList(recent)}
+              </div>
+              <div className="right-column">
+                <div className="panel debt-summary">
+                  <span className="stat-icon debt">
+                    <HandCoins size={22} />
+                  </span>
+                  <h2>Deudas pendientes</h2>
+                  <strong className="debt-number">{money(pending)}</strong>
+                  <p>
+                    {data.debts.filter((d) => balance(d) > 0).length} deudas por
+                    liquidar
+                  </p>
+                  <div className="divider" />
+                  <p>Organizarte hoy es darle tranquilidad a tu mañana.</p>
+                  <button
+                    className="text-button"
+                    onClick={() => navigate("Deudas")}
+                  >
+                    Administrar deudas <ChevronRight size={16} />
+                  </button>
+                </div>
+                <div className="tip">
+                  <Leaf size={23} />
+                  <div>
+                    <strong>A tu ritmo, pero hacia adelante</strong>
+                    <p>
+                      El hábito de registrar es el primer paso para tomar
+                      mejores decisiones.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <div className="privacy-footer">
+              <ShieldCheck size={16} /> Tu información es tuya. Sin cuentas, sin
+              conexiones bancarias.
+            </div>
+          </>
+        )}
+        {tab === "Movimientos" && (
+          <section className="panel full-panel">
+            <PendingPanel
+              data={data}
+              mutate={mutate}
+              busy={busy}
+              currentDay={currentDay}
+            />
+            <div className="wallet-balances" aria-label="Banco y efectivo">
+              <div>
+                <span>Banco</span>
+                <strong>{money(wallets.bank)}</strong>
+              </div>
+              <div>
+                <span>Efectivo</span>
+                <strong>{money(wallets.cash)}</strong>
+              </div>
+              {wallets.unassigned !== 0 && (
+                <div>
+                  <span>Sin clasificar</span>
+                  <strong>{money(wallets.unassigned)}</strong>
+                </div>
+              )}
+            </div>
+            <p className="helper wallet-help">
+              Saldos según los métodos registrados. Los apartados reservan parte
+              de este dinero; no son otra cuenta.
+              {wallets.unassigned !== 0
+                ? " Revisa los movimientos con método Otro o no reconocido para asignarlos."
+                : ""}
+            </p>
+            {filters}
+            <div
+              className="movement-type-tabs"
+              role="tablist"
+              aria-label="Mostrar movimientos"
+            >
+              {(
+                [
+                  ["all", "Todos"],
+                  ["income", "Ingresos"],
+                  ["expense", "Gastos"],
+                  ["credit", "TDC"],
+                  ["transfer", "Traspasos"],
+                ] as const
+              ).map(([type, label], index, options) => (
+                <button
+                  key={type}
+                  id={`movement-tab-${type}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={typeFilter === type}
+                  aria-controls="movement-results"
+                  tabIndex={typeFilter === type ? 0 : -1}
+                  onClick={() => selectMovementType(type)}
+                  onKeyDown={(e) => {
+                    let next = index;
+                    if (e.key === "ArrowRight")
+                      next = (index + 1) % options.length;
+                    else if (e.key === "ArrowLeft")
+                      next = (index + options.length - 1) % options.length;
+                    else if (e.key === "Home") next = 0;
+                    else if (e.key === "End") next = options.length - 1;
+                    else return;
+                    e.preventDefault();
+                    selectMovementType(options[next][0]);
+                    e.currentTarget.parentElement
+                      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                      [next]?.focus();
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div
+              id="movement-results"
+              className="movement-results"
+              role="tabpanel"
+              aria-labelledby={`movement-tab-${typeFilter}`}
+            >
+              <div className="panel-heading">
+                <h2>
+                  {filtered.length} {filteredLabel}
+                </h2>
+                <ExportButtons
+                  disabled={exporting || !filtered.length}
+                  onExport={(format) =>
+                    void exportReadable(
+                      movementDocument,
+                      exportNames[typeFilter],
+                      format,
+                    )
+                  }
+                />
+              </div>
+              {typeFilter === "all" && filtered.length > 0 && (
+                <div className="movement-totals">
+                  {reportColumns.map((column) => (
+                    <span
+                      key={column.key}
+                      className={
+                        column.key === "acquired" ? "total-wide" : undefined
+                      }
+                    >
+                      {column.key === "expense"
+                        ? "Gastos"
+                        : column.key === "acquired"
+                          ? "Compras TDC"
+                          : "Ingresos"}
+                      : <strong>{money(column.total)}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {typeFilter !== "all" &&
+                typeFilter !== "credit" &&
+                filtered.length > 0 && (
+                  <p className="filtered-total">
+                    {typeFilter === "transfer"
+                      ? "Total trasladado"
+                      : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
+                    : <strong>{money(filteredTotal)}</strong>
+                  </p>
+                )}
+              {tdcView && filtered.length > 0 && (
+                <div className="filtered-total movement-totals tdc-totals">
+                  {filteredTotal > 0 && (
+                    <span>
+                      Compras: <strong>{money(filteredTotal)}</strong>
+                    </span>
+                  )}
+                  {filteredCardPayments > 0 && (
+                    <span>
+                      Abonos: <strong>{money(filteredCardPayments)}</strong>
+                    </span>
+                  )}
+                </div>
+              )}
+              {typeFilter === "transfer" && (
+                <p className="helper">
+                  Un retiro pasa dinero del banco al efectivo; un depósito hace
+                  lo contrario. No son ingresos ni gastos y no cambian tu
+                  disponible total.
+                </p>
+              )}
+              {movementList(filtered)}
+            </div>
+            <RecurringPanel
+              onEditing={setPlanningEditing}
+              data={data}
+              suggestions={merchantOptions}
+              mutate={mutate}
+              busy={busy}
+              categories={[...categories, "Pago de deuda"]}
+            />
+          </section>
+        )}
+        {tab === "Deudas" && (
+          <>
+            <div className="summary-strip">
+              <span>Saldo pendiente total</span>
+              <strong>{money(pending)}</strong>
+            </div>
+            <p className="helper">
+              Las compras con tarjeta aumentan la deuda y consumen presupuesto.
+              El gasto y la reducción del saldo disponible se registran al
+              abonar. No registres el abono otra vez como gasto.
+            </p>
+            <div className="debt-grid">
+              {data.debts.map((d) => {
+                const cycle = cardCycle(d, data);
+                const due = cycle
+                  ? cycle.amount > 0
+                    ? cycle.due
+                    : cycle.nextDue
+                  : d.due;
+                return (
+                  <section className="panel debt-detail" key={d.id}>
+                    <div className="panel-heading">
+                      <h2>{d.creditor}</h2>
+                      <button
+                        className="text-button"
+                        aria-label={`Editar deuda ${d.creditor}`}
+                        onClick={() => {
+                          setError("");
+                          setModal({ kind: "debt", debt: d });
+                        }}
+                      >
+                        Editar
+                      </button>
+                      <span
+                        className={"pill " + (balance(d) === 0 ? "paid" : "")}
+                      >
+                        {balance(d) === 0
+                          ? "Liquidada"
+                          : (
+                                cycle
+                                  ? cycle!.amount > 0 && cycle!.due < today()
+                                  : d.due < today()
+                              )
+                            ? "Vencida"
+                            : "Pendiente"}
+                      </span>
+                    </div>
+                    <p>Saldo pendiente</p>
+                    <strong className="debt-number">{money(balance(d))}</strong>
+                    <progress
+                      value={
+                        d.original +
+                        (d.charges ?? []).reduce(
+                          (sum, c) => sum + c.amount,
+                          0,
+                        ) -
+                        balance(d)
+                      }
+                      max={Math.max(
+                        0.01,
+                        d.original +
+                          (d.charges ?? []).reduce(
+                            (sum, c) => sum + c.amount,
+                            0,
+                          ),
+                      )}
+                    />
+                    <div className="debt-meta">
+                      <span>
+                        {d.kind === "credit"
+                          ? "Tarjeta · Apertura"
+                          : "Original"}
+                        : {money(d.original)}
+                        {d.kind === "credit" &&
+                          ` · Compras: ${money((d.charges ?? []).reduce((sum, c) => sum + c.amount, 0))}`}
+                      </span>
+                      <span>
+                        {cycle ? "Límite de pago" : "Vence"}: {dateLabel(due)}{" "}
+                        {due.slice(0, 4)}
+                      </span>
+                    </div>
+                    {cycle && (
+                      <div className="cycle-info">
+                        <p>
+                          Corte: {dateLabel(cycle!.cut)} · Límite:{" "}
+                          {dateLabel(due)}
+                        </p>
+                        <strong>
+                          Pendiente al corte: {money(cycle!.amount)}
+                        </strong>
+                        <p className="helper">
+                          Estimación con los movimientos registrados, sin
+                          intereses ni comisiones bancarias. Los días 29–31 se
+                          ajustan al último día del mes.
+                        </p>
+                      </div>
+                    )}
+                    {d.notes && <p className="helper">{d.notes}</p>}
+                    <button
+                      className="button secondary"
+                      disabled={balance(d) === 0}
+                      onClick={() => setModal({ kind: "payment", debt: d })}
+                    >
+                      <Plus size={17} /> Registrar abono
+                    </button>
+                    <details>
+                      <summary>
+                        Historial de abonos ({d.payments.length})
+                      </summary>
+                      {d.payments.length ? (
+                        d.payments.map((p) => (
+                          <div className="payment" key={p.id}>
+                            <span>
+                              {dateLabel(p.date)} · {money(p.amount)}
+                            </span>
+                            <button
+                              aria-label={`Revertir abono de ${d.creditor}`}
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    "¿Revertir este abono? Se eliminará también su gasto vinculado.",
+                                  )
+                                )
+                                  void mutate((data) =>
+                                    removeMovement(data, p.movementId),
+                                  );
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p>Aún no hay abonos registrados.</p>
+                      )}
+                    </details>
+                  </section>
+                );
+              })}
+            </div>
+            {!data.debts.length && (
+              <div className="panel empty">
+                <HandCoins size={34} />
+                <h3>Todo empieza con un plan</h3>
+                <p>Agrega tus deudas y lleva el control de cada abono.</p>
+                <button
+                  className="button secondary"
+                  onClick={() => setModal({ kind: "debt" })}
+                >
+                  Registrar deuda
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {tab === "Apartados" && (
+          <>
+            {!canSeeSavings && !savingCreating && (
+              <section className="panel savings-hidden">
+                <h2>Ahorros ocultos</h2>
+                <p>••••</p>
+                <button
+                  className="button secondary"
+                  onClick={() =>
+                    setModal({ kind: "movement", initialType: "saving" })
+                  }
+                >
+                  Agregar dinero
+                </button>
+              </section>
+            )}
+            <div
+              hidden={!canSeeSavings && !savingCreating}
+              inert={!canSeeSavings && !savingCreating}
+            >
+              <SavingsPanel
+                data={data}
+                showDetails={canSeeSavings}
+                mutate={mutate}
+                busy={busy}
+                creating={savingCreating}
+                onClose={() => setSavingCreating(false)}
+                onEditing={setPlanningEditing}
+              />
+            </div>
+          </>
+        )}
+        {tab === "Reportes" && (
+          <section className="panel full-panel">
+            <BudgetPanel
+              onEditing={setPlanningEditing}
+              data={data}
+              mutate={mutate}
+              busy={busy}
+              categories={[
+                ...new Set([
+                  ...categories,
+                  "Pago de deuda",
+                  ...data.movements.map((m) => m.category),
+                ]),
+              ]}
+            />
+            {filters}
+            <ExportButtons
+              disabled={exporting || !filtered.length}
+              onExport={(format) =>
+                void exportReadable(
+                  reportDocument,
+                  `reporte-${exportNames[typeFilter]}`,
+                  format,
+                )
+              }
+            />
+            {reportColumns.length > 0 && (
+              <div className="report-totals credit-report-totals">
+                {reportColumns.map((column) => (
+                  <div key={column.key}>
+                    <span>{column.summary}</span>
+                    <strong
+                      className={
+                        column.key === "income" ? "positive" : undefined
+                      }
+                    >
+                      {money(column.total)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            )}
+            {groupTotals.size ? (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Periodo</th>
+                      {reportColumns.map((column) => (
+                        <th key={column.key}>{column.label}</th>
+                      ))}
+                      {showBalance && <th>Balance</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...groupTotals]
+                      .sort(([a], [b]) => b.localeCompare(a))
+                      .map(([key, g]) => (
+                        <tr key={key}>
+                          <td>
+                            {period === "weekly" ? "Semana del " : ""}
+                            {period === "monthly"
+                              ? new Date(
+                                  key + "-01T12:00:00",
+                                ).toLocaleDateString("es-MX", {
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : dateLabel(key) + " " + key.slice(0, 4)}
+                          </td>
+                          {reportColumns.map((column) => (
+                            <td
+                              key={column.key}
+                              className={
+                                column.key === "income" ? "positive" : undefined
+                              }
+                            >
+                              {money(g[column.key])}
+                            </td>
+                          ))}
+                          {showBalance && (
+                            <td>{money(g.income - g.expense)}</td>
+                          )}
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty">
+                <ChartNoAxesCombined size={32} />
+                <h3>Aún no hay datos para este periodo</h3>
+                <p>
+                  Agrega movimientos o ajusta los filtros para ver tus totales.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+        {tab === "Respaldos" && (
+          <div className="backup-grid">
+            <SecurityPanel />
+            <div className="panel backup backup-history">
+              <h2>Tu último respaldo</h2>
+              <p>
+                {data.lastBackupAt
+                  ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
+                  : "Todavía no has exportado un respaldo."}
+              </p>
+              <p>
+                {backupOverdue(data.lastBackupAt)
+                  ? "Te recomendamos exportar un respaldo cada semana."
+                  : "Tu respaldo está al día. Comprueba que guardaste el archivo."}
+              </p>
+            </div>
+            <section className="panel backup">
+              <ShieldCheck size={30} />
+              <h2>Un respaldo, más tranquilidad</h2>
+              <p>
+                Exporta todos tus movimientos, deudas y abonos a un archivo
+                JSON. Guárdalo en Archivos o en un lugar de confianza.
+              </p>
+              <button
+                className="button"
+                disabled={!loaded || busy}
+                onClick={() => void exportBackup()}
+              >
+                <Download size={18} /> Exportar respaldo JSON
+              </button>
+              <div className="divider" />
+              <h3>Restaurar tus datos</h3>
+              <p>
+                La importación reemplaza los datos de este dispositivo. Exporta
+                primero tu respaldo actual. El archivo se valida antes de
+                guardar.
+              </p>
+              <label className="button secondary file-button">
+                <Upload size={18} /> Importar respaldo JSON
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  disabled={!loaded || busy}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    try {
+                      if (file.size > 10 * 1024 * 1024)
+                        throw Error("El archivo supera el límite de 10 MB.");
+                      const backup = validateBackup(
+                        JSON.parse(await file.text()),
+                      );
+                      if (
+                        confirm(
+                          `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
+                        )
+                      )
+                        await mutate(() => backup);
+                    } catch (err) {
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "No se pudo importar el respaldo.",
+                      );
+                    }
+                  }}
+                />
+              </label>
+              <div className="divider" />
+              <h3>Para consultar y compartir</h3>
+              <p>
+                Descarga tus movimientos en Excel, PDF o CSV. Estos archivos son
+                para consultar; usa JSON para restaurar tus datos.
+              </p>
+              <ExportButtons
+                disabled={exporting || !data.movements.length}
+                onExport={(format) =>
+                  void exportReadable(
+                    movementExport(
+                      normalizeExports(newestFirst),
+                      "Todos los movimientos",
+                      ["Todos los registros"],
+                    ),
+                    "movimientos",
+                    format,
+                  )
+                }
+              />
+              <button
+                className="button secondary"
+                onClick={() =>
+                  download(
+                    csv(data.movements),
+                    `movimientos-${today()}.csv`,
+                    "text/csv;charset=utf-8",
+                  )
+                }
+              >
+                <Download size={18} /> Exportar movimientos CSV
+              </button>
+            </section>
+            <section className="panel backup install">
+              <span className="install-icon">
+                <Wallet size={28} />
+              </span>
+              <h2>Mi dinero, en tu iPhone</h2>
+              <p>Ten tus finanzas a un toque de distancia.</p>
+              <ol>
+                <li>
+                  Abre la aplicación en <strong>Safari</strong>.
+                </li>
+                <li>
+                  Toca el botón <strong>Compartir</strong>.
+                </li>
+                <li>
+                  Selecciona <strong>Agregar a pantalla de inicio</strong> y
+                  confirma en Agregar.
+                </li>
+                <li>
+                  Abre Mi dinero y espera el aviso de que está lista sin
+                  internet.
+                </li>
+              </ol>
+              <p className="helper">
+                La instalación requiere HTTPS (o localhost durante desarrollo).
+                Después de la primera carga completa, funciona sin conexión.
+              </p>
+              <div className="local-note">
+                <ShieldCheck size={20} />
+                <p>
+                  No sincronizamos ni enviamos tus datos. Si borras los datos de
+                  Safari, cambias de dispositivo o desinstalas la app, podrías
+                  perderlos. Haz respaldos frecuentes. El archivo JSON contiene
+                  tus datos sin cifrar.
+                </p>
+              </div>
+            </section>
+          </div>
+        )}
+      </>
+    );
+  }
   return (
     <div className={`app${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
       <aside className="sidebar" id="app-sidebar">
@@ -1329,934 +2194,20 @@ export default function App() {
             <ThemeControl />
           </div>
         </header>
-        <div
-          className="page"
-          ref={pageRef}
-          onTouchStart={(e) => {
-            swipe.current = null;
-            if (modal || planningEditing || e.touches.length !== 1) return;
-            let target = e.target as HTMLElement;
-            if (
-              target.closest(
-                "input, select, textarea, button, a, [role=dialog]",
-              )
-            )
-              return;
-            while (target && target !== e.currentTarget) {
-              if (
-                target.scrollWidth > target.clientWidth &&
-                ["auto", "scroll"].includes(getComputedStyle(target).overflowX)
-              )
-                return;
-              target = target.parentElement!;
-            }
-            swipe.current = {
-              x: e.touches[0].clientX,
-              y: e.touches[0].clientY,
-              time: Date.now(),
-            };
-          }}
-          onTouchCancel={() => {
-            swipe.current = null;
-          }}
-          onTouchMove={(e) => {
-            if (
-              e.touches.length !== 1 ||
-              (swipe.current &&
-                Math.abs(e.touches[0].clientY - swipe.current.y) > 20 &&
-                Math.abs(e.touches[0].clientY - swipe.current.y) >
-                  Math.abs(e.touches[0].clientX - swipe.current.x))
-            )
-              swipe.current = null;
-          }}
-          onTouchEnd={(e) => {
-            const start = swipe.current;
-            swipe.current = null;
-            if (!start || modal || planningEditing || !e.changedTouches.length)
-              return;
-            const dx = e.changedTouches[0].clientX - start.x;
-            const dy = e.changedTouches[0].clientY - start.y;
-            if (
-              Date.now() - start.time > 1200 ||
-              Math.abs(dx) < 60 ||
-              Math.abs(dx) < Math.abs(dy) * 1.5
-            )
-              return;
-            const next =
-              tabs[tabs.findIndex((t) => t.name === tab) + (dx < 0 ? 1 : -1)];
-            if (next) navigate(next.name, dx < 0 ? 1 : -1);
-          }}
-        >
-          <div className="page-heading">
-            <div className="page-heading-content">
-              <p className="eyebrow">TUS FINANZAS PERSONALES</p>
-              <div className="section-title-row">
-                <h1>
-                  {tab === "Inicio"
-                    ? homeSummaryVisible
-                      ? "Tu resumen"
-                      : "Tu espacio"
-                    : tab}
-                </h1>
-                {tab === "Apartados" && savingsPrivacy}
-              </div>
-              <p className="section-description">
-                {tab === "Inicio"
-                  ? homeSummaryVisible
-                    ? "Tu dinero, al día."
-                    : "Elige una acción para continuar."
-                  : (
-                      {
-                        Movimientos: "Cada ingreso y gasto, en un solo lugar.",
-                        Deudas: "Un paso más cerca de estar al día.",
-                        Reportes: "Entiende a dónde va tu dinero.",
-                        Apartados: "Reserva dinero para tus metas.",
-                        Respaldos: "Cuida lo que llevas registrado.",
-                      } as Record<string, string>
-                    )[tab]}
-              </p>
-            </div>
-            {tab !== "Respaldos" && (
-              <button
-                className="button section-add"
-                aria-label={
-                  tab === "Apartados"
-                    ? "Nuevo apartado"
-                    : tab === "Deudas"
-                      ? "Nueva deuda"
-                      : "Nuevo movimiento"
-                }
-                title={
-                  tab === "Apartados"
-                    ? "Nuevo apartado"
-                    : tab === "Deudas"
-                      ? "Nueva deuda"
-                      : "Nuevo movimiento"
-                }
-                disabled={!loaded || !!modal || planningEditing}
-                onClick={() => {
-                  setError("");
-                  if (tab === "Apartados") {
-                    setSavingCreating(true);
-                    return;
-                  }
-                  setModal(
-                    tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
-                  );
-                }}
-              >
-                <Plus size={26} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-          {duePending > 0 && tab !== "Movimientos" && (
-            <div className="notice">
-              <span>
-                Tienes {duePending}{" "}
-                {duePending === 1
-                  ? "movimiento pendiente"
-                  : "movimientos pendientes"}{" "}
-                por confirmar.
-              </span>
-              <button
-                className="text-button"
-                onClick={() => navigate("Movimientos")}
-              >
-                Revisar pendientes
-              </button>
-            </div>
-          )}
-          {error && (
-            <div className="alert transient-alert" role="alert">
-              <span>{error}</span>
-              {loaded && (
-                <button aria-label="Cerrar error" onClick={() => setError("")}>
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          )}
-          {updateAvailable && (
-            <div className="notice" role="status">
-              <span>
-                Hay una nueva versión disponible.
-                {modal || planningEditing
-                  ? " Guarda o cierra el formulario antes de actualizar."
-                  : ""}
-              </span>
-              <button
-                className="button secondary"
-                disabled={
-                  !!modal || planningEditing || busy || updating || !loaded
-                }
-                onClick={async () => {
-                  if (!window.__miDineroUpdate) return;
-                  setUpdating(true);
-                  try {
-                    await window.__miDineroUpdate();
-                  } catch {
-                    setError(
-                      "No se pudo actualizar. Revisa la conexión e inténtalo de nuevo.",
-                    );
-                  } finally {
-                    setUpdating(false);
-                  }
-                }}
-              >
-                {updating ? "Actualizando…" : "Actualizar aplicación"}
-              </button>
-            </div>
-          )}
-          {notice && (
-            <div className="notice" role="status">
-              {notice}
-              <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
-                <X size={16} />
-              </button>
-            </div>
-          )}
-          {!loaded && !error && <p>Cargando tus datos…</p>}
-          {tab === "Inicio" && !homeSummaryVisible && (
-            <HomeLanding
-              disabled={!loaded || busy}
-              onMovements={() => showMovements("all")}
-              onPayment={() => {
-                setError("");
-                setModal({ kind: "movement", initialType: "payment" });
-              }}
-              onSavings={() => navigate("Apartados")}
-              onSummary={() => {
-                setHomeSummaryVisible(true);
-                pageRef.current?.scrollTo({ top: 0 });
-              }}
-            />
-          )}
-          {tab === "Inicio" && homeSummaryVisible && (
-            <>
-              {(data.movements.length > 0 ||
-                (data.pendingMovements?.length ?? 0) > 0 ||
-                data.debts.length > 0 ||
-                !!data.budgets?.length ||
-                !!data.recurrents?.length ||
-                !!data.savings?.length) &&
-                backupOverdue(data.lastBackupAt) && (
-                  <div className="notice">
-                    <span>
-                      {data.lastBackupAt
-                        ? "Han pasado 7 días desde tu última exportación."
-                        : "Tus registros aún no tienen respaldo."}
-                    </span>
-                    <button
-                      className="text-button"
-                      disabled={busy}
-                      onClick={() => void exportBackup()}
-                    >
-                      Crear respaldo ahora
-                    </button>
-                  </div>
-                )}
-              <section className="overview">
-                <div className="balance-card">
-                  <div className="balance-label">
-                    <span>Saldo disponible</span>
-                    <Wallet size={23} />
-                  </div>
-                  <div className="balance-number">
-                    {money(freeAmount(data))}
-                    <span>MXN</span>
-                  </div>
-                  <p>
-                    <span className="light-dot" /> Ingresos menos gastos y
-                    apartados
-                  </p>
-                  <div className="balance-decoration" />
-                </div>
-                <button
-                  type="button"
-                  className="stat stat-link"
-                  aria-label="Ver ingresos"
-                  onClick={() => showMovements("income")}
-                >
-                  <span className="stat-icon income">
-                    <ArrowDownLeft size={20} />
-                  </span>
-                  <span>Ingresos</span>
-                  <strong>{money(incomes)}</strong>
-                  <small>Total registrado · Ver listado</small>
-                </button>
-                <button
-                  type="button"
-                  className="stat stat-link"
-                  aria-label="Ver egresos"
-                  onClick={() => showMovements("expense")}
-                >
-                  <span className="stat-icon expense">
-                    <ArrowUpRight size={20} />
-                  </span>
-                  <span>Egresos</span>
-                  <strong>{money(expenses)}</strong>
-                  <small>Pagos y abonos · Ver listado</small>
-                </button>
-                <button
-                  type="button"
-                  className="stat stat-link stat-credit"
-                  aria-label="Ver deuda adquirida"
-                  onClick={() => showMovements("credit")}
-                >
-                  <span className="stat-icon debt">
-                    <HandCoins size={20} />
-                  </span>
-                  <span>Deuda adquirida</span>
-                  <strong>{money(acquired)}</strong>
-                  <small>Compras con TDC · Ver listado</small>
-                </button>
-              </section>
-              <section className="dashboard-grid">
-                <div className="panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h2>Últimos movimientos</h2>
-                      <p>Los pequeños detalles de tu día a día</p>
-                    </div>
-                    <button
-                      className="text-button"
-                      onClick={() => showMovements("all")}
-                    >
-                      Ver todos <ChevronRight size={16} />
-                    </button>
-                  </div>
-                  {movementList(recent)}
-                </div>
-                <div className="right-column">
-                  <div className="panel debt-summary">
-                    <span className="stat-icon debt">
-                      <HandCoins size={22} />
-                    </span>
-                    <h2>Deudas pendientes</h2>
-                    <strong className="debt-number">{money(pending)}</strong>
-                    <p>
-                      {data.debts.filter((d) => balance(d) > 0).length} deudas
-                      por liquidar
-                    </p>
-                    <div className="divider" />
-                    <p>Organizarte hoy es darle tranquilidad a tu mañana.</p>
-                    <button
-                      className="text-button"
-                      onClick={() => navigate("Deudas")}
-                    >
-                      Administrar deudas <ChevronRight size={16} />
-                    </button>
-                  </div>
-                  <div className="tip">
-                    <Leaf size={23} />
-                    <div>
-                      <strong>A tu ritmo, pero hacia adelante</strong>
-                      <p>
-                        El hábito de registrar es el primer paso para tomar
-                        mejores decisiones.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-              <div className="privacy-footer">
-                <ShieldCheck size={16} /> Tu información es tuya. Sin cuentas,
-                sin conexiones bancarias.
-              </div>
-            </>
-          )}
-          {tab === "Movimientos" && (
-            <section className="panel full-panel">
-              <PendingPanel
-                data={data}
-                mutate={mutate}
-                busy={busy}
-                currentDay={currentDay}
-              />
-              <div className="wallet-balances" aria-label="Banco y efectivo">
-                <div>
-                  <span>Banco</span>
-                  <strong>{money(wallets.bank)}</strong>
-                </div>
-                <div>
-                  <span>Efectivo</span>
-                  <strong>{money(wallets.cash)}</strong>
-                </div>
-                {wallets.unassigned !== 0 && (
-                  <div>
-                    <span>Sin clasificar</span>
-                    <strong>{money(wallets.unassigned)}</strong>
-                  </div>
-                )}
-              </div>
-              <p className="helper wallet-help">
-                Saldos según los métodos registrados. Los apartados reservan
-                parte de este dinero; no son otra cuenta.
-                {wallets.unassigned !== 0
-                  ? " Revisa los movimientos con método Otro o no reconocido para asignarlos."
-                  : ""}
-              </p>
-              {filters}
-              <div
-                className="movement-type-tabs"
-                role="tablist"
-                aria-label="Mostrar movimientos"
-              >
-                {(
-                  [
-                    ["all", "Todos"],
-                    ["income", "Ingresos"],
-                    ["expense", "Gastos"],
-                    ["credit", "TDC"],
-                    ["transfer", "Traspasos"],
-                  ] as const
-                ).map(([type, label], index, options) => (
-                  <button
-                    key={type}
-                    id={`movement-tab-${type}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={typeFilter === type}
-                    aria-controls="movement-results"
-                    tabIndex={typeFilter === type ? 0 : -1}
-                    onClick={() => selectMovementType(type)}
-                    onKeyDown={(e) => {
-                      let next = index;
-                      if (e.key === "ArrowRight")
-                        next = (index + 1) % options.length;
-                      else if (e.key === "ArrowLeft")
-                        next = (index + options.length - 1) % options.length;
-                      else if (e.key === "Home") next = 0;
-                      else if (e.key === "End") next = options.length - 1;
-                      else return;
-                      e.preventDefault();
-                      selectMovementType(options[next][0]);
-                      e.currentTarget.parentElement
-                        ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                        [next]?.focus();
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div
-                id="movement-results"
-                className="movement-results"
-                role="tabpanel"
-                aria-labelledby={`movement-tab-${typeFilter}`}
-              >
-                <div className="panel-heading">
-                  <h2>
-                    {filtered.length} {filteredLabel}
-                  </h2>
-                  <ExportButtons
-                    disabled={exporting || !filtered.length}
-                    onExport={(format) =>
-                      void exportReadable(
-                        movementDocument,
-                        exportNames[typeFilter],
-                        format,
-                      )
-                    }
-                  />
-                </div>
-                {typeFilter === "all" && filtered.length > 0 && (
-                  <div className="movement-totals">
-                    {reportColumns.map((column) => (
-                      <span
-                        key={column.key}
-                        className={
-                          column.key === "acquired" ? "total-wide" : undefined
-                        }
-                      >
-                        {column.key === "expense"
-                          ? "Gastos"
-                          : column.key === "acquired"
-                            ? "Compras TDC"
-                            : "Ingresos"}
-                        : <strong>{money(column.total)}</strong>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {typeFilter !== "all" &&
-                  typeFilter !== "credit" &&
-                  filtered.length > 0 && (
-                    <p className="filtered-total">
-                      {typeFilter === "transfer"
-                        ? "Total trasladado"
-                        : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
-                      : <strong>{money(filteredTotal)}</strong>
-                    </p>
-                  )}
-                {tdcView && filtered.length > 0 && (
-                  <div className="filtered-total movement-totals tdc-totals">
-                    {filteredTotal > 0 && (
-                      <span>
-                        Compras: <strong>{money(filteredTotal)}</strong>
-                      </span>
-                    )}
-                    {filteredCardPayments > 0 && (
-                      <span>
-                        Abonos: <strong>{money(filteredCardPayments)}</strong>
-                      </span>
-                    )}
-                  </div>
-                )}
-                {typeFilter === "transfer" && (
-                  <p className="helper">
-                    Un retiro pasa dinero del banco al efectivo; un depósito
-                    hace lo contrario. No son ingresos ni gastos y no cambian tu
-                    disponible total.
-                  </p>
-                )}
-                {movementList(filtered)}
-              </div>
-              <RecurringPanel
-                onEditing={setPlanningEditing}
-                data={data}
-                suggestions={merchantOptions}
-                mutate={mutate}
-                busy={busy}
-                categories={[...categories, "Pago de deuda"]}
-              />
-            </section>
-          )}
-          {tab === "Deudas" && (
-            <>
-              <div className="summary-strip">
-                <span>Saldo pendiente total</span>
-                <strong>{money(pending)}</strong>
-              </div>
-              <p className="helper">
-                Las compras con tarjeta aumentan la deuda y consumen
-                presupuesto. El gasto y la reducción del saldo disponible se
-                registran al abonar. No registres el abono otra vez como gasto.
-              </p>
-              <div className="debt-grid">
-                {data.debts.map((d) => {
-                  const cycle = cardCycle(d, data);
-                  const due = cycle
-                    ? cycle.amount > 0
-                      ? cycle.due
-                      : cycle.nextDue
-                    : d.due;
-                  return (
-                    <section className="panel debt-detail" key={d.id}>
-                      <div className="panel-heading">
-                        <h2>{d.creditor}</h2>
-                        <button
-                          className="text-button"
-                          aria-label={`Editar deuda ${d.creditor}`}
-                          onClick={() => {
-                            setError("");
-                            setModal({ kind: "debt", debt: d });
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <span
-                          className={"pill " + (balance(d) === 0 ? "paid" : "")}
-                        >
-                          {balance(d) === 0
-                            ? "Liquidada"
-                            : (
-                                  cycle
-                                    ? cycle!.amount > 0 && cycle!.due < today()
-                                    : d.due < today()
-                                )
-                              ? "Vencida"
-                              : "Pendiente"}
-                        </span>
-                      </div>
-                      <p>Saldo pendiente</p>
-                      <strong className="debt-number">
-                        {money(balance(d))}
-                      </strong>
-                      <progress
-                        value={
-                          d.original +
-                          (d.charges ?? []).reduce(
-                            (sum, c) => sum + c.amount,
-                            0,
-                          ) -
-                          balance(d)
-                        }
-                        max={Math.max(
-                          0.01,
-                          d.original +
-                            (d.charges ?? []).reduce(
-                              (sum, c) => sum + c.amount,
-                              0,
-                            ),
-                        )}
-                      />
-                      <div className="debt-meta">
-                        <span>
-                          {d.kind === "credit"
-                            ? "Tarjeta · Apertura"
-                            : "Original"}
-                          : {money(d.original)}
-                          {d.kind === "credit" &&
-                            ` · Compras: ${money((d.charges ?? []).reduce((sum, c) => sum + c.amount, 0))}`}
-                        </span>
-                        <span>
-                          {cycle ? "Límite de pago" : "Vence"}: {dateLabel(due)}{" "}
-                          {due.slice(0, 4)}
-                        </span>
-                      </div>
-                      {cycle && (
-                        <div className="cycle-info">
-                          <p>
-                            Corte: {dateLabel(cycle!.cut)} · Límite:{" "}
-                            {dateLabel(due)}
-                          </p>
-                          <strong>
-                            Pendiente al corte: {money(cycle!.amount)}
-                          </strong>
-                          <p className="helper">
-                            Estimación con los movimientos registrados, sin
-                            intereses ni comisiones bancarias. Los días 29–31 se
-                            ajustan al último día del mes.
-                          </p>
-                        </div>
-                      )}
-                      {d.notes && <p className="helper">{d.notes}</p>}
-                      <button
-                        className="button secondary"
-                        disabled={balance(d) === 0}
-                        onClick={() => setModal({ kind: "payment", debt: d })}
-                      >
-                        <Plus size={17} /> Registrar abono
-                      </button>
-                      <details>
-                        <summary>
-                          Historial de abonos ({d.payments.length})
-                        </summary>
-                        {d.payments.length ? (
-                          d.payments.map((p) => (
-                            <div className="payment" key={p.id}>
-                              <span>
-                                {dateLabel(p.date)} · {money(p.amount)}
-                              </span>
-                              <button
-                                aria-label={`Revertir abono de ${d.creditor}`}
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      "¿Revertir este abono? Se eliminará también su gasto vinculado.",
-                                    )
-                                  )
-                                    void mutate((data) =>
-                                      removeMovement(data, p.movementId),
-                                    );
-                                }}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          ))
-                        ) : (
-                          <p>Aún no hay abonos registrados.</p>
-                        )}
-                      </details>
-                    </section>
-                  );
-                })}
-              </div>
-              {!data.debts.length && (
-                <div className="panel empty">
-                  <HandCoins size={34} />
-                  <h3>Todo empieza con un plan</h3>
-                  <p>Agrega tus deudas y lleva el control de cada abono.</p>
-                  <button
-                    className="button secondary"
-                    onClick={() => setModal({ kind: "debt" })}
-                  >
-                    Registrar deuda
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-          {tab === "Apartados" && (
-            <>
-              {!canSeeSavings && !savingCreating && (
-                <section className="panel savings-hidden">
-                  <h2>Ahorros ocultos</h2>
-                  <p>••••</p>
-                  <button
-                    className="button secondary"
-                    onClick={() =>
-                      setModal({ kind: "movement", initialType: "saving" })
-                    }
-                  >
-                    Agregar dinero
-                  </button>
-                </section>
-              )}
-              <div
-                hidden={!canSeeSavings && !savingCreating}
-                inert={!canSeeSavings && !savingCreating}
-              >
-                <SavingsPanel
-                  data={data}
-                  showDetails={canSeeSavings}
-                  mutate={mutate}
-                  busy={busy}
-                  creating={savingCreating}
-                  onClose={() => setSavingCreating(false)}
-                  onEditing={setPlanningEditing}
-                />
-              </div>
-            </>
-          )}
-          {tab === "Reportes" && (
-            <section className="panel full-panel">
-              <BudgetPanel
-                onEditing={setPlanningEditing}
-                data={data}
-                mutate={mutate}
-                busy={busy}
-                categories={[
-                  ...new Set([
-                    ...categories,
-                    "Pago de deuda",
-                    ...data.movements.map((m) => m.category),
-                  ]),
-                ]}
-              />
-              {filters}
-              <ExportButtons
-                disabled={exporting || !filtered.length}
-                onExport={(format) =>
-                  void exportReadable(
-                    reportDocument,
-                    `reporte-${exportNames[typeFilter]}`,
-                    format,
-                  )
-                }
-              />
-              {reportColumns.length > 0 && (
-                <div className="report-totals credit-report-totals">
-                  {reportColumns.map((column) => (
-                    <div key={column.key}>
-                      <span>{column.summary}</span>
-                      <strong
-                        className={
-                          column.key === "income" ? "positive" : undefined
-                        }
-                      >
-                        {money(column.total)}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {groupTotals.size ? (
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Periodo</th>
-                        {reportColumns.map((column) => (
-                          <th key={column.key}>{column.label}</th>
-                        ))}
-                        {showBalance && <th>Balance</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...groupTotals]
-                        .sort(([a], [b]) => b.localeCompare(a))
-                        .map(([key, g]) => (
-                          <tr key={key}>
-                            <td>
-                              {period === "weekly" ? "Semana del " : ""}
-                              {period === "monthly"
-                                ? new Date(
-                                    key + "-01T12:00:00",
-                                  ).toLocaleDateString("es-MX", {
-                                    month: "long",
-                                    year: "numeric",
-                                  })
-                                : dateLabel(key) + " " + key.slice(0, 4)}
-                            </td>
-                            {reportColumns.map((column) => (
-                              <td
-                                key={column.key}
-                                className={
-                                  column.key === "income"
-                                    ? "positive"
-                                    : undefined
-                                }
-                              >
-                                {money(g[column.key])}
-                              </td>
-                            ))}
-                            {showBalance && (
-                              <td>{money(g.income - g.expense)}</td>
-                            )}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="empty">
-                  <ChartNoAxesCombined size={32} />
-                  <h3>Aún no hay datos para este periodo</h3>
-                  <p>
-                    Agrega movimientos o ajusta los filtros para ver tus
-                    totales.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-          {tab === "Respaldos" && (
-            <div className="backup-grid">
-              <SecurityPanel />
-              <div className="panel backup backup-history">
-                <h2>Tu último respaldo</h2>
-                <p>
-                  {data.lastBackupAt
-                    ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
-                    : "Todavía no has exportado un respaldo."}
-                </p>
-                <p>
-                  {backupOverdue(data.lastBackupAt)
-                    ? "Te recomendamos exportar un respaldo cada semana."
-                    : "Tu respaldo está al día. Comprueba que guardaste el archivo."}
-                </p>
-              </div>
-              <section className="panel backup">
-                <ShieldCheck size={30} />
-                <h2>Un respaldo, más tranquilidad</h2>
-                <p>
-                  Exporta todos tus movimientos, deudas y abonos a un archivo
-                  JSON. Guárdalo en Archivos o en un lugar de confianza.
-                </p>
-                <button
-                  className="button"
-                  disabled={!loaded || busy}
-                  onClick={() => void exportBackup()}
-                >
-                  <Download size={18} /> Exportar respaldo JSON
-                </button>
-                <div className="divider" />
-                <h3>Restaurar tus datos</h3>
-                <p>
-                  La importación reemplaza los datos de este dispositivo.
-                  Exporta primero tu respaldo actual. El archivo se valida antes
-                  de guardar.
-                </p>
-                <label className="button secondary file-button">
-                  <Upload size={18} /> Importar respaldo JSON
-                  <input
-                    type="file"
-                    accept=".json,application/json"
-                    disabled={!loaded || busy}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      e.target.value = "";
-                      if (!file) return;
-                      try {
-                        if (file.size > 10 * 1024 * 1024)
-                          throw Error("El archivo supera el límite de 10 MB.");
-                        const backup = validateBackup(
-                          JSON.parse(await file.text()),
-                        );
-                        if (
-                          confirm(
-                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
-                          )
-                        )
-                          await mutate(() => backup);
-                      } catch (err) {
-                        setError(
-                          err instanceof Error
-                            ? err.message
-                            : "No se pudo importar el respaldo.",
-                        );
-                      }
-                    }}
-                  />
-                </label>
-                <div className="divider" />
-                <h3>Para consultar y compartir</h3>
-                <p>
-                  Descarga tus movimientos en Excel, PDF o CSV. Estos archivos
-                  son para consultar; usa JSON para restaurar tus datos.
-                </p>
-                <ExportButtons
-                  disabled={exporting || !data.movements.length}
-                  onExport={(format) =>
-                    void exportReadable(
-                      movementExport(
-                        normalizeExports(newestFirst),
-                        "Todos los movimientos",
-                        ["Todos los registros"],
-                      ),
-                      "movimientos",
-                      format,
-                    )
-                  }
-                />
-                <button
-                  className="button secondary"
-                  onClick={() =>
-                    download(
-                      csv(data.movements),
-                      `movimientos-${today()}.csv`,
-                      "text/csv;charset=utf-8",
-                    )
-                  }
-                >
-                  <Download size={18} /> Exportar movimientos CSV
-                </button>
-              </section>
-              <section className="panel backup install">
-                <span className="install-icon">
-                  <Wallet size={28} />
-                </span>
-                <h2>Mi dinero, en tu iPhone</h2>
-                <p>Ten tus finanzas a un toque de distancia.</p>
-                <ol>
-                  <li>
-                    Abre la aplicación en <strong>Safari</strong>.
-                  </li>
-                  <li>
-                    Toca el botón <strong>Compartir</strong>.
-                  </li>
-                  <li>
-                    Selecciona <strong>Agregar a pantalla de inicio</strong> y
-                    confirma en Agregar.
-                  </li>
-                  <li>
-                    Abre Mi dinero y espera el aviso de que está lista sin
-                    internet.
-                  </li>
-                </ol>
-                <p className="helper">
-                  La instalación requiere HTTPS (o localhost durante
-                  desarrollo). Después de la primera carga completa, funciona
-                  sin conexión.
-                </p>
-                <div className="local-note">
-                  <ShieldCheck size={20} />
-                  <p>
-                    No sincronizamos ni enviamos tus datos. Si borras los datos
-                    de Safari, cambias de dispositivo o desinstalas la app,
-                    podrías perderlos. Haz respaldos frecuentes. El archivo JSON
-                    contiene tus datos sin cifrar.
-                  </p>
-                </div>
-              </section>
-            </div>
-          )}
+        <div className="page" ref={pageRef}>
+          {renderPageContent(tab)}
         </div>
       </main>
+      <div
+        ref={previewFrameRef}
+        className="page-preview-frame"
+        aria-hidden="true"
+        inert
+      >
+        <div ref={previewContentRef} className="page-preview-content">
+          {previewTab && renderPageContent(previewTab, true)}
+        </div>
+      </div>
       <nav className="mobile-nav" aria-label="Navegación principal">
         {tabs.map((t) => (
           <button

@@ -1,10 +1,15 @@
-export type PageSnapshot = {
-  frame: HTMLElement;
-  content: HTMLElement;
-  width: number;
+export type PageDrag = {
+  update: (distance: number) => void;
+  settle: (complete: boolean, done: () => void) => void;
+  cleanup: () => void;
 };
 
-export function snapshotPage(page: HTMLElement): PageSnapshot {
+export function createPageDrag(
+  page: HTMLElement,
+  frame: HTMLElement,
+  content: HTMLElement,
+  direction: 1 | -1,
+): PageDrag {
   const bounds = page.getBoundingClientRect();
   const header = page.parentElement
     ?.querySelector(".topbar")
@@ -16,115 +21,99 @@ export function snapshotPage(page: HTMLElement): PageSnapshot {
     window.innerHeight,
     nav?.height ? nav.top : window.innerHeight,
   );
-  const frame = document.createElement("div");
-  frame.className = "page-transition-snapshot";
-  frame.setAttribute("aria-hidden", "true");
-  frame.inert = true;
+  const style = getComputedStyle(page);
   Object.assign(frame.style, {
-    position: "fixed",
+    visibility: "visible",
     left: `${bounds.left}px`,
     top: `${top}px`,
     width: `${bounds.width}px`,
     height: `${Math.max(0, bottom - top)}px`,
-    overflow: "hidden",
-    pointerEvents: "none",
-    zIndex: "17",
   });
-  const content = page.cloneNode(true) as HTMLElement;
-  content.className = "page-snapshot-content";
-  const originals = page.querySelectorAll<HTMLElement>("*");
-  const copies = content.querySelectorAll<HTMLElement>("*");
-  content.querySelectorAll(".section-add").forEach((button) => button.remove());
-  content
-    .querySelectorAll("[id]")
-    .forEach((element) => element.removeAttribute("id"));
-  const style = getComputedStyle(page);
   Object.assign(content.style, {
-    position: "absolute",
-    left: "0",
-    top: `${bounds.top - top}px`,
     width: `${bounds.width}px`,
-    height: `${bounds.height}px`,
-    maxWidth: "none",
-    margin: "0",
+    minHeight: "100%",
     padding: style.padding,
-    boxSizing: style.boxSizing,
-    overflow: "hidden",
     background: getComputedStyle(document.documentElement).backgroundColor,
   });
-  frame.append(content);
-  document.body.append(frame);
-  content.scrollTop = page.scrollTop;
-  copies.forEach((element, index) => {
-    element.style.animation = "none";
-    element.scrollTop = originals[index].scrollTop;
-    element.scrollLeft = originals[index].scrollLeft;
-  });
-  return { frame, content, width: bounds.width };
-}
-
-export function slidePages(
-  page: HTMLElement,
-  snapshot: PageSnapshot,
-  direction: 1 | -1,
-) {
   const main = page.parentElement;
   const overflow = main?.style.overflowX ?? "";
   if (main) main.style.overflowX = "clip";
-  const options = { duration: 360, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
   const targets = [
     page.querySelector(".page-heading-content"),
     ...Array.from(page.children).filter(
       (child) => !child.classList.contains("page-heading"),
     ),
   ].filter((target): target is HTMLElement => target instanceof HTMLElement);
-  const pointerEvents = targets.map((target) => target.style.pointerEvents);
+  const previous = targets.map((target) => ({
+    transform: target.style.transform,
+    pointerEvents: target.style.pointerEvents,
+    willChange: target.style.willChange,
+  }));
   targets.forEach((target) => {
     target.style.pointerEvents = "none";
+    target.style.willChange = "transform";
   });
-  const animations = targets.flatMap((target) => {
-    if (!target) return [];
-    return [
+  let distance = 0;
+  let disposed = false;
+  let animations: Animation[] = [];
+  const update = (value: number) => {
+    if (disposed) return;
+    distance =
+      direction === 1
+        ? Math.max(-bounds.width, Math.min(0, value))
+        : Math.min(bounds.width, Math.max(0, value));
+    targets.forEach((target) => {
+      target.style.transform = `translateX(${distance}px)`;
+    });
+    content.style.transform = `translateX(${direction * bounds.width + distance}px)`;
+  };
+  const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    animations.forEach((animation) => animation.cancel());
+    targets.forEach((target, index) =>
+      Object.assign(target.style, previous[index]),
+    );
+    frame.style.visibility = "hidden";
+    content.style.transform = "none";
+    if (main) main.style.overflowX = overflow;
+  };
+  const settle = (complete: boolean, done: () => void) => {
+    if (disposed) return;
+    const end = complete ? -direction * bounds.width : 0;
+    const remaining = Math.abs(end - distance) / bounds.width;
+    const options: KeyframeAnimationOptions = {
+      duration: Math.max(100, Math.min(240, remaining * 280)),
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      fill: "forwards",
+    };
+    animations = targets.map((target) =>
       target.animate(
         [
-          { transform: `translateX(${direction * snapshot.width}px)` },
-          { transform: "translateX(0)" },
+          { transform: `translateX(${distance}px)` },
+          { transform: `translateX(${end}px)` },
         ],
         options,
       ),
-    ];
-  });
-  animations.push(
-    snapshot.content.animate(
-      [
-        { transform: "translateX(0)" },
-        { transform: `translateX(${-direction * snapshot.width}px)` },
-      ],
-      options,
-    ),
-  );
-  animations.forEach((animation) => {
-    animation.id = "section-swipe";
-  });
-  let finished = false;
-  const cleanup = () => {
-    if (finished) return;
-    finished = true;
-    animations.forEach((animation) => animation.cancel());
-    targets.forEach((target, index) => {
-      target.style.pointerEvents = pointerEvents[index];
+    );
+    animations.push(
+      content.animate(
+        [
+          { transform: `translateX(${direction * bounds.width + distance}px)` },
+          { transform: `translateX(${direction * bounds.width + end}px)` },
+        ],
+        options,
+      ),
+    );
+    animations.forEach((animation) => {
+      animation.id = "section-swipe";
     });
-    snapshot.frame.remove();
-    if (main) main.style.overflowX = overflow;
-    window.removeEventListener("resize", cleanup);
-    window.removeEventListener("orientationchange", cleanup);
-    document.removeEventListener("visibilitychange", cleanup);
+    void Promise.all(
+      animations.map((animation) => animation.finished.catch(() => {})),
+    ).then(() => {
+      if (!disposed) done();
+    });
   };
-  window.addEventListener("resize", cleanup);
-  window.addEventListener("orientationchange", cleanup);
-  document.addEventListener("visibilitychange", cleanup);
-  void Promise.all(
-    animations.map((animation) => animation.finished.catch(() => {})),
-  ).then(cleanup);
-  return cleanup;
+  update(0);
+  return { update, settle, cleanup };
 }
