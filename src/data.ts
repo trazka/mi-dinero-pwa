@@ -21,6 +21,10 @@ export type Payment = {
   date: string;
   movementId: string;
 };
+export type PendingMovement = Omit<Movement, "type"> & {
+  type: Movement["type"] | "payment" | "saving";
+  targetId?: string;
+};
 export type Debt = {
   id: string;
   creditor: string;
@@ -65,6 +69,7 @@ export type Data = {
   savings?: Saving[];
   budgets?: Budget[];
   recurrents?: Recurring[];
+  pendingMovements?: PendingMovement[];
   lastBackupAt?: string;
 };
 export const empty = (): Data => ({ version: 2, movements: [], debts: [] });
@@ -275,6 +280,33 @@ export function validDate(v: unknown): v is string {
 }
 const str = (v: unknown): v is string =>
   typeof v === "string" && v.length <= 2000;
+export function validPending(p: PendingMovement) {
+  return (
+    !!p &&
+    !!p.id &&
+    str(p.id) &&
+    ["income", "expense", "transfer", "payment", "saving"].includes(p.type) &&
+    validDate(p.date) &&
+    cents(p.amount) &&
+    [p.merchant, p.category, p.method, p.notes].every(str) &&
+    !!p.merchant.trim() &&
+    !p.paymentId &&
+    !p.creditPaymentDebtId &&
+    !p.recurringId &&
+    !p.recurringDate &&
+    (p.type === "transfer"
+      ? ["bank-to-cash", "cash-to-bank"].includes(p.transferDirection ?? "")
+      : p.transferDirection === undefined) &&
+    (["payment", "saving"].includes(p.type)
+      ? str(p.targetId) && !!p.targetId
+      : p.targetId === undefined) &&
+    (p.creditDebtId === undefined ||
+      (str(p.creditDebtId) &&
+        !!p.creditDebtId &&
+        p.type === "expense" &&
+        p.method === "Tarjeta de crédito"))
+  );
+}
 export function validateBackup(input: unknown): Data {
   const fail = () => {
     throw Error(
@@ -483,6 +515,12 @@ export function validateBackup(input: unknown): Data {
       (!str(r.creditDebtId) || r.method !== "Tarjeta de crédito")
     )
       return fail();
+  }
+  if (d.pendingMovements !== undefined && !Array.isArray(d.pendingMovements))
+    return fail();
+  for (const pending of d.pendingMovements ?? []) {
+    if (!validPending(pending)) return fail();
+    unique(pending.id);
   }
   if (
     d.lastBackupAt !== undefined &&

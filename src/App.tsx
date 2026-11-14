@@ -1,3 +1,5 @@
+import { recordMovement, recordPayment, recordSaving } from "./pending";
+import { PendingPanel } from "./PendingPanel";
 import HomeLanding from "./HomeLanding";
 import useTimedMessage from "./useTimedMessage";
 import {
@@ -11,7 +13,7 @@ import {
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
-import { moveSaving, freeAmount } from "./savings";
+import { freeAmount } from "./savings";
 import { SecurityPanel, useSecurity } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -60,13 +62,11 @@ import {
   expenseAmount,
   walletBalances,
   transferRoute,
-  saveMovement,
   cents,
   changeData,
   csv,
   empty,
   money,
-  payDebt,
   readData,
   removeMovement,
   today,
@@ -261,11 +261,28 @@ export default function App() {
     categories[0],
   );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
+  const [movementDate, setMovementDate] = useState(today());
+  const [currentDay, setCurrentDay] = useState(today());
+  useEffect(() => {
+    const refresh = () => setCurrentDay(today());
+    const interval = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+  const duePending = (data.pendingMovements ?? []).filter(
+    (p) => p.date <= currentDay,
+  ).length;
   const [transferDirection, setTransferDirection] =
     useState<NonNullable<Movement["transferDirection"]>>("bank-to-cash");
   const [debtKind, setDebtKind] = useState("normal");
   useEffect(() => {
     if (modal?.kind === "movement") {
+      setMovementDate(modal.movement?.date ?? today());
       setMovementType(
         modal.movement?.creditDebtId
           ? "credit"
@@ -275,6 +292,7 @@ export default function App() {
       setTransferDirection(modal.movement?.transferDirection ?? "bank-to-cash");
       setMovementCategory(modal.movement?.category ?? categories[0]);
     }
+    if (modal?.kind === "payment") setMovementDate(today());
     if (modal?.kind === "debt") setDebtKind(modal.debt?.kind ?? "normal");
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
@@ -697,13 +715,13 @@ export default function App() {
     if (modal.kind === "movement") {
       if (movementType === "saving") {
         void mutate((d) =>
-          moveSaving(d, get("savingId"), "deposit", num("amount"), get("date")),
+          recordSaving(d, get("savingId"), num("amount"), get("date")),
         );
         return;
       }
       if (movementType === "payment") {
         void mutate((d) =>
-          payDebt(d, get("debtId"), num("amount"), get("date")),
+          recordPayment(d, get("debtId"), num("amount"), get("date")),
         );
         return;
       }
@@ -716,7 +734,7 @@ export default function App() {
             ? "Retiro a efectivo"
             : "Depósito al banco";
         void mutate((d) =>
-          saveMovement(d, {
+          recordMovement(d, {
             id: modal.movement?.id ?? crypto.randomUUID(),
             type: "transfer",
             date: get("date"),
@@ -750,7 +768,7 @@ export default function App() {
       }
       if (m.type === "expense" && m.method === "Tarjeta de crédito")
         m.creditDebtId = get("creditDebtId");
-      void mutate((d) => saveMovement(d, m));
+      void mutate((d) => recordMovement(d, m));
     }
     if (modal.kind === "debt") {
       const metadata = {
@@ -806,7 +824,9 @@ export default function App() {
       }));
     }
     if (modal.kind === "payment")
-      void mutate((d) => payDebt(d, modal.debt.id, num("amount"), get("date")));
+      void mutate((d) =>
+        recordPayment(d, modal.debt.id, num("amount"), get("date")),
+      );
   }
   function movementList(items: Movement[]) {
     return items.length ? (
@@ -1395,6 +1415,23 @@ export default function App() {
               </button>
             )}
           </div>
+          {duePending > 0 && tab !== "Movimientos" && (
+            <div className="notice">
+              <span>
+                Tienes {duePending}{" "}
+                {duePending === 1
+                  ? "movimiento pendiente"
+                  : "movimientos pendientes"}{" "}
+                por confirmar.
+              </span>
+              <button
+                className="text-button"
+                onClick={() => navigate("Movimientos")}
+              >
+                Revisar pendientes
+              </button>
+            </div>
+          )}
           {error && (
             <div className="alert transient-alert" role="alert">
               <span>{error}</span>
@@ -1463,6 +1500,7 @@ export default function App() {
           {tab === "Inicio" && homeSummaryVisible && (
             <>
               {(data.movements.length > 0 ||
+                (data.pendingMovements?.length ?? 0) > 0 ||
                 data.debts.length > 0 ||
                 !!data.budgets?.length ||
                 !!data.recurrents?.length ||
@@ -1595,6 +1633,12 @@ export default function App() {
           )}
           {tab === "Movimientos" && (
             <section className="panel full-panel">
+              <PendingPanel
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                currentDay={currentDay}
+              />
               <div className="wallet-balances" aria-label="Banco y efectivo">
                 <div>
                   <span>Banco</span>
@@ -1752,9 +1796,9 @@ export default function App() {
                 <strong>{money(pending)}</strong>
               </div>
               <p className="helper">
-                Las compras con tarjeta solo aumentan la deuda. El gasto y la
-                reducción del saldo disponible se registran al abonar. No
-                registres el abono otra vez como gasto.
+                Las compras con tarjeta aumentan la deuda y consumen
+                presupuesto. El gasto y la reducción del saldo disponible se
+                registran al abonar. No registres el abono otra vez como gasto.
               </p>
               <div className="debt-grid">
                 {data.debts.map((d) => {
@@ -2091,7 +2135,7 @@ export default function App() {
                         );
                         if (
                           confirm(
-                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes?`,
+                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
                           )
                         )
                           await mutate(() => backup);
@@ -2276,9 +2320,17 @@ export default function App() {
                         name="date"
                         required
                         defaultValue={modal.movement?.date ?? today()}
+                        onChange={setMovementDate}
                       />
                     </Field>
                   </div>
+                  {movementDate > today() && (
+                    <p className="helper" role="status">
+                      Se guardará como Pendiente. No afectará dinero, deuda ni
+                      presupuesto hasta que confirmes que se realizó. No se
+                      repetirá.
+                    </p>
+                  )}
                   {movementType === "transfer" ? (
                     <>
                       <Field label="Tipo de traspaso">
@@ -2515,10 +2567,10 @@ export default function App() {
                             </select>
                           </Field>
                           <p className="helper">
-                            La compra solo aumenta la deuda; no suma al gasto ni
-                            reduce el saldo disponible. El gasto se registra al
-                            abonar a la tarjeta. Los abonos anteriores se
-                            conservan tal como fueron registrados.
+                            La compra aumenta la deuda y consume presupuesto en
+                            su categoría; no reduce el saldo disponible. El pago
+                            se registra al abonar a la tarjeta. Los abonos
+                            anteriores se conservan tal como fueron registrados.
                             {!creditDebts.length &&
                               " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
                           </p>
@@ -2657,8 +2709,19 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Fecha del abono">
-                    <DatePicker name="date" defaultValue={today()} required />
+                    <DatePicker
+                      name="date"
+                      defaultValue={today()}
+                      onChange={setMovementDate}
+                      required
+                    />
                   </Field>
+                  {movementDate > today() && (
+                    <p className="helper" role="status">
+                      Se guardará como Pendiente. No descontará dinero ni
+                      reducirá la deuda hasta que confirmes el pago.
+                    </p>
+                  )}
                   <p className="helper">
                     {modal.debt.kind === "credit"
                       ? "Este abono reduce la deuda y se registra como gasto en la fecha del pago. Las compras vinculadas no cuentan como gasto."

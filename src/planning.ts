@@ -1,7 +1,6 @@
 import {
   balance,
   cents,
-  expenseAmount,
   saveMovement,
   today,
   validDate,
@@ -137,10 +136,20 @@ export function budgetSpent(data: Data, budget: Budget) {
     data.movements
       .filter(
         (m) =>
+          m.type === "expense" &&
+          !m.creditPaymentDebtId &&
+          !(
+            m.paymentId &&
+            data.debts.some(
+              (d) =>
+                d.kind === "credit" &&
+                d.payments.some((p) => p.movementId === m.id),
+            )
+          ) &&
           m.date.startsWith(budget.month) &&
           (!budget.category || m.category === budget.category),
       )
-      .reduce((sum, m) => sum + Math.round(expenseAmount(m) * 100), 0) / 100
+      .reduce((sum, m) => sum + Math.round(m.amount * 100), 0) / 100
   );
 }
 export function nextOccurrence(r: Recurring) {
