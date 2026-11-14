@@ -145,6 +145,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
     "No descontará dinero",
   );
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".debt-number")).toContainText("$800.00");
   await page.clock.setFixedTime(new Date(2026, 10, 19, 12));
   await page.reload();
