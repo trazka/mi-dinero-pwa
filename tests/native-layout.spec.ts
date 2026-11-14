@@ -1,10 +1,11 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 test("la interfaz compacta mantiene controles visibles, navegación y formularios en iPhone", async ({
   page,
 }) => {
   await page.goto("./");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Tu resumen" }),
+    page.getByRole("heading", { level: 1, name: "Tu espacio" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
@@ -22,6 +23,7 @@ test("la interfaz compacta mantiene controles visibles, navegación y formulario
   await expect(
     nav.getByRole("button", { name: "Inicio", exact: true }),
   ).toHaveAttribute("aria-current", "page");
+  await revealHomeSummary(page);
   const balance = await page.locator(".balance-card").boundingBox();
   expect(balance!.y + balance!.height).toBeLessThan(650);
   await page.screenshot({ path: "test-results/iphone-native-light.png" });

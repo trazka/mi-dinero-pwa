@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 test("espera la exportación pendiente y restaura datos distintos aun con IndexedDB ocupado", async ({
@@ -109,5 +110,6 @@ test("espera la exportación pendiente y restaura datos distintos aun con Indexe
   );
   expect(stored).toEqual(replacement);
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$75.00");
 });

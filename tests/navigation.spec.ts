@@ -180,7 +180,7 @@ test("gestos cambian sección y el botón flotante sigue su contexto", async ({
     });
   }
   await swipe(-140, 150);
-  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   await swipe(-140);
   await expect(page.locator(".page h1")).toHaveText("Movimientos");
   await swipe(-140);
@@ -226,7 +226,7 @@ test("deslizamientos táctiles reales recorren todas las secciones en ambos sent
   context,
 }) => {
   await page.goto("./");
-  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   const cdp = await context.newCDPSession(page);
   async function swipe(direction: "left" | "right") {
     const x = direction === "left" ? 300 : 90;
@@ -247,7 +247,7 @@ test("deslizamientos táctiles reales recorren todas las secciones en ambos sent
     });
   }
   await swipe("right");
-  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   for (const name of [
     "Movimientos",
     "Deudas",
@@ -265,7 +265,7 @@ test("deslizamientos táctiles reales recorren todas las secciones en ambos sent
     "Apartados",
     "Deudas",
     "Movimientos",
-    "Tu resumen",
+    "Tu espacio",
   ]) {
     await swipe("right");
     await expect(page.locator(".page h1")).toHaveText(name);

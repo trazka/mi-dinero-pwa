@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { enableSavingsPrivacy } from "./savings-privacy-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -46,6 +47,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   ).toBeDisabled();
   await expect(page.locator(".report-totals")).toContainText("$700.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$700.00");
   await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
@@ -73,6 +75,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
     page.getByLabel("Progreso de Fondo de emergencia"),
   ).toHaveAttribute("value", "200");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$800.00");
   await expect(
     page.getByRole("button", { name: "Ver ingresos", exact: true }),
@@ -87,6 +90,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
       exact: true,
     })
     .click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$800.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
@@ -195,6 +199,7 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
     page.getByText(`${selectedDate} · Aportación · $250.00`, { exact: true }),
   ).toBeVisible();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$750.00");
   await expect(page.locator(".savings-summary")).toHaveCount(0);
 });

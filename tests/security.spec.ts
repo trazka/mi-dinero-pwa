@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 
 test("bloqueo con llave verificada, recuperación y acceso offline conservan datos", async ({
@@ -32,6 +33,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
     .getByLabel("Establecimiento o concepto")
     .fill("Gasto ficticio protegido");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
@@ -60,6 +62,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
   await page
     .getByRole("button", { name: "Desbloquear con el dispositivo" })
     .click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   await context.setOffline(false);
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
@@ -147,6 +150,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
     .click();
   await page.getByLabel("Código de recuperación", { exact: true }).fill(code);
   await page.getByRole("button", { name: "Usar código", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   page.once("dialog", (d) => d.accept());
@@ -157,6 +161,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
     page.getByText("Bloqueo activado", { exact: true }),
   ).toBeHidden();
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
 });
 

@@ -185,3 +185,5 @@ En horizontal, la billetera de la cabecera muestra u oculta el menú lateral. En
 Al salir de Apartados, los nombres y saldos vuelven a ocultarse. Cada regreso a la sección requiere pulsar el ojo para mostrarlos; no depende del bloqueo del dispositivo.
 
 Al seleccionar un concepto se cierra su lista y se carga la categoría registrada, sin transferir el clic del mismo gesto a los campos de debajo. Elegir manualmente otra categoría cierra el selector al confirmar el cambio.
+
+Inicio abre en modo discreto, sin saldos, estadísticas ni últimos movimientos. Ofrece Nuevo movimiento, Consultar movimientos, Registrar un abono y Mis apartados. Ver mi resumen muestra el resumen existente solo por petición y Ocultar resumen vuelve a los accesos. Al cambiar de sección, pulsar Inicio, recargar o dejar la app, el resumen vuelve a ocultarse. La billetera de la cabecera conserva su imagen y su función de menú horizontal.

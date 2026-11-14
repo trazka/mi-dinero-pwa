@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
@@ -90,6 +91,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await page.getByRole("button", { name: "Ver ingresos", exact: true }).click();
   const names = page.locator(".movement-info > strong");
   await expect(
@@ -117,6 +119,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   ]);
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await page.getByRole("button", { name: "Ver egresos", exact: true }).click();
   await expect(
     page.getByRole("tab", { name: "Gastos", exact: true }),
@@ -152,6 +155,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await expect(page.locator("tbody td").nth(1)).toHaveText("$70.00");
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await page.getByRole("button", { name: "Ver todos", exact: true }).click();
   await expect(
     page.getByRole("tab", { name: "Todos", exact: true }),

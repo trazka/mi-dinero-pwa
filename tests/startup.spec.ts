@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 const fixture = {
   version: 1,
@@ -88,6 +89,7 @@ for (const failure of ["bundle", "module", "react"] as const) {
     expect(stored).toEqual(fixture);
     await page.unrouteAll();
     await page.getByRole("button", { name: "Volver a cargar" }).click();
+    await revealHomeSummary(page);
     await expect(page.locator(".balance-number")).toContainText("-$50.00");
     await expect(page.locator("#startup-shell")).toBeHidden();
     await context.close();
@@ -111,7 +113,7 @@ test("IndexedDB no disponible muestra un aviso y la interfaz sigue visible", asy
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Tu resumen",
+      name: "Tu espacio",
     }),
   ).toBeVisible();
   await expect(page.getByRole("alert")).toContainText(
@@ -135,7 +137,7 @@ test("un fallo al cargar el registro PWA no impide iniciar React", async ({
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Tu resumen",
+      name: "Tu espacio",
     }),
   ).toBeVisible();
   await expect(
