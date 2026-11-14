@@ -311,7 +311,7 @@ export function RecurringPanel({
           defaultValue={draft?.nextDate ?? today()}
         />
       </div>
-      <div className="planning-actions">
+      <div className="planning-actions recurring-form-actions">
         <button
           type="button"
           className="button secondary"
