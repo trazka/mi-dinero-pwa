@@ -1967,10 +1967,13 @@ li {
   padding-bottom: 14px;
 }
 .recurring-actions {
+  justify-content: space-evenly;
   gap: 4px 10px;
   margin-top: 8px;
 }
 .recurring-actions > button {
+  justify-content: center;
+  text-align: center;
   min-height: 44px;
   padding: 8px 4px;
 }

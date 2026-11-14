@@ -316,11 +316,16 @@ export function RecurringPanel({
           type="button"
           className="button secondary"
           onClick={() => setDraft(undefined)}
+          aria-label="Cancelar recurrente"
         >
-          Cancelar recurrente
+          Cancelar
         </button>
-        <button className="button" disabled={busy}>
-          Guardar recurrente
+        <button
+          className="button"
+          disabled={busy}
+          aria-label="Guardar recurrente"
+        >
+          Guardar
         </button>
       </div>
     </form>
