@@ -86,7 +86,9 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
     .getByRole("button", { name: "Guardar recurrente", exact: true })
     .click();
   await expect(
-    items.nth(0).getByText("$550.00", { exact: false }),
+    items
+      .filter({ has: page.locator("summary", { hasText: "Internet" }) })
+      .getByText("$550.00", { exact: false }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Editar recurrente Internet", exact: true })
@@ -95,13 +97,22 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
   await page
     .getByRole("button", { name: "Cancelar recurrente", exact: true })
     .click();
-  await expect(items.nth(0).locator("summary")).toHaveText("Internet");
+  await expect(
+    items
+      .filter({ has: page.locator("summary", { hasText: "Internet" }) })
+      .locator("summary"),
+  ).toHaveText("Internet");
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(items).toHaveCount(3);
   await expect(items.locator("details[open]")).toHaveCount(0);
-  await items.nth(0).locator("summary").click();
+  await items
+    .filter({ has: page.locator("summary", { hasText: "Internet" }) })
+    .locator("summary")
+    .click();
   await expect(
-    items.nth(0).getByText("$550.00", { exact: false }),
+    items
+      .filter({ has: page.locator("summary", { hasText: "Internet" }) })
+      .getByText("$550.00", { exact: false }),
   ).toBeVisible();
 });

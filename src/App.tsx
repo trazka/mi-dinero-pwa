@@ -62,7 +62,9 @@ import {
 import {
   balance,
   expenseAmount,
-  walletBalances,
+  availableWalletBalances,
+  walletNames,
+  type WalletKey,
   transferRoute,
   cents,
   changeData,
@@ -639,10 +641,10 @@ export default function App() {
   const newestFirst = [...data.movements]
     .reverse()
     .sort((a, b) => b.date.localeCompare(a.date));
-  const wallets = walletBalances(data);
+  const wallets = availableWalletBalances(data);
   const transferSourceWallets =
     modal?.kind === "movement" && modal.movement
-      ? walletBalances({
+      ? availableWalletBalances({
           ...data,
           movements: data.movements.filter((m) => m.id !== modal.movement?.id),
         })
@@ -656,7 +658,13 @@ export default function App() {
     if (modal.kind === "movement") {
       if (movementType === "saving") {
         void mutate((d) =>
-          recordSaving(d, get("savingId"), num("amount"), get("date")),
+          recordSaving(
+            d,
+            get("savingId"),
+            num("amount"),
+            get("date"),
+            get("savingWallet") as WalletKey,
+          ),
         );
         return;
       }
@@ -1533,11 +1541,11 @@ export default function App() {
             />
             <div className="wallet-balances" aria-label="Banco y efectivo">
               <div>
-                <span>Banco</span>
+                <span>Banco disponible</span>
                 <strong>{money(wallets.bank)}</strong>
               </div>
               <div>
-                <span>Efectivo</span>
+                <span>Efectivo disponible</span>
                 <strong>{money(wallets.cash)}</strong>
               </div>
               {wallets.unassigned !== 0 && (
@@ -2398,6 +2406,30 @@ export default function App() {
                                 {saving.name}
                               </option>
                             ))}
+                          </select>
+                        </Field>
+                        <Field label="Reservar de">
+                          <select
+                            name="savingWallet"
+                            defaultValue={
+                              wallets.bank > 0
+                                ? "bank"
+                                : wallets.cash > 0
+                                  ? "cash"
+                                  : "unassigned"
+                            }
+                          >
+                            {(["bank", "cash", "unassigned"] as WalletKey[])
+                              .filter(
+                                (key) =>
+                                  key !== "unassigned" ||
+                                  wallets.unassigned > 0,
+                              )
+                              .map((key) => (
+                                <option key={key} value={key}>
+                                  {walletNames[key]}
+                                </option>
+                              ))}
                           </select>
                         </Field>
                         <p className="helper">

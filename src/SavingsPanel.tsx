@@ -1,6 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import MoneyInput from "./MoneyInput";
-import { money, type Data, type Saving } from "./data";
+import {
+  money,
+  today,
+  availableWalletBalances,
+  allocateLegacySavings,
+  walletNames,
+  type WalletKey,
+  type Data,
+  type Saving,
+} from "./data";
 import {
   freeAmount,
   reservedAmount,
@@ -32,6 +41,16 @@ export default function SavingsPanel({
     id: string;
     type: "deposit" | "withdrawal";
   } | null>(null);
+  const sources =
+    operation?.type === "withdrawal"
+      ? allocateLegacySavings(data).savings?.find((s) => s.id === operation.id)
+          ?.allocations
+      : availableWalletBalances(data);
+  const sourceKeys = (["bank", "cash", "unassigned"] as WalletKey[]).filter(
+    (key) => key !== "unassigned" || (sources?.[key] ?? 0) > 0,
+  );
+  const defaultSource =
+    sourceKeys.find((key) => (sources?.[key] ?? 0) > 0) ?? "bank";
   const open = creating || !!editing || !!operation;
   useEffect(() => {
     onEditing(open);
@@ -53,6 +72,8 @@ export default function SavingsPanel({
               operation.id,
               operation.type,
               Number(values.get("amount")),
+              today(),
+              String(values.get("wallet")) as WalletKey,
             )
           : saveSaving(
               d,
@@ -109,10 +130,22 @@ export default function SavingsPanel({
                 : "Nuevo apartado"}
           </h3>
           {operation ? (
-            <label>
-              Importe del apartado (MXN)
-              <MoneyInput name="amount" required />
-            </label>
+            <>
+              <label>
+                {operation.type === "deposit" ? "Reservar de" : "Liberar en"}
+                <select name="wallet" defaultValue={defaultSource}>
+                  {sourceKeys.map((key) => (
+                    <option key={key} value={key}>
+                      {walletNames[key]} · {money(sources?.[key] ?? 0)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Importe del apartado (MXN)
+                <MoneyInput name="amount" required />
+              </label>
+            </>
           ) : (
             <>
               <label>

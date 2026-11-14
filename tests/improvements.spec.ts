@@ -182,6 +182,10 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await page
+    .locator(".page .recurring-item summary")
+    .filter({ hasText: "Servicio de prueba" })
+    .click();
   await expect(
     page.getByRole("button", {
       name: "Reactivar Servicio de prueba",
