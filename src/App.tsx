@@ -777,11 +777,7 @@ export default function App() {
         recordPayment(d, modal.debt.id, num("amount"), get("date")),
       );
   }
-  function renderPageContent(
-    tab: Tab,
-    preview = false,
-    selectedType = typeFilter,
-  ) {
+  function renderPageContent(tab: Tab, selectedType = typeFilter) {
     const typeFilter =
       tab === "Reportes" && selectedType === "transfer" ? "all" : selectedType;
     const tdcView = tab === "Movimientos" && typeFilter === "credit";
@@ -1282,38 +1278,6 @@ export default function App() {
                   )[tab]}
             </p>
           </div>
-          {!preview && tab !== "Respaldos" && (
-            <button
-              className="button section-add"
-              aria-label={
-                tab === "Apartados"
-                  ? "Nuevo apartado"
-                  : tab === "Deudas"
-                    ? "Nueva deuda"
-                    : "Nuevo movimiento"
-              }
-              title={
-                tab === "Apartados"
-                  ? "Nuevo apartado"
-                  : tab === "Deudas"
-                    ? "Nueva deuda"
-                    : "Nuevo movimiento"
-              }
-              disabled={!loaded || !!modal || planningEditing}
-              onClick={() => {
-                setError("");
-                if (tab === "Apartados") {
-                  setSavingCreating(true);
-                  return;
-                }
-                setModal(
-                  tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
-                );
-              }}
-            >
-              <Plus size={26} aria-hidden="true" />
-            </button>
-          )}
         </div>
         {duePending > 0 && tab !== "Movimientos" && (
           <div className="notice">
@@ -2223,9 +2187,41 @@ export default function App() {
         inert
       >
         <div ref={previewContentRef} className="page-preview-content">
-          {previewTab && renderPageContent(previewTab, true)}
+          {previewTab && renderPageContent(previewTab)}
         </div>
       </div>
+      {tab !== "Respaldos" && (
+        <button
+          className="button section-add"
+          aria-label={
+            tab === "Apartados"
+              ? "Nuevo apartado"
+              : tab === "Deudas"
+                ? "Nueva deuda"
+                : "Nuevo movimiento"
+          }
+          title={
+            tab === "Apartados"
+              ? "Nuevo apartado"
+              : tab === "Deudas"
+                ? "Nueva deuda"
+                : "Nuevo movimiento"
+          }
+          disabled={!loaded || !!modal || planningEditing}
+          onClick={() => {
+            setError("");
+            if (tab === "Apartados") {
+              setSavingCreating(true);
+              return;
+            }
+            setModal(
+              tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
+            );
+          }}
+        >
+          <Plus size={26} aria-hidden="true" />
+        </button>
+      )}
       <nav className="mobile-nav" aria-label="Navegación principal">
         {tabs.map((t) => (
           <button
