@@ -92,13 +92,20 @@ test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", a
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
   await expect(page.locator(".page h1")).toHaveText("Reportes");
-  await expect(page.getByRole("button", { name: "Cerrar aviso", exact: true })).toHaveCount(0);
   for (const width of [844, 960]) {
     await page.setViewportSize({ width, height: 390 });
     const sidebar = await page.locator(".sidebar").boundingBox();
     const topbar = await page.locator(".topbar").boundingBox();
     const heading = await page.locator(".page-heading").boundingBox();
-    const panel = await page.locator(".full-panel").boundingBox();
+    // Installation can finish after navigation and briefly insert its toast.
+    let panel = { x: 0, y: Infinity, width: 0, height: 0 };
+    await expect
+      .poll(async () => {
+        const bounds = await page.locator(".page .full-panel").boundingBox();
+        if (bounds) panel = bounds;
+        return panel.y;
+      })
+      .toBeLessThan(180);
     expect(sidebar!.width).toBe(184);
     expect(topbar!.height).toBe(64);
     expect(topbar!.x).toBe(sidebar!.width);
