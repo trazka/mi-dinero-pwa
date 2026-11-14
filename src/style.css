@@ -1954,7 +1954,13 @@ li {
   margin-top: 0;
 }
 .recurring-item > details > summary {
+  display: block;
+  list-style: none;
+  text-align: center;
   font-weight: 600;
+}
+.recurring-item > details > summary::-webkit-details-marker {
+  display: none;
 }
 .recurring-item > details[open],
 .recurring-item > .planning-form {
