@@ -260,3 +260,93 @@ test("la tabla conserva su desplazamiento horizontal y permite salir al llegar a
   await touch(table, "touchend", 120);
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
 });
+
+test("el botón más permanece fijo y visible durante el arrastre y al cambiar su acción", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("./");
+  const add = page.locator(".section-add");
+  await expect(add).toBeEnabled();
+  const original = await add.elementHandle();
+  expect(await original!.evaluate((el) => el.closest(".page"))).toBeNull();
+  const bounds = await add.boundingBox();
+  await original!.evaluate((el) => {
+    const initial = el.getBoundingClientRect();
+    const errors: string[] = [];
+    let frames = 0,
+      request = 0;
+    const check = () => {
+      frames++;
+      const rect = el.getBoundingClientRect(),
+        style = getComputedStyle(el);
+      if (!el.isConnected) errors.push("El botón se desmontó");
+      if (Math.abs(rect.x - initial.x) > 1 || Math.abs(rect.y - initial.y) > 1)
+        errors.push("El botón se desplazó");
+      if (
+        style.display === "none" ||
+        style.visibility !== "visible" ||
+        Number(style.opacity) < 1
+      )
+        errors.push("El botón se ocultó");
+      const center = document.elementFromPoint(
+        rect.x + rect.width / 2,
+        rect.y + rect.height / 2,
+      );
+      if (center !== el && !el.contains(center))
+        errors.push("El botón dejó de estar en primer plano");
+      request = requestAnimationFrame(check);
+    };
+    request = requestAnimationFrame(check);
+    (
+      window as Window & {
+        stopAddCheck?: () => { frames: number; errors: string[] };
+      }
+    ).stopAddCheck = () => {
+      cancelAnimationFrame(request);
+      return { frames, errors };
+    };
+  });
+  const content = page.locator(".page");
+  await touch(content, "touchstart", 280);
+  await touch(content, "touchmove", 150);
+  await expect(page.locator(".page-preview-content h1")).toHaveText(
+    "Movimientos",
+  );
+  await expect(add).toHaveAccessibleName("Nuevo movimiento");
+  expect(await add.boundingBox()).toEqual(bounds);
+  await touch(content, "touchend", 150);
+  await expect(content.locator("h1")).toHaveText("Movimientos");
+  await touch(content, "touchstart", 280);
+  await touch(content, "touchmove", 220);
+  await touch(content, "touchmove", 275);
+  await touch(content, "touchend", 275);
+  await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
+  await expect(content.locator("h1")).toHaveText("Movimientos");
+  await touch(content, "touchstart", 280);
+  await touch(content, "touchmove", 140);
+  await touch(content, "touchend", 140);
+  await expect(content.locator("h1")).toHaveText("Deudas");
+  await expect(add).toHaveAccessibleName("Nueva deuda");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Apartados", exact: true }).click();
+  await expect(content.locator("h1")).toHaveText("Apartados");
+  await expect(add).toHaveAccessibleName("Nuevo apartado");
+  const result = await page.evaluate(() =>
+    (
+      window as Window & {
+        stopAddCheck?: () => { frames: number; errors: string[] };
+      }
+    ).stopAddCheck!(),
+  );
+  expect(result.frames).toBeGreaterThan(1);
+  expect(result.errors).toEqual([]);
+  expect(
+    await original!.evaluate(
+      (el) => el === document.querySelector(".section-add"),
+    ),
+  ).toBe(true);
+  expect(await add.boundingBox()).toEqual(bounds);
+  await add.click();
+  await expect(page.getByLabel("Nombre del apartado")).toBeVisible();
+});
