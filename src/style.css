@@ -1960,6 +1960,17 @@ li {
 .recurring-item > .planning-form {
   padding-bottom: 14px;
 }
+.recurring-actions {
+  gap: 4px 10px;
+  margin-top: 8px;
+}
+.recurring-actions > button {
+  min-height: 44px;
+  padding: 8px 4px;
+}
+.recurring-actions > .button {
+  padding: 8px 12px;
+}
 .planning-item p {
   font-size: 12px;
   margin-top: 6px;

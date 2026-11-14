@@ -1,5 +1,6 @@
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
+import { exportDate } from "./exports";
 import MoneyInput from "./MoneyInput";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import DatePicker from "./DatePicker";
@@ -164,6 +165,7 @@ export function RecurringPanel({
   const [draft, setDraft] = useState<Recurring | null | undefined>(),
     [method, setMethod] = useState("Efectivo");
   const [category, setCategory] = useState(categories[0]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const dateId = useId();
   useEffect(() => {
     onEditing(draft !== undefined);
@@ -171,6 +173,7 @@ export function RecurringPanel({
   useEffect(() => () => onEditing(false), [onEditing]);
   function edit(rule: Recurring | null) {
     setDraft(rule);
+    setExpandedId(rule?.id ?? null);
     setMethod(rule?.method ?? "Efectivo");
     setCategory(rule?.category ?? categories[0]);
   }
@@ -337,8 +340,15 @@ export function RecurringPanel({
       {draft === null && form}
       {(data.recurrents ?? []).map((r) => (
         <article className="planning-item recurring-item" key={r.id}>
-          <details>
-            <summary>{r.merchant}</summary>
+          <details open={expandedId === r.id}>
+            <summary
+              onClick={(event) => {
+                event.preventDefault();
+                setExpandedId((current) => (current === r.id ? null : r.id));
+              }}
+            >
+              {r.merchant}
+            </summary>
             <p>
               {money(r.amount)} ·{" "}
               {r.frequency === "monthly"
@@ -346,7 +356,7 @@ export function RecurringPanel({
                 : r.frequency === "weekly"
                   ? "Semanal"
                   : "Anual"}{" "}
-              · {r.nextDate}
+              · <time dateTime={r.nextDate}>{exportDate(r.nextDate)}</time>
             </p>
             <p>
               {!r.active
@@ -355,27 +365,38 @@ export function RecurringPanel({
                   ? "Pendiente de confirmar"
                   : "Próximo vencimiento"}
             </p>
-            <div className="planning-actions">
-              <button
-                className="button secondary"
-                disabled={busy || !r.active || r.nextDate > today()}
-                onClick={() => {
-                  if (
-                    confirm(
-                      `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${r.nextDate}?`,
+            <div className="planning-actions recurring-actions">
+              {r.active && r.nextDate <= today() && (
+                <button
+                  className="button secondary"
+                  aria-label={`Registrar ${r.merchant}`}
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${exportDate(r.nextDate)}?`,
+                      )
                     )
-                  )
-                    void mutate((d) => registerRecurring(d, r.id, r.nextDate));
-                }}
+                      void mutate((d) =>
+                        registerRecurring(d, r.id, r.nextDate),
+                      );
+                  }}
+                >
+                  Registrar
+                </button>
+              )}
+              <button
+                className="text-button"
+                aria-label={`Editar recurrente ${r.merchant}`}
+                disabled={busy}
+                onClick={() => edit(r)}
               >
-                Registrar {r.merchant}
-              </button>
-              <button className="text-button" onClick={() => edit(r)}>
-                Editar recurrente {r.merchant}
+                Editar
               </button>
               <button
                 className="text-button"
                 disabled={busy}
+                aria-label={`${r.active ? "Pausar" : "Reactivar"} ${r.merchant}`}
                 onClick={() =>
                   void mutate((d) => ({
                     ...d,
@@ -387,11 +408,12 @@ export function RecurringPanel({
                   }))
                 }
               >
-                {r.active ? "Pausar" : "Reactivar"} {r.merchant}
+                {r.active ? "Pausar" : "Reactivar"}
               </button>
               <button
                 className="text-button"
                 disabled={busy || draft?.id === r.id}
+                aria-label={`Eliminar recurrente ${r.merchant}`}
                 onClick={() => {
                   if (
                     confirm(
@@ -406,11 +428,11 @@ export function RecurringPanel({
                     }));
                 }}
               >
-                Eliminar recurrente {r.merchant}
+                Eliminar
               </button>
             </div>
+            {draft?.id === r.id && form}
           </details>
-          {draft?.id === r.id && form}
         </article>
       ))}
     </section>
