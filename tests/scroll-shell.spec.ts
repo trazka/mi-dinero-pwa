@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 test("en iPhone solo desplaza contenido y conserva encabezado, pestañas y acceso al final", async ({
@@ -12,6 +13,7 @@ test("en iPhone solo desplaza contenido y conserva encabezado, pestañas y acces
     nav = page.getByRole("navigation", { name: "Navegación principal" });
   const initialHeader = await header.boundingBox(),
     initialNav = await nav.boundingBox();
+  await revealHomeSummary(page);
   await content.hover();
   await page.mouse.wheel(0, 650);
   await expect
@@ -70,6 +72,7 @@ test("la vista de escritorio conserva su desplazamiento normal", async ({
   await expect(
     page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
   ).toBeEnabled();
+  await revealHomeSummary(page);
   await page.evaluate(() => window.scrollTo(0, 500));
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
@@ -114,7 +117,7 @@ test("al regresar a la app recupera la altura y los toques del menú sin eventos
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("./");
-  await expect(page.locator(".page h1")).toHaveText("Tu resumen");
+  await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   for (const event of ["visibilitychange", "pageshow", "focus"]) {
     await page.evaluate((event) => {
@@ -152,7 +155,7 @@ test("al regresar a la app recupera la altura y los toques del menú sin eventos
     ]) {
       await nav.getByRole("button", { name, exact: true }).tap();
       await expect(page.locator(".page h1")).toHaveText(
-        name === "Inicio" ? "Tu resumen" : name,
+        name === "Inicio" ? "Tu espacio" : name,
       );
     }
   }
@@ -292,7 +295,7 @@ test("rotación con viewport visual atrasado conserva las zonas de toque de amba
       ).toBe(true);
       await button.tap();
       await expect(page.locator(".page h1")).toHaveText(
-        name === "Inicio" ? "Tu resumen" : name,
+        name === "Inicio" ? "Tu espacio" : name,
       );
     }
     await page.evaluate(() => {

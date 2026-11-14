@@ -1,3 +1,4 @@
+import HomeLanding from "./HomeLanding";
 import useTimedMessage from "./useTimedMessage";
 import {
   excelBlob,
@@ -78,7 +79,11 @@ type MovementFilter = "all" | "income" | "expense" | "credit";
 const acquiredDebtAmount = (movement: Movement) =>
   movement.creditDebtId ? movement.amount : 0;
 type Modal =
-  | { kind: "movement"; movement?: Movement; initialType?: "saving" }
+  | {
+      kind: "movement";
+      movement?: Movement;
+      initialType?: "saving" | "payment";
+    }
   | { kind: "debt"; debt?: Debt }
   | { kind: "payment"; debt: Debt }
   | null;
@@ -184,12 +189,19 @@ export default function App() {
   }
 
   const [savingsVisible, setSavingsVisible] = useState(false);
+  const [homeSummaryVisible, setHomeSummaryVisible] = useState(false);
   const canSeeSavings = savingsVisible;
   useEffect(() => {
     const hide = () => {
-      if (document.hidden) setSavingsVisible(false);
+      if (document.hidden) {
+        setSavingsVisible(false);
+        setHomeSummaryVisible(false);
+      }
     };
-    const pageHide = () => setSavingsVisible(false);
+    const pageHide = () => {
+      setSavingsVisible(false);
+      setHomeSummaryVisible(false);
+    };
     document.addEventListener("visibilitychange", hide);
     window.addEventListener("pagehide", pageHide);
     return () => {
@@ -252,6 +264,11 @@ export default function App() {
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  function navigate(section: Tab) {
+    setHomeSummaryVisible(false);
+    setTab(section);
+    pageRef.current?.scrollTo({ top: 0 });
+  }
   const swipe = useRef<{ x: number; y: number; time: number } | null>(null);
   const merchantOptions = [
     ...new Set([
@@ -451,7 +468,7 @@ export default function App() {
   function showMovements(type: MovementFilter) {
     clearFilters();
     setTypeFilter(type);
-    setTab("Movimientos");
+    navigate("Movimientos");
   }
   useEffect(() => {
     readData()
@@ -1099,7 +1116,7 @@ export default function App() {
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            setTab("Inicio");
+            navigate("Inicio");
           }}
         >
           <span className="brand-icon">
@@ -1114,7 +1131,7 @@ export default function App() {
               key={t.name}
               className={tab === t.name ? "active" : ""}
               aria-current={tab === t.name ? "page" : undefined}
-              onClick={() => setTab(t.name)}
+              onClick={() => navigate(t.name)}
             >
               <t.icon size={20} />
               <span>{t.name}</span>
@@ -1241,19 +1258,27 @@ export default function App() {
               return;
             const next =
               tabs[tabs.findIndex((t) => t.name === tab) + (dx < 0 ? 1 : -1)];
-            if (next) setTab(next.name);
+            if (next) navigate(next.name);
           }}
         >
           <div className="page-heading">
             <div className="page-heading-content">
               <p className="eyebrow">TUS FINANZAS PERSONALES</p>
               <div className="section-title-row">
-                <h1>{tab === "Inicio" ? "Tu resumen" : tab}</h1>
+                <h1>
+                  {tab === "Inicio"
+                    ? homeSummaryVisible
+                      ? "Tu resumen"
+                      : "Tu espacio"
+                    : tab}
+                </h1>
                 {tab === "Apartados" && savingsPrivacy}
               </div>
               <p className="section-description">
                 {tab === "Inicio"
-                  ? "Tu dinero, al día."
+                  ? homeSummaryVisible
+                    ? "Tu dinero, al día."
+                    : "Elige una acción para continuar."
                   : (
                       {
                         Movimientos: "Cada ingreso y gasto, en un solo lugar.",
@@ -1265,38 +1290,41 @@ export default function App() {
                     )[tab]}
               </p>
             </div>
-            {tab !== "Respaldos" && (
-              <button
-                className="button section-add"
-                aria-label={
-                  tab === "Apartados"
-                    ? "Nuevo apartado"
-                    : tab === "Deudas"
-                      ? "Nueva deuda"
-                      : "Nuevo movimiento"
-                }
-                title={
-                  tab === "Apartados"
-                    ? "Nuevo apartado"
-                    : tab === "Deudas"
-                      ? "Nueva deuda"
-                      : "Nuevo movimiento"
-                }
-                disabled={!loaded || !!modal || planningEditing}
-                onClick={() => {
-                  setError("");
-                  if (tab === "Apartados") {
-                    setSavingCreating(true);
-                    return;
+            {tab !== "Respaldos" &&
+              (tab !== "Inicio" || homeSummaryVisible) && (
+                <button
+                  className="button section-add"
+                  aria-label={
+                    tab === "Apartados"
+                      ? "Nuevo apartado"
+                      : tab === "Deudas"
+                        ? "Nueva deuda"
+                        : "Nuevo movimiento"
                   }
-                  setModal(
-                    tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
-                  );
-                }}
-              >
-                <Plus size={26} aria-hidden="true" />
-              </button>
-            )}
+                  title={
+                    tab === "Apartados"
+                      ? "Nuevo apartado"
+                      : tab === "Deudas"
+                        ? "Nueva deuda"
+                        : "Nuevo movimiento"
+                  }
+                  disabled={!loaded || !!modal || planningEditing}
+                  onClick={() => {
+                    setError("");
+                    if (tab === "Apartados") {
+                      setSavingCreating(true);
+                      return;
+                    }
+                    setModal(
+                      tab === "Deudas"
+                        ? { kind: "debt" }
+                        : { kind: "movement" },
+                    );
+                  }}
+                >
+                  <Plus size={26} aria-hidden="true" />
+                </button>
+              )}
           </div>
           {error && (
             <div className="alert transient-alert" role="alert">
@@ -1348,8 +1376,36 @@ export default function App() {
             </div>
           )}
           {!loaded && !error && <p>Cargando tus datos…</p>}
-          {tab === "Inicio" && (
+          {tab === "Inicio" && !homeSummaryVisible && (
+            <HomeLanding
+              disabled={!loaded || busy}
+              onMovement={() => {
+                setError("");
+                setModal({ kind: "movement" });
+              }}
+              onMovements={() => showMovements("all")}
+              onPayment={() => {
+                setError("");
+                setModal({ kind: "movement", initialType: "payment" });
+              }}
+              onSavings={() => navigate("Apartados")}
+              onSummary={() => {
+                setHomeSummaryVisible(true);
+                pageRef.current?.scrollTo({ top: 0 });
+              }}
+            />
+          )}
+          {tab === "Inicio" && homeSummaryVisible && (
             <>
+              <button
+                className="button secondary summary-close"
+                onClick={() => {
+                  setHomeSummaryVisible(false);
+                  pageRef.current?.scrollTo({ top: 0 });
+                }}
+              >
+                <EyeOff size={18} /> Ocultar resumen
+              </button>
               {(data.movements.length > 0 ||
                 data.debts.length > 0 ||
                 !!data.budgets?.length ||
@@ -1458,7 +1514,7 @@ export default function App() {
                     <p>Organizarte hoy es darle tranquilidad a tu mañana.</p>
                     <button
                       className="text-button"
-                      onClick={() => setTab("Deudas")}
+                      onClick={() => navigate("Deudas")}
                     >
                       Administrar deudas <ChevronRight size={16} />
                     </button>
@@ -2040,7 +2096,7 @@ export default function App() {
             className={tab === t.name ? "active" : ""}
             aria-current={tab === t.name ? "page" : undefined}
             key={t.name}
-            onClick={() => setTab(t.name)}
+            onClick={() => navigate(t.name)}
           >
             <t.icon size={21} />
             <span>{t.name}</span>
@@ -2168,7 +2224,7 @@ export default function App() {
                               className="button secondary"
                               onClick={() => {
                                 setModal(null);
-                                setTab("Apartados");
+                                navigate("Apartados");
                                 setSavingCreating(true);
                               }}
                             >

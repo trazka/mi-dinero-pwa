@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
@@ -67,6 +68,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await page.getByLabel("Deuda a abonar").selectOption("card");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
@@ -149,6 +151,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
     .click();
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(
     page.getByText("Tus registros aún no tienen respaldo."),
   ).toBeVisible();
@@ -213,6 +216,7 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$130.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$0.00");
   await expect(
     page.locator(".stat").filter({ hasText: "Egresos" }),
@@ -267,6 +271,7 @@ test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", asy
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText(["$125.00", "$460.00"]);

@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 
@@ -29,6 +30,7 @@ test("movimientos recientes primero, con último registro arriba en la misma fec
   const order = ["Último del día", "Primero del día", "Fecha anterior"];
   const names = page.locator(".movement-info > strong");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(names).toHaveText(order);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(names).toHaveText(order);

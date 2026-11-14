@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 
 test("importes en pesos conservan centavos, validación y persistencia", async ({
@@ -51,5 +52,6 @@ test("importes en pesos conservan centavos, validación y persistencia", async (
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.locator(".debt-number")).toHaveText("$117,097.45");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$1,000.25");
 });

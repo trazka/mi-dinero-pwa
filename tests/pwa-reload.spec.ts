@@ -25,7 +25,7 @@ test("recargar durante la primera instalación no deja la página sin control of
       page.getByRole("button", { name: "Nuevo movimiento", exact: true }),
     ).toBeEnabled();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Tu resumen", exact: true }),
+      page.getByRole("heading", { level: 1, name: "Tu espacio", exact: true }),
     ).toBeVisible();
     await context.close();
   }

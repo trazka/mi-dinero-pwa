@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { chooseDate } from "./date-utils";
 test("tocar un día cierra el calendario y conserva la fecha del movimiento al guardar y recargar", async ({
@@ -17,6 +18,7 @@ test("tocar un día cierra el calendario y conserva la fecha del movimiento al g
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".movement-info")).toContainText("29 feb");
   await page.getByRole("button", { name: "Editar Fecha de prueba" }).click();
   await expect(page.getByLabel("Fecha", { exact: true })).toContainText("2024");

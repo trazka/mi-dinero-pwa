@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
@@ -39,6 +40,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByLabel("Establecimiento o concepto")
     .fill("Ingreso de prueba");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$5,000.00");
   await page.getByRole("button", { name: "Nuevo movimiento" }).click();
   dialog = page.getByRole("dialog");
@@ -47,6 +49,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByLabel("Establecimiento o concepto")
     .fill("Tienda de prueba");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$4,874.50");
   await page.getByRole("button", { name: "Editar Tienda de prueba" }).click();
   await page
@@ -54,6 +57,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByLabel("Importe (MXN)", { exact: true })
     .fill("100");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$4,900.00");
   await page
     .getByRole("navigation", { name: "Navegación principal" })
@@ -72,6 +76,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$600.00");
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$4,700.00");
   await page
     .getByRole("navigation", { name: "Navegación principal" })
@@ -188,6 +193,7 @@ for (const busyStorage of [false, true]) {
     // click() only waits for the event, not for IndexedDB. The app closes the
     // dialog only after changeData has awaited the transaction's completion.
     await expect(page.getByRole("dialog")).toBeHidden();
+    await revealHomeSummary(page);
     await expect(page.locator(".balance-number")).toContainText("-$50.00");
     const beforeReload = await storedData(page);
     expect(beforeReload?.movements).toHaveLength(1);
@@ -197,6 +203,7 @@ for (const busyStorage of [false, true]) {
       merchant: "Gasto sin conexión",
     });
     await page.reload();
+    await revealHomeSummary(page);
     await expect(page.locator(".balance-number")).toContainText("-$50.00");
     await expect(
       page.getByText("Gasto sin conexión", { exact: true }),

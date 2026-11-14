@@ -2792,3 +2792,75 @@ li {
   justify-content: center;
   border-radius: 50%;
 }
+
+.home-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.home-primary {
+  width: 100%;
+  min-height: 58px;
+  font-size: 17px;
+  border-radius: 18px;
+}
+.home-shortcuts {
+  display: grid;
+  gap: 10px;
+}
+.home-shortcuts > button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 58px;
+  padding: 14px 18px;
+  border: 1px solid var(--native-line);
+  border-radius: 18px;
+  background: var(--native-surface);
+  text-align: left;
+  font-size: 15px;
+}
+.home-shortcuts > button > span {
+  flex: 1;
+  min-width: 0;
+}
+.home-shortcuts svg {
+  flex-shrink: 0;
+  color: #4b9871;
+}
+.home-summary {
+  width: 100%;
+  min-height: 52px;
+  font-size: 15px;
+  border-radius: 18px;
+}
+.home-privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: inherit;
+  opacity: 0.75;
+  margin: 4px 0 0;
+}
+.summary-close {
+  margin-bottom: 18px;
+}
+@media (min-width: 801px) and (max-height: 600px) {
+  .home-landing {
+    gap: 14px;
+  }
+  .home-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .home-shortcuts > button {
+    padding: 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+}

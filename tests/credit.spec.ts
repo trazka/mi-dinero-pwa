@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
 test("compra a crédito solo aumenta deuda; el abono registra el gasto y persiste al importar", async ({
@@ -32,6 +33,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$0.00");
   await expect(
     page.locator(".stat").filter({ hasText: "Egresos" }),
@@ -45,6 +47,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await page.reload();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await expect(
     page.locator(".stat").filter({ hasText: "Egresos" }),
@@ -89,6 +92,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
     .click();
   await expect(page.locator(".debt-number")).toHaveText("$120.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   page.once("dialog", (d) => d.accept());

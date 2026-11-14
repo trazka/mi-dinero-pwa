@@ -1,3 +1,4 @@
+import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
@@ -87,6 +88,7 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
   await expect(
     page.getByRole("button", { name: "Ver deuda adquirida", exact: true }),
   ).toContainText("$300.00");
