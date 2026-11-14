@@ -198,6 +198,130 @@ export function RecurringPanel({
     };
     if (await mutate((d) => saveRecurring(d, rule))) setDraft(undefined);
   }
+  const form = draft !== undefined && (
+    <form key={draft?.id ?? "new"} className="planning-form" onSubmit={save}>
+      <h3>{draft ? "Editar recurrente" : "Nuevo recurrente"}</h3>
+      <label>
+        Concepto recurrente
+        <ConceptInput
+          suggestions={suggestions}
+          onSelectSuggestion={(concept) => {
+            const previous = categoryForConcept(data, concept);
+            if (previous) setCategory(previous);
+          }}
+          name="merchant"
+          autoComplete="off"
+          aria-label="Concepto recurrente"
+          maxLength={120}
+          required
+          defaultValue={draft?.merchant}
+        />
+      </label>
+      <label>
+        Importe recurrente (MXN)
+        <MoneyInput
+          name="amount"
+          aria-label="Importe recurrente (MXN)"
+          type="number"
+          inputMode="decimal"
+          min="0.01"
+          max="999999999"
+          step="0.01"
+          required
+          defaultValue={draft?.amount}
+        />
+      </label>
+      <label>
+        Categoría recurrente
+        <select
+          name="category"
+          aria-label="Categoría recurrente"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          {[...new Set([...categories, category])].map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Método recurrente
+        <select
+          aria-label="Método recurrente"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+        >
+          {[
+            "Efectivo",
+            "Tarjeta de débito",
+            "Tarjeta de crédito",
+            "Transferencia",
+            "Otro",
+          ].map((m) => (
+            <option key={m}>{m}</option>
+          ))}
+        </select>
+      </label>
+      {method === "Tarjeta de crédito" && (
+        <label>
+          Tarjeta recurrente
+          <select
+            name="creditDebtId"
+            aria-label="Tarjeta recurrente"
+            required
+            defaultValue={
+              draft?.creditDebtId ??
+              (data.debts.filter((d) => d.kind === "credit").length === 1
+                ? data.debts.find((d) => d.kind === "credit")!.id
+                : "")
+            }
+          >
+            <option value="" disabled>
+              Selecciona una tarjeta
+            </option>
+            {data.debts.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.creditor}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label>
+        Frecuencia
+        <select
+          name="frequency"
+          aria-label="Frecuencia"
+          defaultValue={draft?.frequency ?? "monthly"}
+        >
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensual</option>
+          <option value="yearly">Anual</option>
+        </select>
+      </label>
+      <div className="field">
+        <label htmlFor={dateId}>Próxima fecha</label>
+        <DatePicker
+          id={dateId}
+          name="date"
+          required
+          defaultValue={draft?.nextDate ?? today()}
+        />
+      </div>
+      <div className="planning-actions">
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => setDraft(undefined)}
+        >
+          Cancelar recurrente
+        </button>
+        <button className="button" disabled={busy}>
+          Guardar recurrente
+        </button>
+      </div>
+    </form>
+  );
   return (
     <section className="planning-section">
       <div className="planning-heading">
@@ -210,207 +334,85 @@ export function RecurringPanel({
         No se registran solos. Confirma cada vencimiento; una compra con TDC
         aumentará su deuda y consumirá presupuesto.
       </p>
+      {draft === null && form}
       {(data.recurrents ?? []).map((r) => (
-        <article className="planning-item" key={r.id}>
-          <strong>{r.merchant}</strong>
-          <p>
-            {money(r.amount)} ·{" "}
-            {r.frequency === "monthly"
-              ? "Mensual"
-              : r.frequency === "weekly"
-                ? "Semanal"
-                : "Anual"}{" "}
-            · {r.nextDate}
-          </p>
-          <p>
-            {!r.active
-              ? "Pausado"
-              : r.nextDate <= today()
-                ? "Pendiente de confirmar"
-                : "Próximo vencimiento"}
-          </p>
-          <div className="planning-actions">
-            <button
-              className="button secondary"
-              disabled={busy || !r.active || r.nextDate > today()}
-              onClick={() => {
-                if (
-                  confirm(
-                    `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${r.nextDate}?`,
+        <article className="planning-item recurring-item" key={r.id}>
+          <details>
+            <summary>{r.merchant}</summary>
+            <p>
+              {money(r.amount)} ·{" "}
+              {r.frequency === "monthly"
+                ? "Mensual"
+                : r.frequency === "weekly"
+                  ? "Semanal"
+                  : "Anual"}{" "}
+              · {r.nextDate}
+            </p>
+            <p>
+              {!r.active
+                ? "Pausado"
+                : r.nextDate <= today()
+                  ? "Pendiente de confirmar"
+                  : "Próximo vencimiento"}
+            </p>
+            <div className="planning-actions">
+              <button
+                className="button secondary"
+                disabled={busy || !r.active || r.nextDate > today()}
+                onClick={() => {
+                  if (
+                    confirm(
+                      `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${r.nextDate}?`,
+                    )
                   )
-                )
-                  void mutate((d) => registerRecurring(d, r.id, r.nextDate));
-              }}
-            >
-              Registrar {r.merchant}
-            </button>
-            <button className="text-button" onClick={() => edit(r)}>
-              Editar recurrente {r.merchant}
-            </button>
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={() =>
-                void mutate((d) => ({
-                  ...d,
-                  recurrents: d.recurrents?.map((item) =>
-                    item.id === r.id ? { ...item, active: !item.active } : item,
-                  ),
-                }))
-              }
-            >
-              {r.active ? "Pausar" : "Reactivar"} {r.merchant}
-            </button>
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (
-                  confirm(
-                    "¿Eliminar esta programación? Los movimientos ya registrados se conservan.",
-                  )
-                )
+                    void mutate((d) => registerRecurring(d, r.id, r.nextDate));
+                }}
+              >
+                Registrar {r.merchant}
+              </button>
+              <button className="text-button" onClick={() => edit(r)}>
+                Editar recurrente {r.merchant}
+              </button>
+              <button
+                className="text-button"
+                disabled={busy}
+                onClick={() =>
                   void mutate((d) => ({
                     ...d,
-                    recurrents: d.recurrents?.filter(
-                      (item) => item.id !== r.id,
+                    recurrents: d.recurrents?.map((item) =>
+                      item.id === r.id
+                        ? { ...item, active: !item.active }
+                        : item,
                     ),
-                  }));
-              }}
-            >
-              Eliminar recurrente {r.merchant}
-            </button>
-          </div>
-        </article>
-      ))}
-      {draft !== undefined && (
-        <form
-          key={draft?.id ?? "new"}
-          className="planning-form"
-          onSubmit={save}
-        >
-          <h3>{draft ? "Editar recurrente" : "Nuevo recurrente"}</h3>
-          <label>
-            Concepto recurrente
-            <ConceptInput
-              suggestions={suggestions}
-              onSelectSuggestion={(concept) => {
-                const previous = categoryForConcept(data, concept);
-                if (previous) setCategory(previous);
-              }}
-              name="merchant"
-              autoComplete="off"
-              aria-label="Concepto recurrente"
-              maxLength={120}
-              required
-              defaultValue={draft?.merchant}
-            />
-          </label>
-          <label>
-            Importe recurrente (MXN)
-            <MoneyInput
-              name="amount"
-              aria-label="Importe recurrente (MXN)"
-              type="number"
-              inputMode="decimal"
-              min="0.01"
-              max="999999999"
-              step="0.01"
-              required
-              defaultValue={draft?.amount}
-            />
-          </label>
-          <label>
-            Categoría recurrente
-            <select
-              name="category"
-              aria-label="Categoría recurrente"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {[...new Set([...categories, category])].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Método recurrente
-            <select
-              aria-label="Método recurrente"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-            >
-              {[
-                "Efectivo",
-                "Tarjeta de débito",
-                "Tarjeta de crédito",
-                "Transferencia",
-                "Otro",
-              ].map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-          </label>
-          {method === "Tarjeta de crédito" && (
-            <label>
-              Tarjeta recurrente
-              <select
-                name="creditDebtId"
-                aria-label="Tarjeta recurrente"
-                required
-                defaultValue={
-                  draft?.creditDebtId ??
-                  (data.debts.filter((d) => d.kind === "credit").length === 1
-                    ? data.debts.find((d) => d.kind === "credit")!.id
-                    : "")
+                  }))
                 }
               >
-                <option value="" disabled>
-                  Selecciona una tarjeta
-                </option>
-                {data.debts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.creditor}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label>
-            Frecuencia
-            <select
-              name="frequency"
-              aria-label="Frecuencia"
-              defaultValue={draft?.frequency ?? "monthly"}
-            >
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensual</option>
-              <option value="yearly">Anual</option>
-            </select>
-          </label>
-          <div className="field">
-            <label htmlFor={dateId}>Próxima fecha</label>
-            <DatePicker
-              id={dateId}
-              name="date"
-              required
-              defaultValue={draft?.nextDate ?? today()}
-            />
-          </div>
-          <div className="planning-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => setDraft(undefined)}
-            >
-              Cancelar recurrente
-            </button>
-            <button className="button" disabled={busy}>
-              Guardar recurrente
-            </button>
-          </div>
-        </form>
-      )}
+                {r.active ? "Pausar" : "Reactivar"} {r.merchant}
+              </button>
+              <button
+                className="text-button"
+                disabled={busy || draft?.id === r.id}
+                onClick={() => {
+                  if (
+                    confirm(
+                      "¿Eliminar esta programación? Los movimientos ya registrados se conservan.",
+                    )
+                  )
+                    void mutate((d) => ({
+                      ...d,
+                      recurrents: d.recurrents?.filter(
+                        (item) => item.id !== r.id,
+                      ),
+                    }));
+                }}
+              >
+                Eliminar recurrente {r.merchant}
+              </button>
+            </div>
+          </details>
+          {draft?.id === r.id && form}
+        </article>
+      ))}
     </section>
   );
 }

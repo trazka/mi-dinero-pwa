@@ -1947,6 +1947,19 @@ li {
   padding: 16px;
   margin: 14px 0;
 }
+.recurring-item {
+  padding: 0 14px;
+}
+.recurring-item > details {
+  margin-top: 0;
+}
+.recurring-item > details > summary {
+  font-weight: 600;
+}
+.recurring-item > details[open],
+.recurring-item > .planning-form {
+  padding-bottom: 14px;
+}
 .planning-item p {
   font-size: 12px;
   margin-top: 6px;

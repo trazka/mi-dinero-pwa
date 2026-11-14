@@ -113,6 +113,10 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
     .click();
   await expect(page.getByLabel("Concepto recurrente")).toHaveCount(0);
   await expect(page.locator(".movement")).toHaveCount(0);
+  await page
+    .locator(".recurring-item summary")
+    .filter({ hasText: "Servicio de prueba" })
+    .click();
   page.once("dialog", (d) => d.dismiss());
   await page
     .getByRole("button", { name: "Registrar Servicio de prueba", exact: true })
@@ -178,6 +182,10 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await page
+    .locator(".page .recurring-item summary")
+    .filter({ hasText: "Servicio de prueba" })
+    .click();
   await expect(
     page.getByRole("button", {
       name: "Reactivar Servicio de prueba",
@@ -210,6 +218,10 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await expect(page.getByLabel("Tarjeta recurrente")).toHaveValue("card");
   await page
     .getByRole("button", { name: "Guardar recurrente", exact: true })
+    .click();
+  await page
+    .locator(".recurring-item summary")
+    .filter({ hasText: "Compra programada" })
     .click();
   page.once("dialog", (d) => d.accept());
   await page
