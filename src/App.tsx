@@ -1390,15 +1390,6 @@ export default function App() {
           )}
           {tab === "Inicio" && homeSummaryVisible && (
             <>
-              <button
-                className="button secondary summary-close"
-                onClick={() => {
-                  setHomeSummaryVisible(false);
-                  pageRef.current?.scrollTo({ top: 0 });
-                }}
-              >
-                <EyeOff size={18} /> Ocultar resumen
-              </button>
               {(data.movements.length > 0 ||
                 data.debts.length > 0 ||
                 !!data.budgets?.length ||

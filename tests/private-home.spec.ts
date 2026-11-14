@@ -65,9 +65,10 @@ test("Inicio no expone cifras ni movimientos y vuelve a ocultarse al regresar", 
   await expect(
     page.getByText("Concepto confidencial", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Ocultar resumen", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Ocultar resumen", exact: true }),
+  ).toHaveCount(0);
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await hidden();
   await revealHomeSummary(page);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();

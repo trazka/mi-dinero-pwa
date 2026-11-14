@@ -2842,9 +2842,6 @@ li {
   opacity: 0.75;
   margin: 4px 0 0;
 }
-.summary-close {
-  margin-bottom: 18px;
-}
 @media (min-width: 801px) and (max-height: 600px) {
   .home-landing {
     gap: 14px;
