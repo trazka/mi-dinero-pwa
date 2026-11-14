@@ -24,6 +24,14 @@ export type Payment = {
 export type PendingMovement = Omit<Movement, "type"> & {
   type: Movement["type"] | "payment" | "saving";
   targetId?: string;
+  savingWallet?: WalletKey;
+};
+export type WalletKey = "bank" | "cash" | "unassigned";
+export type WalletAmounts = Record<WalletKey, number>;
+export const walletNames: Record<WalletKey, string> = {
+  bank: "Banco",
+  cash: "Efectivo",
+  unassigned: "Sin clasificar",
 };
 export type Debt = {
   id: string;
@@ -55,11 +63,13 @@ export type Saving = {
   id: string;
   name: string;
   target: number;
+  allocations?: WalletAmounts;
   entries: {
     id: string;
     type: "deposit" | "withdrawal";
     amount: number;
     date: string;
+    wallet?: WalletKey;
   }[];
 };
 export type Data = {
@@ -123,6 +133,67 @@ export function walletBalances(data: Data) {
     unassigned: totals.unassigned / 100,
   };
 }
+const walletKeys: WalletKey[] = ["bank", "cash", "unassigned"];
+const savingCents = (saving: Saving) =>
+  saving.entries.reduce(
+    (sum, entry) =>
+      sum +
+      (entry.type === "deposit" ? 1 : -1) * Math.round(entry.amount * 100),
+    0,
+  );
+export function allocateLegacySavings(data: Data): Data {
+  if (!(data.savings ?? []).some((saving) => !saving.allocations)) return data;
+  const physical = walletBalances(data);
+  const capacity = Object.fromEntries(
+    walletKeys.map((key) => [
+      key,
+      Math.max(0, Math.round(physical[key] * 100)),
+    ]),
+  ) as WalletAmounts;
+  for (const saving of data.savings ?? [])
+    if (saving.allocations)
+      for (const key of walletKeys)
+        capacity[key] -= Math.round(saving.allocations[key] * 100);
+  const fallback = walletKeys.find((key) => physical[key] > 0) ?? "bank";
+  return {
+    ...data,
+    savings: data.savings?.map((saving) => {
+      if (saving.allocations) return saving;
+      let remaining = savingCents(saving);
+      const allocated: WalletAmounts = { bank: 0, cash: 0, unassigned: 0 };
+      for (const key of walletKeys) {
+        const take = Math.min(remaining, Math.max(0, capacity[key]));
+        allocated[key] = take;
+        capacity[key] -= take;
+        remaining -= take;
+      }
+      allocated[fallback] += remaining;
+      capacity[fallback] -= remaining;
+      return {
+        ...saving,
+        allocations: {
+          bank: allocated.bank / 100,
+          cash: allocated.cash / 100,
+          unassigned: allocated.unassigned / 100,
+        },
+      };
+    }),
+  };
+}
+export function availableWalletBalances(data: Data): WalletAmounts {
+  const result = walletBalances(data);
+  const normalized = allocateLegacySavings(data);
+  for (const key of walletKeys)
+    result[key] =
+      (Math.round(result[key] * 100) -
+        (normalized.savings ?? []).reduce(
+          (sum, saving) =>
+            sum + Math.round((saving.allocations?.[key] ?? 0) * 100),
+          0,
+        )) /
+      100;
+  return result;
+}
 export const transferRoute = (m: Movement) =>
   m.transferDirection === "bank-to-cash"
     ? { from: "Banco", to: "Efectivo", label: "Retiro a efectivo" }
@@ -144,6 +215,7 @@ export function payDebt(
   amount: number,
   date: string,
 ): Data {
+  data = allocateLegacySavings(data);
   const debt = data.debts.find((d) => d.id === id);
   if (!debt || !cents(amount) || amount > balance(debt) || !validDate(date))
     throw Error(
@@ -189,6 +261,7 @@ function assertBalances(data: Data): Data {
   return data;
 }
 export function saveMovement(data: Data, movement: Movement): Data {
+  data = allocateLegacySavings(data);
   const old = data.movements.find((m) => m.id === movement.id);
   if (old?.paymentId || movement.paymentId || movement.creditPaymentDebtId)
     throw Error("Los abonos se corrigen desde su deuda.");
@@ -206,7 +279,7 @@ export function saveMovement(data: Data, movement: Movement): Data {
       "Revisa el origen y destino del traspaso. No puede vincularse a una deuda o recurrente.",
     );
   if (movement.type === "transfer") {
-    const available = walletBalances({
+    const available = availableWalletBalances({
       ...data,
       movements: data.movements.filter((m) => m.id !== movement.id),
     });
@@ -258,6 +331,7 @@ export function saveMovement(data: Data, movement: Movement): Data {
   return assertBalances(next);
 }
 export function removeMovement(data: Data, id: string): Data {
+  data = allocateLegacySavings(data);
   return assertBalances({
     ...data,
     movements: data.movements.filter((m) => m.id !== id),
@@ -300,6 +374,8 @@ export function validPending(p: PendingMovement) {
     (["payment", "saving"].includes(p.type)
       ? str(p.targetId) && !!p.targetId
       : p.targetId === undefined) &&
+    (p.savingWallet === undefined ||
+      (p.type === "saving" && walletKeys.includes(p.savingWallet))) &&
     (p.creditDebtId === undefined ||
       (str(p.creditDebtId) &&
         !!p.creditDebtId &&
@@ -470,7 +546,28 @@ export function validateBackup(input: unknown): Data {
       saved +=
         (entry.type === "deposit" ? 1 : -1) * Math.round(entry.amount * 100);
       if (saved < 0 || !Number.isSafeInteger(saved)) return fail();
+      if (entry.wallet !== undefined && !walletKeys.includes(entry.wallet))
+        return fail();
     }
+    if (
+      saving.allocations !== undefined &&
+      (!saving.allocations ||
+        typeof saving.allocations !== "object" ||
+        walletKeys.some(
+          (key) =>
+            !Number.isFinite(saving.allocations![key]) ||
+            saving.allocations![key] < 0 ||
+            Math.abs(
+              saving.allocations![key] * 100 -
+                Math.round(saving.allocations![key] * 100),
+            ) > 0.0001,
+        ) ||
+        walletKeys.reduce(
+          (sum, key) => sum + Math.round(saving.allocations![key] * 100),
+          0,
+        ) !== saved)
+    )
+      return fail();
   }
   if (d.budgets !== undefined && !Array.isArray(d.budgets)) return fail();
   const budgetKeys = new Set<string>();
@@ -543,16 +640,16 @@ export async function readData(): Promise<Data> {
     throw Error(
       "La versión de los datos no es compatible con esta aplicación.",
     );
-  return { ...stored, version: 2 };
+  return allocateLegacySavings({ ...stored, version: 2 });
 }
 export async function changeData(fn: (data: Data) => Data): Promise<Data> {
   const database = await db();
   const tx = database.transaction("data", "readwrite");
   const stored = (await tx.store.get("main")) ?? empty();
-  const current: Data = { ...stored, version: 2 };
+  const current: Data = allocateLegacySavings({ ...stored, version: 2 });
   let next: Data;
   try {
-    next = fn(current);
+    next = allocateLegacySavings(fn(current));
     await tx.store.put(next, "main");
     await tx.done;
     return next;

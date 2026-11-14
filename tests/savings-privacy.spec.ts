@@ -76,7 +76,12 @@ test("el ojo muestra y oculta sin bloqueo y conserva los importes en el respaldo
   const path = await (await download).path();
   const { readFile } = await import("node:fs/promises");
   const backup = JSON.parse(await readFile(path!, "utf8"));
-  expect(backup.savings).toEqual(fixture.savings);
+  expect(backup.savings).toMatchObject(fixture.savings);
+  expect(backup.savings[0].allocations).toEqual({
+    bank: 0,
+    cash: 350,
+    unassigned: 0,
+  });
   expect(backup.movements).toEqual(fixture.movements);
 });
 test("el ojo no pide verificación con bloqueo activo y vuelve a ocultar al salir", async ({

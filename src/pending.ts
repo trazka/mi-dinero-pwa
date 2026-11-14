@@ -8,6 +8,7 @@ import {
   type Data,
   type Movement,
   type PendingMovement,
+  type WalletKey,
 } from "./data";
 import { moveSaving } from "./savings";
 
@@ -59,14 +60,16 @@ export function recordSaving(
   savingId: string,
   amount: number,
   date: string,
+  wallet?: WalletKey,
 ): Data {
   if (date <= today())
-    return moveSaving(data, savingId, "deposit", amount, date);
+    return moveSaving(data, savingId, "deposit", amount, date, wallet);
   const saving = data.savings?.find((s) => s.id === savingId);
   if (!saving) throw Error("El apartado ya no existe.");
   return savePending(data, {
     id: crypto.randomUUID(),
     type: "saving",
+    savingWallet: wallet,
     targetId: savingId,
     date,
     amount,
@@ -90,7 +93,14 @@ export function confirmPending(data: Data, id: string, date = today()): Data {
   if (pending.type === "payment")
     return payDebt(next, pending.targetId!, pending.amount, date);
   if (pending.type === "saving")
-    return moveSaving(next, pending.targetId!, "deposit", pending.amount, date);
-  const { targetId: _target, ...movement } = pending;
+    return moveSaving(
+      next,
+      pending.targetId!,
+      "deposit",
+      pending.amount,
+      date,
+      pending.savingWallet,
+    );
+  const { targetId: _target, savingWallet: _wallet, ...movement } = pending;
   return saveMovement(next, { ...movement, type: pending.type, date });
 }
