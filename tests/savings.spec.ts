@@ -46,7 +46,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   ).toBeDisabled();
   await expect(page.locator(".report-totals")).toContainText("$700.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
-  await expect(page.locator(".balance-number")).toContainText("$1,000.00");
+  await expect(page.locator(".balance-number")).toContainText("$700.00");
   await expect(page.locator(".savings-summary")).toHaveCount(0);
   await nav.getByRole("button", { name: "Apartados", exact: true }).click();
   await page
@@ -72,6 +72,22 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await expect(
     page.getByLabel("Progreso de Fondo de emergencia"),
   ).toHaveAttribute("value", "200");
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await expect(page.locator(".balance-number")).toContainText("$800.00");
+  await expect(
+    page.getByRole("button", { name: "Ver ingresos", exact: true }),
+  ).toContainText("$1,000.00");
+  await expect(
+    page.getByRole("button", { name: "Ver egresos", exact: true }),
+  ).toContainText("$0.00");
+  await page.reload();
+  await page
+    .getByRole("button", {
+      name: "Desbloquear con el dispositivo",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".balance-number")).toContainText("$800.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
   await page
@@ -179,7 +195,7 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
     page.getByText(`${selectedDate} · Aportación · $250.00`, { exact: true }),
   ).toBeVisible();
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
-  await expect(page.locator(".balance-number")).toContainText("$1,000.00");
+  await expect(page.locator(".balance-number")).toContainText("$750.00");
   await expect(page.locator(".savings-summary")).toHaveCount(0);
 });
 

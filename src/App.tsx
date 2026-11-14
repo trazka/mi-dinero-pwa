@@ -10,7 +10,7 @@ import {
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
-import { moveSaving } from "./savings";
+import { moveSaving, freeAmount } from "./savings";
 import { SecurityPanel, useSecurity } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -1378,12 +1378,12 @@ export default function App() {
                     <Wallet size={23} />
                   </div>
                   <div className="balance-number">
-                    {money(incomes - expenses)}
+                    {money(freeAmount(data))}
                     <span>MXN</span>
                   </div>
                   <p>
-                    <span className="light-dot" /> Ingresos menos gastos
-                    registrados
+                    <span className="light-dot" /> Ingresos menos gastos y
+                    apartados
                   </p>
                   <div className="balance-decoration" />
                 </div>
