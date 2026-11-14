@@ -34,6 +34,9 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   const items = page.locator(".page .recurring-item");
   await expect(items).toHaveCount(2);
+  expect(
+    await items.nth(0).evaluate((node) => node.getBoundingClientRect().height),
+  ).toBeLessThanOrEqual(60);
   await expect(items.locator("details[open]")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Registrar Internet", exact: true }),
