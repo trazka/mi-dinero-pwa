@@ -1,3 +1,4 @@
+import { openSidebar } from "./layout-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
@@ -77,6 +78,7 @@ test("la vista de escritorio conserva su desplazamiento normal", async ({
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(0);
+  await openSidebar(page);
   await expect(page.locator(".sidebar")).toBeInViewport();
 });
 
