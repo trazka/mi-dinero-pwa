@@ -99,9 +99,13 @@ test("accesos de Inicio abren captura, abonos, movimientos y apartados ocultos",
 }) => {
   await page.goto("./");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
-  await page
-    .getByRole("button", { name: "Nuevo movimiento", exact: true })
-    .click();
+  const add = page.getByRole("button", {
+    name: "Nuevo movimiento",
+    exact: true,
+  });
+  await expect(add).toHaveClass(/section-add/);
+  await expect(add).toHaveCSS("border-radius", "50%");
+  await add.click();
   await expect(page.getByLabel("Tipo", { exact: true })).toHaveValue("expense");
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await page

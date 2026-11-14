@@ -1290,41 +1290,38 @@ export default function App() {
                     )[tab]}
               </p>
             </div>
-            {tab !== "Respaldos" &&
-              (tab !== "Inicio" || homeSummaryVisible) && (
-                <button
-                  className="button section-add"
-                  aria-label={
-                    tab === "Apartados"
-                      ? "Nuevo apartado"
-                      : tab === "Deudas"
-                        ? "Nueva deuda"
-                        : "Nuevo movimiento"
+            {tab !== "Respaldos" && (
+              <button
+                className="button section-add"
+                aria-label={
+                  tab === "Apartados"
+                    ? "Nuevo apartado"
+                    : tab === "Deudas"
+                      ? "Nueva deuda"
+                      : "Nuevo movimiento"
+                }
+                title={
+                  tab === "Apartados"
+                    ? "Nuevo apartado"
+                    : tab === "Deudas"
+                      ? "Nueva deuda"
+                      : "Nuevo movimiento"
+                }
+                disabled={!loaded || !!modal || planningEditing}
+                onClick={() => {
+                  setError("");
+                  if (tab === "Apartados") {
+                    setSavingCreating(true);
+                    return;
                   }
-                  title={
-                    tab === "Apartados"
-                      ? "Nuevo apartado"
-                      : tab === "Deudas"
-                        ? "Nueva deuda"
-                        : "Nuevo movimiento"
-                  }
-                  disabled={!loaded || !!modal || planningEditing}
-                  onClick={() => {
-                    setError("");
-                    if (tab === "Apartados") {
-                      setSavingCreating(true);
-                      return;
-                    }
-                    setModal(
-                      tab === "Deudas"
-                        ? { kind: "debt" }
-                        : { kind: "movement" },
-                    );
-                  }}
-                >
-                  <Plus size={26} aria-hidden="true" />
-                </button>
-              )}
+                  setModal(
+                    tab === "Deudas" ? { kind: "debt" } : { kind: "movement" },
+                  );
+                }}
+              >
+                <Plus size={26} aria-hidden="true" />
+              </button>
+            )}
           </div>
           {error && (
             <div className="alert transient-alert" role="alert">
@@ -1379,10 +1376,6 @@ export default function App() {
           {tab === "Inicio" && !homeSummaryVisible && (
             <HomeLanding
               disabled={!loaded || busy}
-              onMovement={() => {
-                setError("");
-                setModal({ kind: "movement" });
-              }}
               onMovements={() => showMovements("all")}
               onPayment={() => {
                 setError("");
