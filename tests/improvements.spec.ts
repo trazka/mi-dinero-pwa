@@ -132,7 +132,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
       name: "Registrar Servicio de prueba",
       exact: true,
     }),
-  ).toBeDisabled();
+  ).toBeHidden();
   await page
     .getByRole("button", { name: "Pausar Servicio de prueba", exact: true })
     .click();
