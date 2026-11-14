@@ -106,11 +106,16 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
   ).toBe("FORM");
   await page.getByLabel("Importe recurrente (MXN)").fill("550");
   await items.nth(1).locator("summary").click();
-  await expect(items.nth(0).getByLabel("Concepto recurrente")).toBeHidden();
+  await expect(page.getByLabel("Concepto recurrente")).toHaveCount(0);
+  await expect(page.locator(".section-add")).toBeEnabled();
   await items.nth(0).locator("summary").click();
+  await page
+    .getByRole("button", { name: "Editar recurrente Internet", exact: true })
+    .click();
   await expect(page.getByLabel("Importe recurrente (MXN)")).toHaveValue(
-    "$550.00",
+    "$500.00",
   );
+  await page.getByLabel("Importe recurrente (MXN)").fill("550");
 
   await page
     .getByRole("button", { name: "Guardar recurrente", exact: true })
@@ -124,9 +129,42 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
     .getByRole("button", { name: "Editar recurrente Internet", exact: true })
     .click();
   await page.getByLabel("Concepto recurrente").fill("No guardar");
+  await expect(page.locator(".section-add")).toBeDisabled();
+  const internet = items.filter({
+    has: page.locator("summary", { hasText: "Internet" }),
+  });
+  await internet.locator("summary").click();
+  await expect(page.getByLabel("Concepto recurrente")).toHaveCount(0);
+  await expect(page.locator(".section-add")).toBeEnabled();
+  await page
+    .locator(".page")
+    .dispatchEvent("touchstart", {
+      touches: [{ identifier: 1, clientX: 280, clientY: 240 }],
+    });
+  await page
+    .locator(".page")
+    .dispatchEvent("touchend", {
+      changedTouches: [{ identifier: 1, clientX: 120, clientY: 240 }],
+    });
+  await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await expect(page.locator(".page h1")).toHaveText("Movimientos");
+  await internet.locator("summary").click();
+  await page
+    .getByRole("button", { name: "Editar recurrente Internet", exact: true })
+    .click();
+  await expect(page.getByLabel("Concepto recurrente")).toHaveValue("Internet");
+  await expect(page.getByLabel("Importe recurrente (MXN)")).toHaveValue(
+    "$550.00",
+  );
   await page
     .getByRole("button", { name: "Cancelar recurrente", exact: true })
     .click();
+  await page.locator(".section-add").click();
+  await expect(
+    page.getByRole("dialog", { name: "Nuevo movimiento", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await expect(
     items
       .filter({ has: page.locator("summary", { hasText: "Internet" }) })
