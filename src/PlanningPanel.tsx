@@ -344,6 +344,7 @@ export function RecurringPanel({
             <summary
               onClick={(event) => {
                 event.preventDefault();
+                if (draft) setDraft(undefined);
                 setExpandedId((current) => (current === r.id ? null : r.id));
               }}
             >
