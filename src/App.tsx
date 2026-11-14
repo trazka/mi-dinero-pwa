@@ -30,6 +30,7 @@ import {
   cloneElement,
   useId,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -297,7 +298,40 @@ export default function App() {
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-  function navigate(section: Tab) {
+  const swipeDirection = useRef<1 | -1 | null>(null);
+  useLayoutEffect(() => {
+    const direction = swipeDirection.current;
+    swipeDirection.current = null;
+    const page = pageRef.current;
+    if (
+      !page ||
+      !direction ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    // Animate the content, keeping the scroll container and fixed controls still.
+    const targets = [
+      page.querySelector(".page-heading-content"),
+      ...Array.from(page.children).filter(
+        (child) => !child.classList.contains("page-heading"),
+      ),
+    ];
+    const animations = targets.flatMap((target) => {
+      if (!target || typeof target.animate !== "function") return [];
+      const animation = target.animate(
+        [
+          { transform: `translateX(${direction * 28}px)`, opacity: 0.4 },
+          { transform: "translateX(0)", opacity: 1 },
+        ],
+        { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      );
+      animation.id = "section-swipe";
+      return [animation];
+    });
+    return () => animations.forEach((animation) => animation.cancel());
+  }, [tab]);
+  function navigate(section: Tab, direction: 1 | -1 | null = null) {
+    swipeDirection.current = section !== tab ? direction : null;
     setHomeSummaryVisible(false);
     if (section === "Reportes" && typeFilter === "transfer")
       setTypeFilter("all");
@@ -1350,7 +1384,7 @@ export default function App() {
               return;
             const next =
               tabs[tabs.findIndex((t) => t.name === tab) + (dx < 0 ? 1 : -1)];
-            if (next) navigate(next.name);
+            if (next) navigate(next.name, dx < 0 ? 1 : -1);
           }}
         >
           <div className="page-heading">
