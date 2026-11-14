@@ -2427,7 +2427,7 @@ export default function App() {
                               )
                               .map((key) => (
                                 <option key={key} value={key}>
-                                  {walletNames[key]} · {money(wallets[key])}
+                                  {walletNames[key]}
                                 </option>
                               ))}
                           </select>
