@@ -7,6 +7,7 @@ import {
   payDebt,
   readData,
   saveMovement,
+  removeMovement,
   today,
   validateBackup,
   type Data,
@@ -123,8 +124,8 @@ describe("Edición y cortes", () => {
     });
   });
 });
-describe("Presupuestos por gastos pagados", () => {
-  it("excluye compras TDC e ingresos e incluye el abono en su mes y categoría", () => {
+describe("Presupuestos por consumo", () => {
+  it("incluye compras TDC en su mes y categoría y excluye ingresos y abonos TDC", () => {
     let d = saveMovement(card(), purchase());
     d = payDebt(d, "card", 40, "2026-03-04");
     d = saveMovement(d, {
@@ -139,10 +140,10 @@ describe("Presupuestos por gastos pagados", () => {
       creditDebtId: undefined,
     });
     expect(budgetSpent(d, { month: "2026-02", category: "", limit: 100 })).toBe(
-      0,
+      100,
     );
     expect(budgetSpent(d, { month: "2026-03", category: "", limit: 50 })).toBe(
-      60,
+      20,
     );
     expect(
       budgetSpent(d, {
@@ -150,7 +151,51 @@ describe("Presupuestos por gastos pagados", () => {
         category: "Pago de deuda",
         limit: 100,
       }),
-    ).toBe(40);
+    ).toBe(0);
+    expect(
+      budgetSpent(d, { month: "2026-02", category: "Compras", limit: 200 }),
+    ).toBe(100);
+    const legacy = {
+      ...d,
+      movements: d.movements.map(
+        ({ creditPaymentDebtId: _ignored, ...m }) => m,
+      ),
+    };
+    expect(
+      budgetSpent(legacy, { month: "2026-03", category: "", limit: 100 }),
+    ).toBe(20);
+  });
+  it("recalcula una compra editada o eliminada y conserva pagos de otras deudas", () => {
+    const movement = purchase("2026-11-12", 800);
+    movement.category = "Transporte";
+    const budget = { month: "2026-11", category: "Transporte", limit: 2000 };
+    expect(
+      budgetSpent(
+        removeMovement(saveMovement(card(), movement), movement.id),
+        budget,
+      ),
+    ).toBe(0);
+    let d = saveMovement(card(), movement);
+    d = payDebt(d, "card", 300, "2026-11-13");
+    expect(budgetSpent(d, budget)).toBe(800);
+    d = saveMovement(d, { ...movement, amount: 900 });
+    expect(budgetSpent(d, budget)).toBe(900);
+    d = saveMovement(d, { ...movement, amount: 900, category: "Compras" });
+    expect(budgetSpent(d, budget)).toBe(0);
+    expect(budgetSpent(d, { ...budget, category: "" })).toBe(900);
+    const loan = {
+      creditor: "Préstamo",
+      due: "2026-12-05",
+      id: "loan",
+      original: 1000,
+      initialBalance: 1000,
+      payments: [],
+    };
+    d = payDebt({ ...d, debts: [...d.debts, loan] }, "loan", 100, "2026-11-13");
+    expect(budgetSpent(d, { ...budget, category: "Pago de deuda" })).toBe(100);
+    expect(budgetSpent(validateBackup(d), { ...budget, category: "" })).toBe(
+      1000,
+    );
   });
   it("actualiza límites sin duplicarlos y valida importes", () => {
     let d = saveBudget(empty(), { month: "2026-11", category: "", limit: 100 });

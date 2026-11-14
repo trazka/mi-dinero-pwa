@@ -261,11 +261,13 @@ export default function App() {
     categories[0],
   );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
+  const [movementDate, setMovementDate] = useState(today());
   const [transferDirection, setTransferDirection] =
     useState<NonNullable<Movement["transferDirection"]>>("bank-to-cash");
   const [debtKind, setDebtKind] = useState("normal");
   useEffect(() => {
     if (modal?.kind === "movement") {
+      setMovementDate(modal.movement?.date ?? today());
       setMovementType(
         modal.movement?.creditDebtId
           ? "credit"
@@ -275,6 +277,7 @@ export default function App() {
       setTransferDirection(modal.movement?.transferDirection ?? "bank-to-cash");
       setMovementCategory(modal.movement?.category ?? categories[0]);
     }
+    if (modal?.kind === "payment") setMovementDate(today());
     if (modal?.kind === "debt") setDebtKind(modal.debt?.kind ?? "normal");
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
@@ -1752,9 +1755,9 @@ export default function App() {
                 <strong>{money(pending)}</strong>
               </div>
               <p className="helper">
-                Las compras con tarjeta solo aumentan la deuda. El gasto y la
-                reducción del saldo disponible se registran al abonar. No
-                registres el abono otra vez como gasto.
+                Las compras con tarjeta aumentan la deuda y consumen
+                presupuesto. El gasto y la reducción del saldo disponible se
+                registran al abonar. No registres el abono otra vez como gasto.
               </p>
               <div className="debt-grid">
                 {data.debts.map((d) => {
@@ -2276,9 +2279,21 @@ export default function App() {
                         name="date"
                         required
                         defaultValue={modal.movement?.date ?? today()}
+                        onChange={setMovementDate}
                       />
                     </Field>
                   </div>
+                  {movementDate > today() && (
+                    <p className="helper" role="status">
+                      {movementType === "transfer"
+                        ? "La fecha es futura. Si guardas el traspaso, cambiará los saldos de Banco y Efectivo desde ahora."
+                        : movementType === "credit" ||
+                            (movementType === "expense" &&
+                              movementMethod === "Tarjeta de crédito")
+                          ? "La fecha es futura. Si guardas esta compra, aumentará tu deuda y consumirá presupuesto desde ahora."
+                          : "La fecha es futura. Si guardas este movimiento, afectará tu saldo desde ahora."}
+                    </p>
+                  )}
                   {movementType === "transfer" ? (
                     <>
                       <Field label="Tipo de traspaso">
@@ -2515,10 +2530,10 @@ export default function App() {
                             </select>
                           </Field>
                           <p className="helper">
-                            La compra solo aumenta la deuda; no suma al gasto ni
-                            reduce el saldo disponible. El gasto se registra al
-                            abonar a la tarjeta. Los abonos anteriores se
-                            conservan tal como fueron registrados.
+                            La compra aumenta la deuda y consume presupuesto en
+                            su categoría; no reduce el saldo disponible. El pago
+                            se registra al abonar a la tarjeta. Los abonos
+                            anteriores se conservan tal como fueron registrados.
                             {!creditDebts.length &&
                               " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
                           </p>
@@ -2657,8 +2672,19 @@ export default function App() {
                     />
                   </Field>
                   <Field label="Fecha del abono">
-                    <DatePicker name="date" defaultValue={today()} required />
+                    <DatePicker
+                      name="date"
+                      defaultValue={today()}
+                      onChange={setMovementDate}
+                      required
+                    />
                   </Field>
+                  {movementDate > today() && (
+                    <p className="helper" role="status">
+                      La fecha es futura. Si guardas este abono, afectará tu
+                      saldo y reducirá la deuda desde ahora.
+                    </p>
+                  )}
                   <p className="helper">
                     {modal.debt.kind === "credit"
                       ? "Este abono reduce la deuda y se registra como gasto en la fecha del pago. Las compras vinculadas no cuentan como gasto."
