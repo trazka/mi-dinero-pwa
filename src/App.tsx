@@ -238,7 +238,17 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(
     !!window.__miDineroUpdate,
   );
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  useEffect(() => {
+    const landscape = window.matchMedia(
+      "(min-width: 801px) and (orientation: landscape)",
+    );
+    const enterLandscape = () => {
+      if (landscape.matches) setSidebarCollapsed(true);
+    };
+    landscape.addEventListener("change", enterLandscape);
+    return () => landscape.removeEventListener("change", enterLandscape);
+  }, []);
   const [updating, setUpdating] = useState(false);
   const [savingCreating, setSavingCreating] = useState(false);
   const [planningEditing, setPlanningEditing] = useState(false);

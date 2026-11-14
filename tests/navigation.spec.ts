@@ -1,3 +1,4 @@
+import { openSidebar } from "./layout-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 
@@ -210,6 +211,7 @@ test("menú lateral horizontal no muestra tarjetas decorativas recortadas", asyn
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("./");
+  await openSidebar(page);
   await expect(page.locator(".sidebar-note")).toBeHidden();
   await expect(page.locator(".sidebar-bottom")).toBeHidden();
   await expect(

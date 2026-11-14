@@ -1,3 +1,4 @@
+import { openSidebar } from "./layout-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 test("la interfaz compacta mantiene controles visibles, navegación y formularios en iPhone", async ({
@@ -84,6 +85,8 @@ test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", a
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("./");
+  await expect(page.locator(".sidebar")).toBeHidden();
+  await openSidebar(page);
   await page
     .locator(".sidebar")
     .getByRole("button", { name: "Reportes", exact: true })
@@ -126,6 +129,8 @@ test("el menú horizontal se oculta y se muestra sin perder sección ni navegaci
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("./");
+  await expect(page.locator(".sidebar")).toBeHidden();
+  await openSidebar(page);
   await page
     .locator(".sidebar")
     .getByRole("button", { name: "Apartados", exact: true })
@@ -148,9 +153,6 @@ test("el menú horizontal se oculta y se muestra sin perder sección ni navegaci
   await toggle.press("Enter");
   await expect(page.locator(".sidebar")).toBeVisible();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await page
-    .getByRole("button", { name: "Ocultar menú lateral", exact: true })
-    .click();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(toggle).toBeHidden();
   await page

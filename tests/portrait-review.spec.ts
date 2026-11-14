@@ -1,3 +1,4 @@
+import { openSidebar } from "./layout-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 
@@ -187,6 +188,7 @@ test("todas las vistas y formularios verticales conservan controles y textos den
   await fits();
   await page.getByText("Configurar presupuesto", { exact: true }).click();
   await page.setViewportSize({ width: 844, height: 390 });
+  await openSidebar(page);
   await page
     .locator(".sidebar")
     .getByRole("button", { name: "Deudas", exact: true })

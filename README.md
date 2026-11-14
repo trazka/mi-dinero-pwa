@@ -189,3 +189,5 @@ Al seleccionar un concepto se cierra su lista y se carga la categoría registrad
 Inicio abre en modo discreto, sin saldos, estadísticas ni últimos movimientos. Ofrece Nuevo movimiento, Consultar movimientos, Registrar un abono y Mis apartados. Ver mi resumen muestra el resumen existente solo por petición. Para volver a los accesos, pulsa Inicio. Al cambiar de sección, pulsar Inicio, recargar o dejar la app, el resumen vuelve a ocultarse. La billetera de la cabecera conserva su imagen y su función de menú horizontal.
 
 El acceso Nuevo movimiento de Inicio se presenta como el botón + flotante circular, también en modo discreto.
+
+Cada entrada al modo horizontal comienza con el menú lateral oculto, incluso si antes se había abierto. La billetera permite abrirlo y cerrarlo; las pestañas verticales conservan su funcionamiento.
