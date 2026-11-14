@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date(2026, 10, 14, 12));
 });
 
-test("fecha futura avisa antes de guardar, se limpia al corregir y sigue afectando desde ahora", async ({
+test("fecha futura queda pendiente y solo descuenta al confirmar aunque abra días después", async ({
   page,
 }) => {
   await page.goto("./");
@@ -30,28 +30,45 @@ test("fecha futura avisa antes de guardar, se limpia al corregir y sigue afectan
   await expect(dialog.getByRole("status")).toHaveCount(0);
   await chooseDate(page, "Fecha", "2026-11-19");
   await expect(dialog.getByRole("status")).toContainText(
-    "afectará tu saldo desde ahora",
+    "Se guardará como Pendiente",
   );
   await chooseDate(page, "Fecha", "2026-11-14");
   await expect(dialog.getByRole("status")).toHaveCount(0);
   await chooseDate(page, "Fecha", "2026-11-19");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("credit");
-  await expect(dialog.getByRole("status")).toContainText("aumentará tu deuda");
+  await expect(dialog.getByRole("status")).toContainText("No afectará dinero");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("transfer");
-  await expect(dialog.getByRole("status")).toContainText("Banco y Efectivo");
+  await expect(dialog.getByRole("status")).toContainText("No afectará dinero");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("expense");
   await dialog.getByLabel("Establecimiento o concepto").fill("Gasto futuro");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
   await revealHomeSummary(page);
-  await expect(page.locator(".balance-number")).toContainText("$700.00");
+  await expect(page.locator(".balance-number")).toContainText("$1,000.00");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Editar Gasto futuro", exact: true })
+  const pending = page.getByRole("region", { name: "Movimientos pendientes" });
+  await expect(pending).toContainText("Gasto futuro");
+  await expect(
+    pending.getByRole("button", { name: "Confirmar realizado Gasto futuro" }),
+  ).toBeDisabled();
+  await chooseDate(page, "Fecha prevista de Gasto futuro", "2026-11-20");
+  await expect(pending).toContainText("20-nov-2026");
+  await page.clock.setFixedTime(new Date(2026, 10, 22, 12));
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Revisar pendientes" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Revisar pendientes" }).click();
+  await pending
+    .getByRole("button", { name: "Confirmar realizado Gasto futuro" })
     .click();
-  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
-    "La fecha es futura",
-  );
+  await expect(pending).toHaveCount(0);
+  await expect(
+    page.locator(".movement-info").filter({ hasText: "Gasto futuro" }),
+  ).toContainText("22 nov");
+  await nav.getByRole("button", { name: "Inicio", exact: true }).click();
+  await revealHomeSummary(page);
+  await expect(page.locator(".balance-number")).toContainText("$700.00");
 });
 
 test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y deuda", async ({
@@ -125,9 +142,17 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
   await page.getByLabel("Importe del abono (MXN)").fill("800");
   await chooseDate(page, "Fecha del abono", "2026-11-19");
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
-    "reducirá la deuda desde ahora",
+    "No descontará dinero",
   );
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator(".debt-number")).toContainText("$800.00");
+  await page.clock.setFixedTime(new Date(2026, 10, 19, 12));
+  await page.reload();
+  await page.getByRole("button", { name: "Revisar pendientes" }).click();
+  await page
+    .getByRole("button", { name: "Confirmar realizado Abono · Mi TDC" })
+    .click();
+  await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".debt-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(transport).toContainText("$800.00 de $2,000.00");

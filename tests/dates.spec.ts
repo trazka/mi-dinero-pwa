@@ -31,6 +31,7 @@ test("tocar un día cierra el calendario y conserva la fecha del movimiento al g
 test("fechas de deuda y abono se seleccionan sin confirmación y filtros respetan el mínimo", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date(2027, 2, 1, 12));
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await page.goto("./");
   await expect(

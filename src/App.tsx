@@ -1,3 +1,5 @@
+import { recordMovement, recordPayment, recordSaving } from "./pending";
+import { PendingPanel } from "./PendingPanel";
 import HomeLanding from "./HomeLanding";
 import useTimedMessage from "./useTimedMessage";
 import {
@@ -11,7 +13,7 @@ import {
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import SavingsPanel from "./SavingsPanel";
-import { moveSaving, freeAmount } from "./savings";
+import { freeAmount } from "./savings";
 import { SecurityPanel, useSecurity } from "./SecurityGate";
 import MoneyInput from "./MoneyInput";
 import { BudgetPanel, RecurringPanel } from "./PlanningPanel";
@@ -60,13 +62,11 @@ import {
   expenseAmount,
   walletBalances,
   transferRoute,
-  saveMovement,
   cents,
   changeData,
   csv,
   empty,
   money,
-  payDebt,
   readData,
   removeMovement,
   today,
@@ -262,6 +262,21 @@ export default function App() {
   );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
   const [movementDate, setMovementDate] = useState(today());
+  const [currentDay, setCurrentDay] = useState(today());
+  useEffect(() => {
+    const refresh = () => setCurrentDay(today());
+    const interval = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+  const duePending = (data.pendingMovements ?? []).filter(
+    (p) => p.date <= currentDay,
+  ).length;
   const [transferDirection, setTransferDirection] =
     useState<NonNullable<Movement["transferDirection"]>>("bank-to-cash");
   const [debtKind, setDebtKind] = useState("normal");
@@ -700,13 +715,13 @@ export default function App() {
     if (modal.kind === "movement") {
       if (movementType === "saving") {
         void mutate((d) =>
-          moveSaving(d, get("savingId"), "deposit", num("amount"), get("date")),
+          recordSaving(d, get("savingId"), num("amount"), get("date")),
         );
         return;
       }
       if (movementType === "payment") {
         void mutate((d) =>
-          payDebt(d, get("debtId"), num("amount"), get("date")),
+          recordPayment(d, get("debtId"), num("amount"), get("date")),
         );
         return;
       }
@@ -719,7 +734,7 @@ export default function App() {
             ? "Retiro a efectivo"
             : "Depósito al banco";
         void mutate((d) =>
-          saveMovement(d, {
+          recordMovement(d, {
             id: modal.movement?.id ?? crypto.randomUUID(),
             type: "transfer",
             date: get("date"),
@@ -753,7 +768,7 @@ export default function App() {
       }
       if (m.type === "expense" && m.method === "Tarjeta de crédito")
         m.creditDebtId = get("creditDebtId");
-      void mutate((d) => saveMovement(d, m));
+      void mutate((d) => recordMovement(d, m));
     }
     if (modal.kind === "debt") {
       const metadata = {
@@ -809,7 +824,9 @@ export default function App() {
       }));
     }
     if (modal.kind === "payment")
-      void mutate((d) => payDebt(d, modal.debt.id, num("amount"), get("date")));
+      void mutate((d) =>
+        recordPayment(d, modal.debt.id, num("amount"), get("date")),
+      );
   }
   function movementList(items: Movement[]) {
     return items.length ? (
@@ -1398,6 +1415,23 @@ export default function App() {
               </button>
             )}
           </div>
+          {duePending > 0 && tab !== "Movimientos" && (
+            <div className="notice">
+              <span>
+                Tienes {duePending}{" "}
+                {duePending === 1
+                  ? "movimiento pendiente"
+                  : "movimientos pendientes"}{" "}
+                por confirmar.
+              </span>
+              <button
+                className="text-button"
+                onClick={() => navigate("Movimientos")}
+              >
+                Revisar pendientes
+              </button>
+            </div>
+          )}
           {error && (
             <div className="alert transient-alert" role="alert">
               <span>{error}</span>
@@ -1466,6 +1500,7 @@ export default function App() {
           {tab === "Inicio" && homeSummaryVisible && (
             <>
               {(data.movements.length > 0 ||
+                (data.pendingMovements?.length ?? 0) > 0 ||
                 data.debts.length > 0 ||
                 !!data.budgets?.length ||
                 !!data.recurrents?.length ||
@@ -1598,6 +1633,12 @@ export default function App() {
           )}
           {tab === "Movimientos" && (
             <section className="panel full-panel">
+              <PendingPanel
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                currentDay={currentDay}
+              />
               <div className="wallet-balances" aria-label="Banco y efectivo">
                 <div>
                   <span>Banco</span>
@@ -2094,7 +2135,7 @@ export default function App() {
                         );
                         if (
                           confirm(
-                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes?`,
+                            `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
                           )
                         )
                           await mutate(() => backup);
@@ -2285,13 +2326,9 @@ export default function App() {
                   </div>
                   {movementDate > today() && (
                     <p className="helper" role="status">
-                      {movementType === "transfer"
-                        ? "La fecha es futura. Si guardas el traspaso, cambiará los saldos de Banco y Efectivo desde ahora."
-                        : movementType === "credit" ||
-                            (movementType === "expense" &&
-                              movementMethod === "Tarjeta de crédito")
-                          ? "La fecha es futura. Si guardas esta compra, aumentará tu deuda y consumirá presupuesto desde ahora."
-                          : "La fecha es futura. Si guardas este movimiento, afectará tu saldo desde ahora."}
+                      Se guardará como Pendiente. No afectará dinero, deuda ni
+                      presupuesto hasta que confirmes que se realizó. No se
+                      repetirá.
                     </p>
                   )}
                   {movementType === "transfer" ? (
@@ -2681,8 +2718,8 @@ export default function App() {
                   </Field>
                   {movementDate > today() && (
                     <p className="helper" role="status">
-                      La fecha es futura. Si guardas este abono, afectará tu
-                      saldo y reducirá la deuda desde ahora.
+                      Se guardará como Pendiente. No descontará dinero ni
+                      reducirá la deuda hasta que confirmes el pago.
                     </p>
                   )}
                   <p className="helper">
