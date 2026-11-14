@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { setBackupFile } from "./backup-utils";
@@ -93,6 +94,7 @@ test("JSON y modo offline conservan pendientes, cancelar no descuenta y confirma
   await expect(page.locator(".wallet-balances")).toContainText("$400.00");
   await page.reload();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await expect(
     page.locator(".movement-info").filter({ hasText: "Retiro futuro" }),
   ).toHaveCount(1);

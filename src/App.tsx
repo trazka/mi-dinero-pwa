@@ -304,6 +304,7 @@ export default function App() {
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewTab, setPreviewTab] = useState<Tab | null>(null);
+  const navigationTab = previewTab ?? tab;
   const { cancel: cancelPageSwipe, goTo: animateNavigation } = usePageSwipe({
     pageRef,
     previewFrameRef,
@@ -508,6 +509,7 @@ export default function App() {
     };
   }, []);
   const [typeFilter, setTypeFilter] = useState<MovementFilter>("all");
+  const [movementListVisible, setMovementListVisible] = useState(false);
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [category, setCategory] = useState(""),
@@ -527,6 +529,7 @@ export default function App() {
     setMerchant("");
   }
   function selectMovementType(type: MovementFilter) {
+    setMovementListVisible(true);
     setTypeFilter(type);
     setSearch("");
     setMethodFilter("");
@@ -535,6 +538,7 @@ export default function App() {
     setMerchant("");
   }
   function showMovements(type: MovementFilter) {
+    setMovementListVisible(true);
     clearFilters();
     setTypeFilter(type);
     navigate("Movimientos");
@@ -1349,7 +1353,7 @@ export default function App() {
         {tab === "Inicio" && !homeSummaryVisible && (
           <HomeLanding
             disabled={!loaded || busy}
-            onMovements={() => showMovements("all")}
+            onMovements={() => navigate("Movimientos")}
             onPayment={() => {
               setError("");
               setModal({ kind: "movement", initialType: "payment" });
@@ -1545,9 +1549,13 @@ export default function App() {
                   id={`movement-tab-${type}`}
                   type="button"
                   role="tab"
-                  aria-selected={typeFilter === type}
+                  aria-selected={movementListVisible && typeFilter === type}
                   aria-controls="movement-results"
-                  tabIndex={typeFilter === type ? 0 : -1}
+                  tabIndex={
+                    (movementListVisible ? typeFilter === type : index === 0)
+                      ? 0
+                      : -1
+                  }
                   onClick={() => selectMovementType(type)}
                   onKeyDown={(e) => {
                     let next = index;
@@ -1572,75 +1580,85 @@ export default function App() {
             <div
               id="movement-results"
               className="movement-results"
-              role="tabpanel"
-              aria-labelledby={`movement-tab-${typeFilter}`}
+              role={movementListVisible ? "tabpanel" : undefined}
+              aria-labelledby={
+                movementListVisible ? `movement-tab-${typeFilter}` : undefined
+              }
             >
-              <div className="panel-heading">
-                <h2>
-                  {filtered.length} {filteredLabel}
-                </h2>
-                <ExportButtons
-                  disabled={exporting || !filtered.length}
-                  onExport={(format) =>
-                    void exportReadable(
-                      movementDocument,
-                      exportNames[typeFilter],
-                      format,
-                    )
-                  }
-                />
-              </div>
-              {typeFilter === "all" && filtered.length > 0 && (
-                <div className="movement-totals">
-                  {reportColumns.map((column) => (
-                    <span
-                      key={column.key}
-                      className={
-                        column.key === "acquired" ? "total-wide" : undefined
+              {movementListVisible ? (
+                <>
+                  <div className="panel-heading">
+                    <h2>
+                      {filtered.length} {filteredLabel}
+                    </h2>
+                    <ExportButtons
+                      disabled={exporting || !filtered.length}
+                      onExport={(format) =>
+                        void exportReadable(
+                          movementDocument,
+                          exportNames[typeFilter],
+                          format,
+                        )
                       }
-                    >
-                      {column.key === "expense"
-                        ? "Gastos"
-                        : column.key === "acquired"
-                          ? "Compras TDC"
-                          : "Ingresos"}
-                      : <strong>{money(column.total)}</strong>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {typeFilter !== "all" &&
-                typeFilter !== "credit" &&
-                filtered.length > 0 && (
-                  <p className="filtered-total">
-                    {typeFilter === "transfer"
-                      ? "Total trasladado"
-                      : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
-                    : <strong>{money(filteredTotal)}</strong>
-                  </p>
-                )}
-              {tdcView && filtered.length > 0 && (
-                <div className="filtered-total movement-totals tdc-totals">
-                  {filteredTotal > 0 && (
-                    <span>
-                      Compras: <strong>{money(filteredTotal)}</strong>
-                    </span>
+                    />
+                  </div>
+                  {typeFilter === "all" && filtered.length > 0 && (
+                    <div className="movement-totals">
+                      {reportColumns.map((column) => (
+                        <span
+                          key={column.key}
+                          className={
+                            column.key === "acquired" ? "total-wide" : undefined
+                          }
+                        >
+                          {column.key === "expense"
+                            ? "Gastos"
+                            : column.key === "acquired"
+                              ? "Compras TDC"
+                              : "Ingresos"}
+                          : <strong>{money(column.total)}</strong>
+                        </span>
+                      ))}
+                    </div>
                   )}
-                  {filteredCardPayments > 0 && (
-                    <span>
-                      Abonos: <strong>{money(filteredCardPayments)}</strong>
-                    </span>
+                  {typeFilter !== "all" &&
+                    typeFilter !== "credit" &&
+                    filtered.length > 0 && (
+                      <p className="filtered-total">
+                        {typeFilter === "transfer"
+                          ? "Total trasladado"
+                          : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
+                        : <strong>{money(filteredTotal)}</strong>
+                      </p>
+                    )}
+                  {tdcView && filtered.length > 0 && (
+                    <div className="filtered-total movement-totals tdc-totals">
+                      {filteredTotal > 0 && (
+                        <span>
+                          Compras: <strong>{money(filteredTotal)}</strong>
+                        </span>
+                      )}
+                      {filteredCardPayments > 0 && (
+                        <span>
+                          Abonos: <strong>{money(filteredCardPayments)}</strong>
+                        </span>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-              {typeFilter === "transfer" && (
-                <p className="helper">
-                  Un retiro pasa dinero del banco al efectivo; un depósito hace
-                  lo contrario. No son ingresos ni gastos y no cambian tu
-                  disponible total.
+                  {typeFilter === "transfer" && (
+                    <p className="helper">
+                      Un retiro pasa dinero del banco al efectivo; un depósito
+                      hace lo contrario. No son ingresos ni gastos y no cambian
+                      tu disponible total.
+                    </p>
+                  )}
+                  {movementList(filtered)}
+                </>
+              ) : (
+                <p className="helper movement-selection-prompt">
+                  Elige una opción para ver tus movimientos.
                 </p>
               )}
-              {movementList(filtered)}
             </div>
             <RecurringPanel
               onEditing={setPlanningEditing}
@@ -2102,13 +2120,13 @@ export default function App() {
           {tabs.map((t) => (
             <button
               key={t.name}
-              className={tab === t.name ? "active" : ""}
-              aria-current={tab === t.name ? "page" : undefined}
+              className={navigationTab === t.name ? "active" : ""}
+              aria-current={navigationTab === t.name ? "page" : undefined}
               onClick={() => navigate(t.name)}
             >
               <t.icon size={20} />
               <span>{t.name}</span>
-              {tab === t.name && <i />}
+              {navigationTab === t.name && <i />}
             </button>
           ))}
         </nav>
@@ -2225,8 +2243,8 @@ export default function App() {
       <nav className="mobile-nav" aria-label="Navegación principal">
         {tabs.map((t) => (
           <button
-            className={tab === t.name ? "active" : ""}
-            aria-current={tab === t.name ? "page" : undefined}
+            className={navigationTab === t.name ? "active" : ""}
+            aria-current={navigationTab === t.name ? "page" : undefined}
             key={t.name}
             onClick={() => navigate(t.name)}
           >

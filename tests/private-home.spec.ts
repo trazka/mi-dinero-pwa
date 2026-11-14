@@ -119,7 +119,7 @@ test("accesos de Inicio abren captura, abonos, movimientos y apartados ocultos",
     .click();
   await expect(
     page.getByRole("tab", { name: "Todos", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+  ).toHaveAttribute("aria-selected", "false");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page
     .getByRole("button", { name: "Mis apartados", exact: true })

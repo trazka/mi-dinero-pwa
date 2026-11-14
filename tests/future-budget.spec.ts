@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { chooseDate } from "./date-utils";
 import { setBackupFile } from "./backup-utils";
@@ -63,6 +64,7 @@ test("fecha futura queda pendiente y solo descuenta al confirmar aunque abra dí
     .getByRole("button", { name: "Confirmar realizado Gasto futuro" })
     .click();
   await expect(pending).toHaveCount(0);
+  await selectAllMovements(page);
   await expect(
     page.locator(".movement-info").filter({ hasText: "Gasto futuro" }),
   ).toContainText("22 nov");

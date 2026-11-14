@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { setBackupFile } from "./backup-utils";
 import { test, expect } from "@playwright/test";
@@ -20,6 +21,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.locator(".debt-number")).toHaveText("$0.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
@@ -72,6 +74,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.locator(".page h1")).toHaveText("Deudas");
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await expect(page.locator(".movement")).toHaveCount(2);
   await expect(
     page.locator(".movement-info > strong").filter({ hasText: "Abono ·" }),
@@ -100,6 +103,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Eliminar Compra ficticia" }).click();
   await expect(page.locator(".movement")).toHaveCount(0);

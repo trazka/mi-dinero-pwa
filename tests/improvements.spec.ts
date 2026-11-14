@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { setBackupFile } from "./backup-utils";
@@ -77,6 +78,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await page.locator("summary").click();
   await expect(page.locator(".payment")).toHaveCount(1);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await openAdvancedFilters(page);
   await page.getByLabel("Buscar movimientos").fill("$40.00");
   await page.getByLabel("Filtrar método").selectOption("Transferencia");
@@ -102,6 +104,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await seed(page, base);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Crear recurrente", exact: true })
     .click();
@@ -182,6 +185,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .locator(".page .recurring-item summary")
     .filter({ hasText: "Servicio de prueba" })
@@ -201,6 +205,7 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await seed(page, base);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
@@ -253,6 +258,7 @@ test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", asy
   await seed(page, { ...base, debts: [...base.debts, car] });
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
@@ -314,6 +320,7 @@ test("sin tarjetas muestra instrucciones aunque exista una deuda de coche", asyn
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Movimientos", exact: true })
     .click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();

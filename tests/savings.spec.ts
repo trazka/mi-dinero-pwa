@@ -1,3 +1,4 @@
+import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { enableSavingsPrivacy } from "./savings-privacy-utils";
 import { test, expect } from "@playwright/test";
@@ -164,6 +165,7 @@ test("Nuevo movimiento ofrece Apartado, conserva la fecha y no crea gastos", asy
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await selectAllMovements(page);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
     .click();
