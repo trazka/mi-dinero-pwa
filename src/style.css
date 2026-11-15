@@ -2987,44 +2987,55 @@ li {
   color: inherit;
 }
 
-@media (max-width: 600px) {
-  .report-table {
-    overflow: visible;
-  }
-  .report-table table {
-    white-space: normal;
-  }
-  .report-table :is(thead, tbody) {
-    display: block;
-  }
-  .report-table tr {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-bottom: 1px solid var(--native-line, #e2e8df);
-  }
-  .report-table :is(td, th) {
-    padding: 12px 3px;
-    border: 0;
-    overflow-wrap: anywhere;
-  }
-  .report-table thead th:first-child {
-    display: none;
-  }
-  .report-table tbody td:first-child {
-    grid-column: 1 / -1;
-    padding-bottom: 0;
-    font-weight: 600;
-  }
+.report-periods {
+  margin-top: 16px;
 }
-@media (max-width: 600px) {
-  .report-table[data-columns="1"] tr {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .report-table[data-columns="2"] tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .report-table[data-columns="4"] tr {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    font-size: 10px;
-  }
+.report-period {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--native-line, #e2e8df);
+}
+.report-period h3 {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.report-period .report-period-values {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+.report-period .report-period-values > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  grid-column: auto;
+  text-align: left;
+}
+.report-period-values :is(dt, dd) {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.report-period-values dd {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-period-values .report-available {
+  font-weight: 700;
+  border-top: 1px solid var(--native-line, #e2e8df);
+  padding-top: 4px;
+}
+.recurring-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 4px;
+}
+.recurring-meta p {
+  margin: 0;
+  line-height: 1.4;
 }

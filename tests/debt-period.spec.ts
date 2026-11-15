@@ -122,19 +122,20 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
   expect(csv).not.toContain("Compra anterior");
   expect(csv).toContain("Pago tarjeta");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
-  await expect(page.locator("thead th")).toHaveText([
-    "Periodo",
+  await expect(page.locator(".report-period dt")).toHaveText([
     "Deuda adquirida",
   ]);
-  await expect(page.locator("tbody td").nth(1)).toHaveText("$200.00");
+  await expect(page.locator(".report-period dd").nth(0)).toHaveText("$200.00");
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await page
     .getByLabel("Tipo de movimiento", { exact: true })
     .selectOption("all");
-  await expect(page.locator("tbody td").nth(1)).toHaveText("$1,000.00");
-  await expect(page.locator("tbody td").nth(2)).toHaveText("$70.00");
-  await expect(page.locator("tbody td").nth(3)).toHaveText("$200.00");
-  await expect(page.locator("tbody td").nth(4)).toHaveText("$930.00");
+  await expect(page.locator(".report-period dd").nth(0)).toHaveText(
+    "$1,000.00",
+  );
+  await expect(page.locator(".report-period dd").nth(1)).toHaveText("$70.00");
+  await expect(page.locator(".report-period dd").nth(2)).toHaveText("$200.00");
+  await expect(page.locator(".report-period dd").nth(3)).toHaveText("$930.00");
   await expect(page.locator(".filters > :last-child")).toHaveClass(
     "filter-actions",
   );

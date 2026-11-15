@@ -355,22 +355,24 @@ export function RecurringPanel({
             >
               {r.merchant}
             </summary>
-            <p>
-              {money(r.amount)} ·{" "}
-              {r.frequency === "monthly"
-                ? "Mensual"
-                : r.frequency === "weekly"
-                  ? "Semanal"
-                  : "Anual"}{" "}
-              · <time dateTime={r.nextDate}>{exportDate(r.nextDate)}</time>
-            </p>
-            <p>
-              {!r.active
-                ? "Pausado"
-                : r.nextDate <= today()
-                  ? "Pendiente de confirmar"
-                  : "Próximo vencimiento"}
-            </p>
+            <div className="recurring-meta">
+              <p>
+                {money(r.amount)} ·{" "}
+                {r.frequency === "monthly"
+                  ? "Mensual"
+                  : r.frequency === "weekly"
+                    ? "Semanal"
+                    : "Anual"}
+              </p>
+              <p>
+                {!r.active
+                  ? "Pausado · Fecha: "
+                  : r.nextDate <= today()
+                    ? "Pendiente: "
+                    : "Próximo pago: "}
+                <time dateTime={r.nextDate}>{exportDate(r.nextDate)}</time>
+              </p>
+            </div>
             <div className="planning-actions recurring-actions">
               {r.active && r.nextDate <= today() && (
                 <button

@@ -143,5 +143,5 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   ).toHaveValue("all");
   await expect(page.locator(".report-totals")).toContainText("$7,100.00");
   await expect(page.locator(".report-totals")).toContainText("$400.00");
-  await expect(page.locator("tbody")).not.toContainText("$1,200.00");
+  await expect(page.locator(".report-periods")).not.toContainText("$1,200.00");
 });

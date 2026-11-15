@@ -101,8 +101,8 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   await expect(page.locator(".page h1")).toHaveText("Reportes");
   await page.getByLabel("Agrupar por").focus();
   await page.getByLabel("Agrupar por").selectOption("daily");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody")).toContainText("$200.00");
+  await expect(page.locator(".report-period")).toHaveCount(1);
+  await expect(page.locator(".report-periods")).toContainText("$200.00");
   await page.getByRole("button", { name: "Listo", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Navegación principal" })
@@ -269,25 +269,25 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator(".report-period")).toHaveCount(2);
   await page.getByLabel("Agrupar por").selectOption("weekly");
-  await expect(page.locator("tbody tr")).toHaveCount(2);
-  await expect(page.locator("tbody tr").last()).toContainText("$80.00");
+  await expect(page.locator(".report-period")).toHaveCount(2);
+  await expect(page.locator(".report-period").last()).toContainText("$80.00");
   await page.getByLabel("Agrupar por").selectOption("daily");
-  await expect(page.locator("tbody tr")).toHaveCount(3);
+  await expect(page.locator(".report-period")).toHaveCount(3);
   await chooseDate(page, "Desde", "2026-11-01");
   await chooseDate(page, "Hasta", "2026-11-02");
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator(".report-period")).toHaveCount(2);
   await openAdvancedFilters(page);
   await page
     .getByLabel("Categoría", { exact: true })
     .selectOption("Alimentación");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody")).toContainText("$20.00");
+  await expect(page.locator(".report-period")).toHaveCount(1);
+  await expect(page.locator(".report-periods")).toContainText("$20.00");
   await page
     .getByLabel("Establecimiento", { exact: true })
     .fill("sin coincidencia");
-  await expect(page.locator("tbody tr")).toHaveCount(0);
+  await expect(page.locator(".report-period")).toHaveCount(0);
 });
 
 test("manifest, iconos y service worker respetan la ruta de GitHub Pages", async ({

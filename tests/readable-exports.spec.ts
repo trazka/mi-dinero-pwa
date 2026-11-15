@@ -145,8 +145,8 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(report.getWorksheet("Datos")!.getRow(1).values).toEqual([
     ,
     "Periodo",
-    "Egresos",
-    "Libre",
+    "Utilizado",
+    "Disponible",
   ]);
   expect(report.getWorksheet("Datos")!.getCell("B2").value).toBe(35.5);
   expect(report.getWorksheet("Datos")!.getCell("C2").value).toBe(-35.5);
