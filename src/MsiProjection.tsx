@@ -15,10 +15,7 @@ export default function MsiProjection({
   return (
     <details className="msi-projection">
       <summary>Compras a MSI ({purchases.length})</summary>
-      <p className="helper">
-        Calendario estimado de mensualidades, sin compras normales ni intereses.
-        Los abonos generales no se asignan a cada plan.
-      </p>
+      <p className="helper">Estimación. Los abonos no se asignan por plan.</p>
       {purchases.map((m) => (
         <details key={m.id}>
           <summary>

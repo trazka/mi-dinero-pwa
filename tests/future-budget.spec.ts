@@ -31,15 +31,19 @@ test("fecha futura queda pendiente y solo descuenta al confirmar aunque abra dí
   await expect(dialog.getByRole("status")).toHaveCount(0);
   await chooseDate(page, "Fecha", "2026-11-19");
   await expect(dialog.getByRole("status")).toContainText(
-    "Se guardará como Pendiente",
+    "Quedará pendiente hasta que confirmes.",
   );
   await chooseDate(page, "Fecha", "2026-11-14");
   await expect(dialog.getByRole("status")).toHaveCount(0);
   await chooseDate(page, "Fecha", "2026-11-19");
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("credit");
-  await expect(dialog.getByRole("status")).toContainText("No afectará dinero");
+  await expect(dialog.getByRole("status")).toContainText(
+    "Quedará pendiente hasta que confirmes.",
+  );
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("transfer");
-  await expect(dialog.getByRole("status")).toContainText("No afectará dinero");
+  await expect(dialog.getByRole("status")).toContainText(
+    "Quedará pendiente hasta que confirmes.",
+  );
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("expense");
   await dialog.getByLabel("Establecimiento o concepto").fill("Gasto futuro");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
@@ -144,7 +148,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
   await page.getByLabel("Importe del abono (MXN)").fill("800");
   await chooseDate(page, "Fecha del abono", "2026-11-19");
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
-    "No descontará dinero",
+    "Quedará pendiente hasta que confirmes.",
   );
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

@@ -88,8 +88,7 @@ export default function MsiFields({
           )}
           {!debt?.cutDay && (
             <p className="helper">
-              Indica el primer corte. Configura corte y límite de la tarjeta
-              para estimar las fechas de pago.
+              Configura corte y límite para estimar los pagos.
             </p>
           )}
         </>

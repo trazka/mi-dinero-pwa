@@ -62,7 +62,6 @@ import {
   Trash2,
   Wallet,
   ChevronRight,
-  Leaf,
   PiggyBank,
   Eye,
   EyeOff,
@@ -1353,21 +1352,6 @@ export default function App() {
               </h1>
               {tab === "Apartados" && savingsPrivacy}
             </div>
-            <p className="section-description">
-              {tab === "Inicio"
-                ? homeSummaryVisible
-                  ? "Tu dinero, al día."
-                  : "Elige una acción para continuar."
-                : (
-                    {
-                      Movimientos: "Cada ingreso y gasto, en un solo lugar.",
-                      Deudas: "Un paso más cerca de estar al día.",
-                      Reportes: "Entiende a dónde va tu dinero.",
-                      Apartados: "Reserva dinero para tus metas.",
-                      Respaldos: "Cuida lo que llevas registrado.",
-                    } as Record<string, string>
-                  )[tab]}
-            </p>
           </div>
         </div>
         {duePending > 0 && tab !== "Movimientos" && (
@@ -1537,7 +1521,6 @@ export default function App() {
                 <div className="panel-heading">
                   <div>
                     <h2>Últimos movimientos</h2>
-                    <p>Los pequeños detalles de tu día a día</p>
                   </div>
                   <button
                     className="text-button"
@@ -1560,23 +1543,13 @@ export default function App() {
                     liquidar
                   </p>
                   <div className="divider" />
-                  <p>Organizarte hoy es darle tranquilidad a tu mañana.</p>
+
                   <button
                     className="text-button"
                     onClick={() => navigate("Deudas")}
                   >
                     Administrar deudas <ChevronRight size={16} />
                   </button>
-                </div>
-                <div className="tip">
-                  <Leaf size={23} />
-                  <div>
-                    <strong>A tu ritmo, pero hacia adelante</strong>
-                    <p>
-                      El hábito de registrar es el primer paso para tomar
-                      mejores decisiones.
-                    </p>
-                  </div>
                 </div>
               </div>
             </section>
@@ -1751,13 +1724,7 @@ export default function App() {
                       )}
                     </div>
                   )}
-                  {typeFilter === "transfer" && (
-                    <p className="helper">
-                      Un retiro pasa dinero del banco al efectivo; un depósito
-                      hace lo contrario. No son ingresos ni gastos y no cambian
-                      tu disponible total.
-                    </p>
-                  )}
+
                   {movementList(filtered)}
                 </>
               ) : (
@@ -1782,11 +1749,7 @@ export default function App() {
               <span>Saldo pendiente total</span>
               <strong>{money(pending)}</strong>
             </div>
-            <p className="helper">
-              Las compras con tarjeta aumentan la deuda y consumen presupuesto.
-              El gasto y la reducción del saldo disponible se registran al
-              abonar. No registres el abono otra vez como gasto.
-            </p>
+
             <div className="debt-grid">
               {data.debts.map((d) => {
                 const cycle = cardCycle(d, data);
@@ -1867,9 +1830,7 @@ export default function App() {
                           Pendiente al corte: {money(cycle!.amount)}
                         </strong>
                         <p className="helper">
-                          Estimación con los movimientos registrados, sin
-                          intereses ni comisiones bancarias. Los días 29–31 se
-                          ajustan al último día del mes.
+                          Estimación sin intereses ni comisiones.
                         </p>
                       </div>
                     )}
@@ -2144,7 +2105,7 @@ export default function App() {
                 <Wallet size={28} />
               </span>
               <h2>Mi dinero, en tu iPhone</h2>
-              <p>Ten tus finanzas a un toque de distancia.</p>
+
               <ol>
                 <li>
                   Abre la aplicación en <strong>Safari</strong>.
@@ -2161,10 +2122,7 @@ export default function App() {
                   internet.
                 </li>
               </ol>
-              <p className="helper">
-                La instalación requiere HTTPS (o localhost durante desarrollo).
-                Después de la primera carga completa, funciona sin conexión.
-              </p>
+
               <div className="local-note">
                 <ShieldCheck size={20} />
                 <p>
@@ -2218,9 +2176,6 @@ export default function App() {
           <span>
             <b /> Almacenamiento local
           </span>
-        </div>
-        <div className="sidebar-bottom">
-          Hecho para tu tranquilidad <Leaf size={14} />
         </div>
       </aside>
       <main>
@@ -2427,9 +2382,7 @@ export default function App() {
                   </div>
                   {movementDate > today() && (
                     <p className="helper" role="status">
-                      Se guardará como Pendiente. No afectará dinero, deuda ni
-                      presupuesto hasta que confirmes que se realizó. No se
-                      repetirá.
+                      Quedará pendiente hasta que confirmes.
                     </p>
                   )}
                   {movementType === "transfer" ? (
@@ -2461,7 +2414,6 @@ export default function App() {
                             ? transferSourceWallets.bank
                             : transferSourceWallets.cash,
                         )}
-                        . El total no cambia; solo cambia dónde está tu dinero.
                       </p>
                       <Field label="Concepto del traspaso (opcional)">
                         <input
@@ -2530,10 +2482,7 @@ export default function App() {
                               ))}
                           </select>
                         </Field>
-                        <p className="helper">
-                          El dinero sigue en tu cuenta; solo lo reservas para
-                          esta meta.
-                        </p>
+
                         {!data.savings?.length && (
                           <>
                             <p className="helper">
@@ -2571,11 +2520,9 @@ export default function App() {
                         </select>
                       </Field>
                       <p className="helper">
-                        El abono se registra como gasto mediante transferencia y
-                        reduce la deuda en una sola operación. No lo registres
-                        por separado.
+                        Reduce la deuda y el disponible.
                         {!data.debts.some((d) => balance(d) > 0) &&
-                          " No hay deudas pendientes; registra primero una deuda."}
+                          " No hay deudas pendientes."}
                       </p>
                     </>
                   ) : (
@@ -2694,14 +2641,11 @@ export default function App() {
                             initialDate={modal.movement?.date}
                             initialDebtId={modal.movement?.creditDebtId}
                           />
-                          <p className="helper">
-                            La compra aumenta la deuda y consume presupuesto en
-                            su categoría; no reduce el saldo disponible. El pago
-                            se registra al abonar a la tarjeta. Los abonos
-                            anteriores se conservan tal como fueron registrados.
-                            {!creditDebts.length &&
-                              " Primero registra tu tarjeta en Deudas → Nueva deuda (tipo Tarjeta de crédito); puedes iniciar con saldo cero."}
-                          </p>
+                          {!creditDebts.length && (
+                            <p className="helper">
+                              Primero registra tu tarjeta en Deudas.
+                            </p>
+                          )}
                         </>
                       )}
                       <Field label="Notas (opcional)">
@@ -2806,16 +2750,17 @@ export default function App() {
                   </Field>
                   {modal.debt && (
                     <p className="helper">
-                      Los importes de apertura no se editan para conservar el
-                      historial. El saldo cambia con compras y abonos.
+                      Los importes de apertura no se editan.
                     </p>
                   )}
-                  <p className="helper">
-                    El saldo actual permite registrar deudas que ya has empezado
-                    a pagar. No se generarán gastos por pagos anteriores.{" "}
-                    {debtKind === "credit" &&
-                      "Si tu tarjeta no tiene adeudo, escribe 0 en ambos importes. Las compras nuevas se agregarán automáticamente al saldo al vincularlas."}
-                  </p>
+                  {!modal.debt && (
+                    <p className="helper">
+                      Saldo actual: lo que debes hoy. Los pagos anteriores no se
+                      registran como gastos.
+                      {debtKind === "credit" &&
+                        " Sin adeudo, usa 0 en ambos importes."}
+                    </p>
+                  )}
                 </>
               )}
               {modal.kind === "payment" && (
@@ -2846,17 +2791,10 @@ export default function App() {
                   </Field>
                   {movementDate > today() && (
                     <p className="helper" role="status">
-                      Se guardará como Pendiente. No descontará dinero ni
-                      reducirá la deuda hasta que confirmes el pago.
+                      Quedará pendiente hasta que confirmes.
                     </p>
                   )}
-                  <p className="helper">
-                    {modal.debt.kind === "credit"
-                      ? "Este abono reduce la deuda y se registra como gasto en la fecha del pago. Las compras vinculadas no cuentan como gasto."
-                      : "Se registrará una sola vez como gasto en la categoría Pago de deuda."}{" "}
-                    Se registra mediante transferencia. Para corregirlo,
-                    revierte el abono y regístralo de nuevo.
-                  </p>
+                  <p className="helper">Reduce la deuda y el disponible.</p>
                 </>
               )}
               {error && (
