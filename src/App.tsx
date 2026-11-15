@@ -1109,7 +1109,7 @@ export default function App() {
       columns: [
         "Periodo",
         ...reportColumns.map((c) => c.label),
-        ...(showBalance ? ["Balance"] : []),
+        ...(showBalance ? ["Resultado del periodo"] : []),
       ],
       rows: [...groupTotals]
         .sort(([a], [b]) => b.localeCompare(a))
@@ -1942,7 +1942,7 @@ export default function App() {
                       {reportColumns.map((column) => (
                         <th key={column.key}>{column.label}</th>
                       ))}
-                      {showBalance && <th>Balance</th>}
+                      {showBalance && <th>Resultado del periodo</th>}
                     </tr>
                   </thead>
                   <tbody>
