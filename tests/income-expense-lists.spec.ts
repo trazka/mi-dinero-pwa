@@ -115,7 +115,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await expect(page.locator("thead th")).toHaveText([
     "Periodo",
     "Ingresos",
-    "Resultado del periodo",
+    "Libre",
   ]);
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
@@ -150,7 +150,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   await expect(page.locator("thead th")).toHaveText([
     "Periodo",
     "Egresos",
-    "Resultado del periodo",
+    "Libre",
   ]);
   await expect(page.locator("tbody td").nth(1)).toHaveText("$70.00");
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
@@ -182,7 +182,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
     "Ingresos",
     "Egresos",
     "Deuda adquirida",
-    "Resultado del periodo",
+    "Libre",
   ]);
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(3);
 });

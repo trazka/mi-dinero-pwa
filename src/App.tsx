@@ -1,3 +1,4 @@
+import { groupReport, reportFree } from "./reports";
 import { usePageSwipe } from "./usePageSwipe";
 import { flushSync } from "react-dom";
 import { recordMovement, recordPayment, recordSaving } from "./pending";
@@ -858,9 +859,19 @@ export default function App() {
         },
       ] as const
     ).filter((column) => column.total > 0);
-    const showBalance = reportColumns.some(
-      (column) => column.key === "income" || column.key === "expense",
-    );
+    const hasSavingActivity =
+      typeFilter !== "credit" &&
+      typeFilter !== "transfer" &&
+      (data.savings ?? []).some((s) =>
+        s.entries.some(
+          (e) => (!from || e.date >= from) && (!to || e.date <= to),
+        ),
+      );
+    const showBalance =
+      hasSavingActivity ||
+      reportColumns.some(
+        (column) => column.key === "income" || column.key === "expense",
+      );
     const recent = newestFirst.slice(0, 5);
     const acquired = data.movements.reduce(
       (total, m) => total + acquiredDebtAmount(m),
@@ -1030,29 +1041,15 @@ export default function App() {
         </div>
       );
     }
-    const groupTotals = new Map<
-      string,
-      { income: number; expense: number; acquired: number }
-    >();
-    for (const m of filtered) {
-      if (m.type === "transfer") continue;
-      let key = m.date;
-      if (period === "monthly") key = m.date.slice(0, 7);
-      if (period === "weekly") {
-        const d = new Date(m.date + "T12:00:00Z");
-        d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-        key = d.toISOString().slice(0, 10);
-      }
-      const group = groupTotals.get(key) ?? {
-        income: 0,
-        expense: 0,
-        acquired: 0,
-      };
-      group.acquired += acquiredDebtAmount(m);
-      group[m.type === "income" ? "income" : "expense"] +=
-        m.type === "income" ? m.amount : expenseAmount(m);
-      groupTotals.set(key, group);
-    }
+    const groupTotals = groupReport(
+      filtered,
+      typeFilter === "credit" || typeFilter === "transfer"
+        ? []
+        : (data.savings ?? []),
+      period,
+      from,
+      to,
+    );
     const exportNames = {
       all: "movimientos",
       income: "ingresos",
@@ -1109,14 +1106,14 @@ export default function App() {
       columns: [
         "Periodo",
         ...reportColumns.map((c) => c.label),
-        ...(showBalance ? ["Resultado del periodo"] : []),
+        ...(showBalance ? ["Libre"] : []),
       ],
       rows: [...groupTotals]
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([key, g]) => [
           periodLabel(key),
           ...reportColumns.map((c) => g[c.key]),
-          ...(showBalance ? [g.income - g.expense] : []),
+          ...(showBalance ? [reportFree(g)] : []),
         ]),
       moneyColumns: reportColumns
         .map((_, i) => i + 1)
@@ -1934,7 +1931,10 @@ export default function App() {
               </div>
             )}
             {groupTotals.size ? (
-              <div className="table-scroll">
+              <div
+                className="table-scroll report-table"
+                data-columns={reportColumns.length + (showBalance ? 1 : 0)}
+              >
                 <table>
                   <thead>
                     <tr>
@@ -1942,7 +1942,7 @@ export default function App() {
                       {reportColumns.map((column) => (
                         <th key={column.key}>{column.label}</th>
                       ))}
-                      {showBalance && <th>Resultado del periodo</th>}
+                      {showBalance && <th>Libre</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1971,9 +1971,7 @@ export default function App() {
                               {money(g[column.key])}
                             </td>
                           ))}
-                          {showBalance && (
-                            <td>{money(g.income - g.expense)}</td>
-                          )}
+                          {showBalance && <td>{money(reportFree(g))}</td>}
                         </tr>
                       ))}
                   </tbody>
