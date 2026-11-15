@@ -146,7 +146,7 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
     ,
     "Periodo",
     "Egresos",
-    "Balance",
+    "Resultado del periodo",
   ]);
   expect(report.getWorksheet("Datos")!.getCell("B2").value).toBe(35.5);
   expect(report.getWorksheet("Datos")!.getCell("C2").value).toBe(-35.5);
