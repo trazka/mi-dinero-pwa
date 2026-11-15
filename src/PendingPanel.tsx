@@ -26,10 +26,7 @@ export function PendingPanel({
       aria-label="Movimientos pendientes"
     >
       <h2>Pendientes</h2>
-      <p className="helper">
-        Son recordatorios de una sola vez. No afectan dinero, deuda ni
-        presupuesto hasta confirmar. No se registran automáticamente.
-      </p>
+      <p className="helper">Se registran una sola vez, al confirmar.</p>
       {pending.map((p) => (
         <article className="planning-item" key={p.id}>
           <div className="planning-heading">
@@ -100,8 +97,7 @@ export function PendingPanel({
             }}
           />
           <p className="helper">
-            Cambiar fecha prevista. Al confirmar se registrará con fecha de hoy
-            ({exportDate(currentDay)}).
+            Al confirmar se usará la fecha de hoy ({exportDate(currentDay)}).
           </p>
           <div className="planning-actions">
             <button

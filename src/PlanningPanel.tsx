@@ -71,11 +71,7 @@ export function BudgetPanel({
           </button>
         </div>
       </div>
-      <p className="helper">
-        Compras y gastos del mes completo, independientemente de los filtros.
-        Las compras con TDC consumen su categoría al registrarlas; los abonos a
-        la tarjeta no vuelven a consumir presupuesto.
-      </p>
+      <p className="helper">Mes completo; no depende de los filtros.</p>
       {budgets.map((b) => {
         const spent = budgetSpent(data, b),
           left = Math.round((b.limit - spent) * 100) / 100;
@@ -338,10 +334,7 @@ export function RecurringPanel({
           Crear recurrente
         </button>
       </div>
-      <p className="helper">
-        No se registran solos. Confirma cada vencimiento; una compra con TDC
-        aumentará su deuda y consumirá presupuesto.
-      </p>
+      <p className="helper">Confirma cada pago para registrarlo.</p>
       {draft === null && form}
       {(data.recurrents ?? []).map((r) => (
         <article className="planning-item recurring-item" key={r.id}>

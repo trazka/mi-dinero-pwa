@@ -88,10 +88,7 @@ export default function SavingsPanel({
   return (
     <section className="panel full-panel savings-panel">
       <h2>Tu ahorro, por objetivos</h2>
-      <p>
-        Reserva dinero para una meta. Aportar lo aparta; retirar lo deja libre.
-        Tu dinero sigue en tus cuentas.
-      </p>
+
       {showDetails && (
         <div className="report-totals">
           <div>
