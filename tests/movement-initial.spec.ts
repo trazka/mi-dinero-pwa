@@ -215,3 +215,42 @@ test("la vista previa al deslizar tampoco muestra movimientos antes de elegir", 
   ).toHaveCount(0);
   await expect(content.locator(".movement")).toHaveCount(0);
 });
+
+test("búsqueda visible filtra la opción elegida, totales y exportación", async ({
+  page,
+}) => {
+  await seed(page);
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  const search = page.getByRole("searchbox", { name: "Buscar movimientos" });
+  await expect(search).toHaveCount(0);
+  await page.getByRole("tab", { name: "Todos", exact: true }).click();
+  const results = page.locator(".page .movement-results");
+  await search.fill("ingreso PRIVADO");
+  await expect(results.locator(".movement-list > article")).toHaveCount(1);
+  await expect(results).toContainText("Ingreso privado");
+  await expect(results.locator(".movement-totals")).toContainText("$1,000.00");
+  await expect(results.locator(".movement-totals")).not.toContainText(
+    "Gastos:",
+  );
+  const download = page.waitForEvent("download");
+  await results.getByRole("button", { name: /Excel/ }).click();
+  const { exportText } = await import("./export-utils");
+  const exported = await exportText(await download);
+  expect(exported).toContain("Ingreso privado");
+  expect(exported).not.toContain("Gasto privado");
+  await page.getByRole("button", { name: "Borrar búsqueda" }).click();
+  await expect(search).toHaveValue("");
+  await expect(results.locator(".movement-list > article")).toHaveCount(2);
+  await page.getByRole("tab", { name: "Gastos", exact: true }).click();
+  await search.fill("Ingreso");
+  await expect(results.locator(".movement-list > article")).toHaveCount(0);
+  await expect(results.getByRole("button", { name: /Excel/ })).toBeDisabled();
+  await search.fill("Gasto");
+  await expect(results.locator(".movement-list > article")).toHaveCount(1);
+  await expect(results).toContainText("$50.00");
+  await page
+    .getByRole("button", { name: "Limpiar filtros", exact: true })
+    .click();
+  await expect(search).toHaveValue("");
+});
