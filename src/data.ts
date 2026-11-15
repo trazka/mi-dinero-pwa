@@ -1,3 +1,4 @@
+import { validMsi, type Msi } from "./installments";
 import { openDB } from "idb";
 export type Movement = {
   id: string;
@@ -11,6 +12,7 @@ export type Movement = {
   transferDirection?: "bank-to-cash" | "cash-to-bank";
   paymentId?: string;
   creditDebtId?: string;
+  msi?: Msi;
   creditPaymentDebtId?: string;
   recurringId?: string;
   recurringDate?: string;
@@ -266,6 +268,7 @@ export function saveMovement(data: Data, movement: Movement): Data {
   if (old?.paymentId || movement.paymentId || movement.creditPaymentDebtId)
     throw Error("Los abonos se corrigen desde su deuda.");
   if (
+    !validMsi(movement) ||
     !cents(movement.amount) ||
     !validDate(movement.date) ||
     !["income", "expense", "transfer"].includes(movement.type)
@@ -361,6 +364,7 @@ export function validPending(p: PendingMovement) {
     str(p.id) &&
     ["income", "expense", "transfer", "payment", "saving"].includes(p.type) &&
     validDate(p.date) &&
+    validMsi(p) &&
     cents(p.amount) &&
     [p.merchant, p.category, p.method, p.notes].every(str) &&
     !!p.merchant.trim() &&
@@ -407,6 +411,7 @@ export function validateBackup(input: unknown): Data {
       !m ||
       !["income", "expense", "transfer"].includes(m.type) ||
       !validTransfer(m) ||
+      !validMsi(m) ||
       !validDate(m.date) ||
       !cents(m.amount) ||
       ![m.merchant, m.category, m.method, m.notes].every(str)

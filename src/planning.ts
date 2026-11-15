@@ -1,4 +1,9 @@
 import {
+  billableAtCut,
+  installmentSchedule,
+  suggestedCut,
+} from "./installments";
+import {
   balance,
   cents,
   saveMovement,
@@ -75,23 +80,24 @@ export function cardCycle(debt: Debt, data: Data, date = today()) {
       debt.paymentDay,
     );
   }
-  const amount = Math.max(
-    0,
-    (Math.round(debt.initialBalance * 100) +
-      (debt.charges ?? []).reduce(
-        (sum, c) =>
-          sum +
-          ((data.movements.find((m) => m.id === c.movementId)?.date ??
-            "9999-12-31") <= cut
-            ? Math.round(c.amount * 100)
-            : 0),
-        0,
-      ) -
-      debt.payments
-        .filter((p) => p.date <= date)
-        .reduce((sum, p) => sum + Math.round(p.amount * 100), 0)) /
-      100,
-  );
+  const purchases = (debt.charges ?? [])
+    .map((c) => data.movements.find((m) => m.id === c.movementId))
+    .filter((m): m is Movement => !!m);
+  const paid = debt.payments
+    .filter((p) => p.date <= date)
+    .reduce((sum, p) => sum + Math.round(p.amount * 100), 0);
+  const outstandingAtCut = (cut: string) =>
+    Math.max(
+      0,
+      (Math.round(debt.initialBalance * 100) +
+        purchases.reduce(
+          (sum, m) => sum + Math.round(billableAtCut(m, cut, debt) * 100),
+          0,
+        ) -
+        paid) /
+        100,
+    );
+  const amount = outstandingAtCut(cut);
   const nextMonth = shiftMonth(cut.slice(0, 7), 1);
   const nextCut = monthDay(
     Number(nextMonth.slice(0, 4)),
@@ -110,6 +116,35 @@ export function cardCycle(debt: Debt, data: Data, date = today()) {
       Number(monthAfter.slice(5)) - 1,
       debt.paymentDay,
     );
+  }
+  if (amount === 0 && balance(debt) > 0) {
+    const future = [
+      ...new Set(
+        purchases.flatMap((m) =>
+          m.msi
+            ? installmentSchedule(m, debt).map((p) => p.cut)
+            : [suggestedCut(m.date, debt)],
+        ),
+      ),
+    ]
+      .filter((c) => c > cut)
+      .sort()
+      .find((c) => outstandingAtCut(c) > 0);
+    if (future) {
+      nextDue = monthDay(
+        Number(future.slice(0, 4)),
+        Number(future.slice(5, 7)) - 1,
+        debt.paymentDay,
+      );
+      if (nextDue <= future) {
+        const after = shiftMonth(future.slice(0, 7), 1);
+        nextDue = monthDay(
+          Number(after.slice(0, 4)),
+          Number(after.slice(5)) - 1,
+          debt.paymentDay,
+        );
+      }
+    }
   }
   return { cut, due, amount: Math.min(balance(debt), amount), nextDue };
 }

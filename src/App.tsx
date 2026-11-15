@@ -1,3 +1,5 @@
+import MsiFields from "./MsiFields";
+import MsiProjection from "./MsiProjection";
 import {
   groupReport,
   reportFree,
@@ -272,6 +274,8 @@ export default function App() {
   );
   const [movementMethod, setMovementMethod] = useState("Efectivo");
   const [movementDate, setMovementDate] = useState(today());
+  const [movementAmount, setMovementAmount] = useState(0);
+  const [creditCardId, setCreditCardId] = useState("");
   const [currentDay, setCurrentDay] = useState(today());
   useEffect(() => {
     const refresh = () => setCurrentDay(today());
@@ -293,6 +297,15 @@ export default function App() {
   useEffect(() => {
     if (modal?.kind === "movement") {
       setMovementDate(modal.movement?.date ?? today());
+      setMovementAmount(modal.movement?.amount ?? 0);
+      setCreditCardId(
+        modal.movement?.creditDebtId ??
+          (modal.movement?.method === "Tarjeta de crédito"
+            ? ""
+            : creditDebts.length === 1
+              ? creditDebts[0].id
+              : ""),
+      );
       setMovementType(
         modal.movement?.creditDebtId
           ? "credit"
@@ -735,8 +748,11 @@ export default function App() {
         setError("Introduce un importe válido con hasta dos decimales.");
         return;
       }
-      if (m.type === "expense" && m.method === "Tarjeta de crédito")
+      if (m.type === "expense" && m.method === "Tarjeta de crédito") {
         m.creditDebtId = get("creditDebtId");
+        if (get("msiEnabled"))
+          m.msi = { months: num("msiMonths"), firstCut: get("msiFirstCut") };
+      }
       void mutate((d) => recordMovement(d, m));
     }
     if (modal.kind === "debt") {
@@ -969,6 +985,12 @@ export default function App() {
                       <small>Abono vinculado · elimina para revertir</small>
                     )}
                   </>
+                )}
+                {m.msi && (
+                  <small>
+                    {m.msi.months} MSI · Primer corte:{" "}
+                    {exportDate(m.msi.firstCut)}
+                  </small>
                 )}
               </div>
               <div className="movement-right">
@@ -1851,6 +1873,7 @@ export default function App() {
                         </p>
                       </div>
                     )}
+                    <MsiProjection data={data} debt={d} />
                     {d.notes && <p className="helper">{d.notes}</p>}
                     <button
                       className="button secondary"
@@ -2381,6 +2404,9 @@ export default function App() {
                       <MoneyInput
                         autoFocus
                         name="amount"
+                        onAmountChange={(value) =>
+                          setMovementAmount(value ?? 0)
+                        }
                         type="number"
                         inputMode="decimal"
                         min="0.01"
@@ -2634,14 +2660,8 @@ export default function App() {
                                   "Tarjeta de crédito" ||
                                 modal.movement?.type !== "expense"
                               }
-                              defaultValue={
-                                modal.movement?.creditDebtId ??
-                                (modal.movement?.method === "Tarjeta de crédito"
-                                  ? ""
-                                  : creditDebts.length === 1
-                                    ? creditDebts[0].id
-                                    : "")
-                              }
+                              value={creditCardId}
+                              onChange={(e) => setCreditCardId(e.target.value)}
                             >
                               <option
                                 value=""
@@ -2665,6 +2685,16 @@ export default function App() {
                               ))}
                             </select>
                           </Field>
+                          <MsiFields
+                            date={movementDate}
+                            amount={movementAmount}
+                            debt={creditDebts.find(
+                              (d) => d.id === creditCardId,
+                            )}
+                            initial={modal.movement?.msi}
+                            initialDate={modal.movement?.date}
+                            initialDebtId={modal.movement?.creditDebtId}
+                          />
                           <p className="helper">
                             La compra aumenta la deuda y consume presupuesto en
                             su categoría; no reduce el saldo disponible. El pago
