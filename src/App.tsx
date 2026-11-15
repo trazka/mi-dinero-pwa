@@ -2619,32 +2619,31 @@ export default function App() {
                           </select>
                         </Field>
                         <Field label="Método de pago">
-                          <select
-                            name="method"
-                            value={
-                              movementType === "credit"
-                                ? "Tarjeta de crédito"
-                                : movementMethod
-                            }
-                            onChange={(e) => {
-                              setMovementMethod(e.target.value);
-                              if (
-                                movementType === "credit" &&
-                                e.target.value !== "Tarjeta de crédito"
-                              )
-                                setMovementType("expense");
-                            }}
-                          >
-                            {[
-                              "Efectivo",
-                              "Tarjeta de débito",
-                              "Tarjeta de crédito",
-                              "Transferencia",
-                              "Otro",
-                            ].map((c) => (
-                              <option key={c}>{c}</option>
-                            ))}
-                          </select>
+                          {movementType === "credit" ? (
+                            <input
+                              name="method"
+                              value="Tarjeta de crédito"
+                              readOnly
+                            />
+                          ) : (
+                            <select
+                              name="method"
+                              value={movementMethod}
+                              onChange={(e) =>
+                                setMovementMethod(e.target.value)
+                              }
+                            >
+                              {[
+                                "Efectivo",
+                                "Tarjeta de débito",
+                                "Tarjeta de crédito",
+                                "Transferencia",
+                                "Otro",
+                              ].map((method) => (
+                                <option key={method}>{method}</option>
+                              ))}
+                            </select>
+                          )}
                         </Field>
                       </div>
                       {(movementType === "credit" ||

@@ -47,6 +47,25 @@ test("compra MSI calcula mensualidad, conserva corte editado, deuda total y resp
   });
   await expect(dialog.getByLabel("A meses sin intereses")).toHaveCount(0);
   await dialog.getByLabel("Tipo", { exact: true }).selectOption("credit");
+  await expect(
+    dialog.getByRole("textbox", { name: "Método de pago", exact: true }),
+  ).toHaveAttribute("readonly", "");
+  await expect(
+    dialog.getByLabel("Método de pago", { exact: true }),
+  ).toHaveValue("Tarjeta de crédito");
+  await expect(
+    dialog.getByRole("combobox", { name: "Método de pago", exact: true }),
+  ).toHaveCount(0);
+  await dialog.getByLabel("Tipo", { exact: true }).selectOption("expense");
+  await dialog
+    .getByLabel("Método de pago", { exact: true })
+    .selectOption("Tarjeta de débito");
+  await expect(dialog.getByLabel("Tipo", { exact: true })).toHaveValue(
+    "expense",
+  );
+  await expect(dialog.getByLabel("A meses sin intereses")).toHaveCount(0);
+  await dialog.getByLabel("Tipo", { exact: true }).selectOption("credit");
+
   await dialog.getByLabel("Importe (MXN)", { exact: true }).fill("6000");
   await dialog
     .getByLabel("Establecimiento o concepto", { exact: true })
@@ -74,6 +93,9 @@ test("compra MSI calcula mensualidad, conserva corte editado, deuda total y resp
     exact: true,
   });
   await expect(edit.getByLabel("A meses sin intereses")).toBeChecked();
+  await expect(
+    edit.getByLabel("Método de pago", { exact: true }),
+  ).toHaveAttribute("readonly", "");
   await expect(
     edit.getByLabel("Primer corte de cobro", { exact: true }),
   ).toContainText("21 dic 2026");
