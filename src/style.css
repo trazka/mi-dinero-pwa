@@ -3031,6 +3031,8 @@ li {
 }
 .recurring-meta {
   display: flex;
+  justify-content: center;
+  text-align: center;
   flex-wrap: wrap;
   gap: 2px 12px;
   margin-top: 4px;
