@@ -15,6 +15,7 @@ function amount(raw: string): number | undefined {
 
 export default function MoneyInput({
   name,
+  onAmountChange,
   defaultValue,
   min = "0.01",
   max = "999999999",
@@ -23,7 +24,10 @@ export default function MoneyInput({
   readOnly,
   disabled,
   ...props
-}: Props & { defaultValue?: string | number }) {
+}: Props & {
+  defaultValue?: string | number;
+  onAmountChange?: (value: number | undefined) => void;
+}) {
   const [raw, setRaw] = useState(
     defaultValue === undefined ? "" : money(Number(defaultValue)),
   );
@@ -49,7 +53,10 @@ export default function MoneyInput({
         disabled={disabled}
         value={raw}
         onFocus={(event) => event.currentTarget.select()}
-        onChange={(event) => setRaw(event.target.value)}
+        onChange={(event) => {
+          setRaw(event.target.value);
+          onAmountChange?.(amount(event.target.value));
+        }}
         onBlur={() => {
           if (valid) setRaw(money(value!));
         }}

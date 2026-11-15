@@ -43,6 +43,7 @@ export function movementExport(
   filters: string[],
   onlyTdc = false,
 ): ExportTable {
+  const hasMsi = movements.some((m) => m.msi);
   const income = movements.reduce(
     (s, m) => s + (m.type === "income" ? m.amount : 0),
     0,
@@ -106,6 +107,7 @@ export function movementExport(
       "Notas",
       "Origen del traspaso",
       "Destino del traspaso",
+      ...(hasMsi ? ["Meses sin intereses", "Primer corte MSI"] : []),
     ],
     rows: movements.map((m) => [
       exportDate(m.date),
@@ -118,6 +120,9 @@ export function movementExport(
       m.notes,
       m.type === "transfer" ? transferRoute(m).from : "",
       m.type === "transfer" ? transferRoute(m).to : "",
+      ...(hasMsi
+        ? [m.msi?.months ?? "", m.msi ? exportDate(m.msi.firstCut) : ""]
+        : []),
     ]),
     moneyColumns: [5, 6],
     pdfColumns: ["Fecha", "Concepto", "Tipo", "Importe MXN"],
@@ -126,6 +131,9 @@ export function movementExport(
       [
         m.merchant,
         `${m.category} · ${m.method}`,
+        m.msi
+          ? `${m.msi.months} MSI · Primer corte: ${exportDate(m.msi.firstCut)}`
+          : "",
         m.notes === "Abono vinculado a deuda" ? "" : m.notes,
       ]
         .filter(Boolean)

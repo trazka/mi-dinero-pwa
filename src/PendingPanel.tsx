@@ -1,3 +1,4 @@
+import { effectiveFirstCut } from "./installments";
 import { money, type Data } from "./data";
 import { exportDate } from "./exports";
 import DatePicker from "./DatePicker";
@@ -51,6 +52,19 @@ export function PendingPanel({
                       : "Gasto"}
           </p>
           {p.notes && <p className="helper">{p.notes}</p>}
+          {p.msi && (
+            <p className="helper">
+              {p.msi.months} MSI · Primer corte al confirmar:{" "}
+              {exportDate(
+                effectiveFirstCut(
+                  p.msi.firstCut,
+                  currentDay > p.date ? currentDay : p.date,
+                  data.debts.find((d) => d.id === p.creditDebtId),
+                ),
+              )}
+              . Si el corte previsto ya pasó, se ajustará al siguiente.
+            </p>
+          )}
           <label htmlFor={`pending-date-${p.id}`}>
             Fecha prevista de {p.merchant}
           </label>
@@ -64,7 +78,24 @@ export function PendingPanel({
                     (item) => item.id === p.id,
                   );
                   if (!current) throw Error("Este pendiente ya fue atendido.");
-                  return savePending(d, { ...current, date });
+                  return savePending(d, {
+                    ...current,
+                    date,
+                    ...(current.msi
+                      ? {
+                          msi: {
+                            ...current.msi,
+                            firstCut: effectiveFirstCut(
+                              current.msi.firstCut,
+                              date,
+                              d.debts.find(
+                                (debt) => debt.id === current.creditDebtId,
+                              ),
+                            ),
+                          },
+                        }
+                      : {}),
+                  });
                 });
             }}
           />

@@ -1,3 +1,4 @@
+import { effectiveFirstCut } from "./installments";
 import {
   today,
   validDate,
@@ -102,5 +103,21 @@ export function confirmPending(data: Data, id: string, date = today()): Data {
       pending.savingWallet,
     );
   const { targetId: _target, savingWallet: _wallet, ...movement } = pending;
-  return saveMovement(next, { ...movement, type: pending.type, date });
+  return saveMovement(next, {
+    ...movement,
+    type: pending.type,
+    date,
+    ...(movement.msi
+      ? {
+          msi: {
+            ...movement.msi,
+            firstCut: effectiveFirstCut(
+              movement.msi.firstCut,
+              date,
+              data.debts.find((d) => d.id === movement.creditDebtId),
+            ),
+          },
+        }
+      : {}),
+  });
 }

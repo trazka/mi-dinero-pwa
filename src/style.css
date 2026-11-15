@@ -3082,3 +3082,33 @@ li {
 .report-range + .report-periods {
   margin-top: 4px;
 }
+
+.msi-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.msi-toggle input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.msi-fields .form-grid {
+  margin-top: 8px;
+}
+.msi-schedule {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.msi-schedule li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.msi-schedule strong {
+  white-space: nowrap;
+}
