@@ -3041,3 +3041,35 @@ li {
   margin: 0;
   line-height: 1.4;
 }
+
+.active-filters {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.active-filters li {
+  min-width: 0;
+  max-width: 100%;
+}
+.active-filters button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--native-line, #e2e8df);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 12px;
+}
+.active-filters span {
+  overflow-wrap: anywhere;
+}
+.active-filters svg {
+  flex-shrink: 0;
+}

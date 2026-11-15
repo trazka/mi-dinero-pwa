@@ -160,12 +160,9 @@ test("sugerencias permiten conceptos nuevos y conservan los registros", async ({
     .click();
   await selectAllMovements(page);
   await openAdvancedFilters(page);
-  const filter = page.getByLabel("Establecimiento", { exact: true });
+  const filter = page.getByLabel("Buscar movimientos", { exact: true });
   await filter.fill("tienda");
-  await page
-    .getByRole("option", { name: "Tienda de prueba", exact: true })
-    .click();
-  await expect(filter).toHaveValue("Tienda de prueba");
+  await expect(filter).toHaveValue("tienda");
   await expect(page.locator(".movement")).toHaveCount(1);
 });
 

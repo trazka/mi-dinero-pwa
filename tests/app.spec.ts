@@ -86,12 +86,12 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   await selectAllMovements(page);
   await expect(page.locator(".movement")).toHaveCount(3);
   await openAdvancedFilters(page);
-  await page.getByLabel("Establecimiento", { exact: true }).fill("Tienda");
+  await page.getByLabel("Buscar movimientos", { exact: true }).fill("Tienda");
   await expect(page.locator(".movement")).toHaveCount(1);
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Eliminar Tienda de prueba" }).click();
   await expect(page.locator(".movement")).toHaveCount(0);
-  await page.getByLabel("Establecimiento", { exact: true }).fill("");
+  await page.getByLabel("Buscar movimientos", { exact: true }).fill("");
   await expect(page.locator(".movement")).toHaveCount(2);
   await page.getByRole("button", { name: "Listo", exact: true }).click();
   await page
@@ -285,7 +285,7 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
   await expect(page.locator(".report-period")).toHaveCount(1);
   await expect(page.locator(".report-periods")).toContainText("$20.00");
   await page
-    .getByLabel("Establecimiento", { exact: true })
+    .getByLabel("Buscar movimientos", { exact: true })
     .fill("sin coincidencia");
   await expect(page.locator(".report-period")).toHaveCount(0);
 });

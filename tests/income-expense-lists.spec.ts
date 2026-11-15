@@ -112,11 +112,8 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).not.toContain("Ingreso antiguo");
   expect(csv).not.toContain("Gasto reciente");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
-  await expect(page.locator(".report-period dt")).toHaveText([
-    "Ingresos",
-    "Disponible",
-  ]);
-  await expect(page.locator(".credit-report-totals > div")).toHaveCount(2);
+  await expect(page.locator(".report-period dt")).toHaveText(["Ingresos"]);
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
   await page.getByRole("button", { name: "Ver egresos", exact: true }).click();
@@ -146,12 +143,9 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).not.toContain("Ingreso reciente");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".report-period")).toHaveCount(1);
-  await expect(page.locator(".report-period dt")).toHaveText([
-    "Utilizado",
-    "Disponible",
-  ]);
+  await expect(page.locator(".report-period dt")).toHaveText(["Gastos"]);
   await expect(page.locator(".report-period dd").nth(0)).toHaveText("$70.00");
-  await expect(page.locator(".credit-report-totals > div")).toHaveCount(2);
+  await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
   await page.getByRole("button", { name: "Ver todos", exact: true }).click();

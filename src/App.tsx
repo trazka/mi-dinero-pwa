@@ -532,7 +532,6 @@ export default function App() {
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [category, setCategory] = useState(""),
-    [merchant, setMerchant] = useState(""),
     [period, setPeriod] = useState("monthly");
   const [search, setSearch] = useState(""),
     [methodFilter, setMethodFilter] = useState(""),
@@ -545,7 +544,6 @@ export default function App() {
     setFrom("");
     setTo("");
     setCategory("");
-    setMerchant("");
   }
   function selectMovementType(type: MovementFilter) {
     setMovementListVisible(true);
@@ -554,7 +552,6 @@ export default function App() {
     setMethodFilter("");
     setDebtFilter("");
     setCategory("");
-    setMerchant("");
   }
   function showMovements(type: MovementFilter) {
     setMovementListVisible(true);
@@ -817,22 +814,25 @@ export default function App() {
                   (tdcView && cardPaymentAmount(m) > 0)
                 : expenseAmount(m) > 0)),
     );
-    const filterMerchantOptions = [
-      ...new Set(typeMovements.map((m) => m.merchant)),
-    ].sort((a, b) => a.localeCompare(b, "es"));
-    const advancedFilterCount = [
-      tab === "Reportes" ? search : "",
-      methodFilter,
-      debtFilter,
-      category,
-      merchant,
-    ].filter(Boolean).length;
+    const activeFilters = [
+      { name: "Búsqueda", value: search.trim(), clear: () => setSearch("") },
+      { name: "Método", value: methodFilter, clear: () => setMethodFilter("") },
+      {
+        name: "Tarjeta o deuda",
+        value: debtFilter
+          ? (data.debts.find((d) => d.id === debtFilter)?.creditor ??
+            debtFilter)
+          : "",
+        clear: () => setDebtFilter(""),
+      },
+      { name: "Categoría", value: category, clear: () => setCategory("") },
+    ].filter((f) => f.value);
+    const generalReport = typeFilter === "all" && activeFilters.length === 0;
     const filtered = typeMovements.filter(
       (m) =>
         (!from || m.date >= from) &&
         (!to || m.date <= to) &&
         (!category || m.category === category) &&
-        m.merchant.toLocaleLowerCase().includes(merchant.toLocaleLowerCase()) &&
         matchesSearch(m, search) &&
         (!methodFilter || m.method === methodFilter) &&
         (!debtFilter || movementDebtId(data, m) === debtFilter),
@@ -865,18 +865,18 @@ export default function App() {
       ] as const
     ).filter((column) => column.total > 0);
     const hasSavingActivity =
-      typeFilter !== "credit" &&
-      typeFilter !== "transfer" &&
+      generalReport &&
       (data.savings ?? []).some((s) =>
         s.entries.some(
           (e) => (!from || e.date >= from) && (!to || e.date <= to),
         ),
       );
     const showBalance =
-      hasSavingActivity ||
-      reportColumns.some(
-        (column) => column.key === "income" || column.key === "expense",
-      );
+      generalReport &&
+      (hasSavingActivity ||
+        reportColumns.some(
+          (column) => column.key === "income" || column.key === "expense",
+        ));
     const recent = newestFirst.slice(0, 5);
     const acquired = data.movements.reduce(
       (total, m) => total + acquiredDebtAmount(m),
@@ -1048,9 +1048,7 @@ export default function App() {
     }
     const groupTotals = groupReport(
       filtered,
-      typeFilter === "credit" || typeFilter === "transfer"
-        ? []
-        : (data.savings ?? []),
+      generalReport ? (data.savings ?? []) : [],
       period,
       from,
       to,
@@ -1076,7 +1074,6 @@ export default function App() {
       debtFilter &&
         `Tarjeta o deuda: ${data.debts.find((d) => d.id === debtFilter)?.creditor ?? debtFilter}`,
       category && `Categoría: ${category}`,
-      merchant && `Establecimiento: ${merchant}`,
     ].filter(Boolean) as string[];
     const normalizeExports = (items: Movement[]) =>
       items.map((m) =>
@@ -1107,9 +1104,14 @@ export default function App() {
       value: (g: ReportGroup) => number;
     }[] = reportColumns.map((column) => ({
       key: column.key,
-      label: column.key === "expense" ? "Utilizado" : column.label,
-      value:
+      label:
         column.key === "expense"
+          ? generalReport
+            ? "Utilizado"
+            : "Gastos"
+          : column.label,
+      value:
+        column.key === "expense" && generalReport
           ? reportUsed
           : (g: ReportGroup) => g[column.key],
     }));
@@ -1180,10 +1182,7 @@ export default function App() {
         )}
         <details className="advanced-filters">
           <summary>
-            <span>
-              Más filtros
-              {advancedFilterCount > 0 && ` (${advancedFilterCount})`}
-            </span>
+            <span>Más filtros</span>
             <ChevronRight size={18} aria-hidden="true" />
           </summary>
           <div className="advanced-filter-fields">
@@ -1266,16 +1265,26 @@ export default function App() {
                 )}
               </select>
             </Field>
-            <Field label="Establecimiento">
-              <ConceptInput
-                suggestions={filterMerchantOptions}
-                value={merchant}
-                onValueChange={setMerchant}
-                placeholder="Buscar establecimiento"
-              />
-            </Field>
           </div>
         </details>
+        {activeFilters.length > 0 && (
+          <ul className="active-filters" aria-label="Filtros activos">
+            {activeFilters.map((filter) => (
+              <li key={filter.name}>
+                <button
+                  type="button"
+                  aria-label={`Quitar filtro ${filter.name}: ${filter.value}`}
+                  onClick={filter.clear}
+                >
+                  <span>
+                    {filter.name}: {filter.value}
+                  </span>
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {from && to && from > to && (
           <p role="alert">La fecha inicial debe ser anterior a la final.</p>
         )}
