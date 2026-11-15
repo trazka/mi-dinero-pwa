@@ -145,11 +145,10 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(report.getWorksheet("Datos")!.getRow(1).values).toEqual([
     ,
     "Periodo",
-    "Utilizado",
-    "Disponible",
+    "Gastos",
   ]);
   expect(report.getWorksheet("Datos")!.getCell("B2").value).toBe(35.5);
-  expect(report.getWorksheet("Datos")!.getCell("C2").value).toBe(-35.5);
+  expect(report.getWorksheet("Datos")!.columnCount).toBe(2);
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const all = await xlsx();
   expect(all.getWorksheet("Datos")!.rowCount).toBe(6);
