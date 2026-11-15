@@ -815,7 +815,7 @@ export default function App() {
       ...new Set(typeMovements.map((m) => m.merchant)),
     ].sort((a, b) => a.localeCompare(b, "es"));
     const advancedFilterCount = [
-      search,
+      tab === "Reportes" ? search : "",
       methodFilter,
       debtFilter,
       category,
@@ -1163,13 +1163,15 @@ export default function App() {
             <ChevronRight size={18} aria-hidden="true" />
           </summary>
           <div className="advanced-filter-fields">
-            <Field label="Buscar movimientos">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Concepto, notas o importe"
-              />
-            </Field>
+            {tab === "Reportes" && (
+              <Field label="Buscar movimientos">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Concepto, notas o importe"
+                />
+              </Field>
+            )}
             {!(tab === "Reportes" && typeFilter === "credit") && (
               <Field label="Filtrar método">
                 <select
@@ -1600,6 +1602,25 @@ export default function App() {
             >
               {movementListVisible ? (
                 <>
+                  <div className="movement-search">
+                    <input
+                      type="search"
+                      aria-label="Buscar movimientos"
+                      placeholder="Buscar movimientos…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                    {search && (
+                      <button
+                        type="button"
+                        className="movement-search-clear"
+                        aria-label="Borrar búsqueda"
+                        onClick={() => setSearch("")}
+                      >
+                        <X size={18} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
                   <div className="panel-heading">
                     <h2>
                       {filtered.length} {filteredLabel}
