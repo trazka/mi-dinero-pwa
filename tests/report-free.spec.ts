@@ -50,7 +50,7 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   );
   const november = table
     .locator(".report-period")
-    .filter({ hasText: "nov 2026" });
+    .filter({ hasText: "Noviembre 2026" });
   await expect(november.locator("dd").last()).toHaveText("$17.95");
   await expect(november.locator("dd").nth(1)).toHaveText("$22,364.70");
   expect(
@@ -59,7 +59,7 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   await expect(november.locator("dd")).toHaveCount(3);
   const december = table
     .locator(".report-period")
-    .filter({ hasText: "dic 2026" });
+    .filter({ hasText: "Diciembre 2026" });
   await expect(december.locator("dd").last()).toHaveText("$500.00");
   await expect(page.locator(".page")).not.toContainText("Meta secreta");
   for (const width of [320, 390, 844]) {
@@ -81,8 +81,30 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   expect(text).toContain("22364.7");
   expect(text).toContain("500");
   expect(text).not.toContain("Meta secreta");
+  const range = page.locator(".page .report-range");
+  await expect(range).toHaveText("Periodo: Todo el historial");
+  await chooseDate(page, "Desde", "2026-10-21");
+  await expect(range).toHaveText("Periodo: Desde el 21 oct 2026");
+  await chooseDate(page, "Hasta", "2026-11-14");
+  await expect(range).toHaveText("Periodo: 21 oct – 14 nov 2026");
+  await expect(table.locator("h3")).toHaveText(["Noviembre 2026"]);
+  await page.getByLabel("Agrupar por").selectOption("weekly");
+  await expect(range).toHaveText("Periodo: 21 oct – 14 nov 2026");
+  await expect(table.locator("h3").first()).toContainText("Semana del");
+  await page.getByLabel("Agrupar por").selectOption("monthly");
+  await page
+    .getByRole("button", { name: "Limpiar filtros", exact: true })
+    .click();
+  await chooseDate(page, "Hasta", "2026-11-14");
+  await expect(range).toHaveText("Periodo: Hasta el 14 nov 2026");
+  await chooseDate(page, "Desde", "2025-10-21");
+  await expect(range).toHaveText("Periodo: 21 oct 2025 – 14 nov 2026");
+  await page
+    .getByRole("button", { name: "Limpiar filtros", exact: true })
+    .click();
   await chooseDate(page, "Desde", "2026-12-01");
   await chooseDate(page, "Hasta", "2026-12-01");
+  await expect(range).toHaveText("Periodo: 1 dic 2026");
   await expect(table.locator(".report-period")).toHaveCount(1);
   await expect(table.locator("dd").last()).toHaveText("$500.00");
 });

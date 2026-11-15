@@ -1091,13 +1091,30 @@ export default function App() {
       exportFilters,
       tdcView,
     );
-    const periodLabel = (key: string) =>
-      period === "monthly"
-        ? new Date(key + "-01T12:00:00").toLocaleDateString("es-MX", {
-            month: "short",
-            year: "numeric",
-          })
-        : `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
+    const rangeDate = (iso: string, includeYear = true) =>
+      new Date(iso + "T12:00:00").toLocaleDateString("es-MX", {
+        day: "numeric",
+        month: "short",
+        ...(includeYear ? { year: "numeric" as const } : {}),
+      });
+    const reportRange =
+      from && to
+        ? from === to
+          ? rangeDate(from)
+          : `${rangeDate(from, from.slice(0, 4) !== to.slice(0, 4))} – ${rangeDate(to)}`
+        : from
+          ? `Desde el ${rangeDate(from)}`
+          : to
+            ? `Hasta el ${rangeDate(to)}`
+            : "Todo el historial";
+    const periodLabel = (key: string) => {
+      if (period !== "monthly")
+        return `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
+      const label = new Date(key + "-01T12:00:00")
+        .toLocaleDateString("es-MX", { month: "long", year: "numeric" })
+        .replace(" de ", " ");
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    };
     const reportFields: {
       key: string;
       label: string;
@@ -1950,6 +1967,7 @@ export default function App() {
                 )
               }
             />
+            <p className="report-range">Periodo: {reportRange}</p>
             {groupTotals.size ? (
               <div className="report-periods">
                 {[...groupTotals]

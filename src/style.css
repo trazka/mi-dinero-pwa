@@ -3073,3 +3073,12 @@ li {
 .active-filters svg {
   flex-shrink: 0;
 }
+
+.report-range {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.report-range + .report-periods {
+  margin-top: 4px;
+}
