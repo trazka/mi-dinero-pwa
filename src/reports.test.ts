@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupReport, reportFree } from "./reports";
+import { groupReport, reportFree, reportUsed } from "./reports";
 import type { Movement, Saving } from "./data";
 const income: Movement = {
   id: "i",
@@ -26,6 +26,8 @@ describe("dinero libre en reportes", () => {
   it("descuenta aportaciones y libera retiros en su periodo sin alterar ingresos ni gastos", () => {
     const groups = groupReport([income], savings, "monthly");
     expect(reportFree(groups.get("2026-11")!)).toBe(800);
+    expect(reportUsed(groups.get("2026-11")!)).toBe(200);
+    expect(reportUsed(groups.get("2026-12")!)).toBe(-50);
     expect(reportFree(groups.get("2026-12")!)).toBe(50);
     expect(groups.get("2026-11")!.income).toBe(1000);
     expect(groups.get("2026-12")!.income).toBe(0);

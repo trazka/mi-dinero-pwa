@@ -136,16 +136,12 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
   await internet.locator("summary").click();
   await expect(page.getByLabel("Concepto recurrente")).toHaveCount(0);
   await expect(page.locator(".section-add")).toBeEnabled();
-  await page
-    .locator(".page")
-    .dispatchEvent("touchstart", {
-      touches: [{ identifier: 1, clientX: 280, clientY: 240 }],
-    });
-  await page
-    .locator(".page")
-    .dispatchEvent("touchend", {
-      changedTouches: [{ identifier: 1, clientX: 120, clientY: 240 }],
-    });
+  await page.locator(".page").dispatchEvent("touchstart", {
+    touches: [{ identifier: 1, clientX: 280, clientY: 240 }],
+  });
+  await page.locator(".page").dispatchEvent("touchend", {
+    changedTouches: [{ identifier: 1, clientX: 120, clientY: 240 }],
+  });
   await expect(page.locator(".page h1")).toHaveText("Deudas");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Movimientos");
@@ -237,7 +233,16 @@ test("acciones cortas y Registrar solo para recurrentes activos vencidos", async
     has: page.locator("summary", { hasText: "Vencido" }),
   });
   await due.locator("summary").click();
+  await expect(due.locator("time")).toHaveCount(1);
   await expect(due.locator("time")).toHaveText("06-dic-2020");
+  await expect(due.locator(".recurring-meta")).toContainText(
+    "Pendiente: 06-dic-2020",
+  );
+  expect(
+    await due
+      .locator(".recurring-meta")
+      .evaluate((el) => el.getBoundingClientRect().height),
+  ).toBeLessThanOrEqual(42);
   await expect(due.locator(".recurring-actions > button")).toHaveText([
     "Registrar",
     "Editar",
@@ -267,6 +272,12 @@ test("acciones cortas y Registrar solo para recurrentes activos vencidos", async
     });
     await item.locator("summary").click();
     await expect(items.locator("details[open]")).toHaveCount(1);
+    await expect(item.locator(".recurring-meta")).toContainText(
+      name === "Futuro"
+        ? "Próximo pago: 06-dic-2099"
+        : "Pausado · Fecha: 06-dic-2020",
+    );
+    await expect(item.locator("time")).toHaveCount(1);
     await expect(
       item.getByRole("button", { name: `Registrar ${name}`, exact: true }),
     ).toHaveCount(0);

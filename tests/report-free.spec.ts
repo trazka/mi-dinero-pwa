@@ -44,21 +44,23 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
-  const table = page.locator(".page .report-table");
-  await expect(table.locator("th")).toHaveText([
-    "Periodo",
-    "Ingresos",
-    "Egresos",
-    "Libre",
-  ]);
+  const table = page.locator(".page .report-periods");
+  await expect(table.locator(".report-period").last().locator("dt")).toHaveText(
+    ["Ingresos", "Utilizado", "Disponible"],
+  );
   const november = table
-    .getByRole("row")
-    .filter({ hasText: "noviembre de 2026" });
-  await expect(november.locator("td").last()).toHaveText("$17.95");
+    .locator(".report-period")
+    .filter({ hasText: "nov 2026" });
+  await expect(november.locator("dd").last()).toHaveText("$17.95");
+  await expect(november.locator("dd").nth(1)).toHaveText("$22,364.70");
+  expect(
+    await november.evaluate((el) => el.getBoundingClientRect().height),
+  ).toBeLessThan(150);
+  await expect(november.locator("dd")).toHaveCount(3);
   const december = table
-    .getByRole("row")
-    .filter({ hasText: "diciembre de 2026" });
-  await expect(december.locator("td").last()).toHaveText("$500.00");
+    .locator(".report-period")
+    .filter({ hasText: "dic 2026" });
+  await expect(december.locator("dd").last()).toHaveText("$500.00");
   await expect(page.locator(".page")).not.toContainText("Meta secreta");
   for (const width of [320, 390, 844]) {
     await page.setViewportSize({ width, height: width === 844 ? 390 : 844 });
@@ -73,12 +75,14 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Excel", exact: true }).click();
   const text = await exportText(await download);
-  expect(text).toContain("Libre");
+  expect(text).toContain("Disponible");
   expect(text).toContain("17.95");
+  expect(text).toContain("Utilizado");
+  expect(text).toContain("22364.7");
   expect(text).toContain("500");
   expect(text).not.toContain("Meta secreta");
   await chooseDate(page, "Desde", "2026-12-01");
   await chooseDate(page, "Hasta", "2026-12-01");
-  await expect(table.locator("tbody tr")).toHaveCount(1);
-  await expect(table.locator("tbody td").last()).toHaveText("$500.00");
+  await expect(table.locator(".report-period")).toHaveCount(1);
+  await expect(table.locator("dd").last()).toHaveText("$500.00");
 });

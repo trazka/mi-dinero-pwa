@@ -1,4 +1,9 @@
-import { groupReport, reportFree } from "./reports";
+import {
+  groupReport,
+  reportFree,
+  reportUsed,
+  type ReportGroup,
+} from "./reports";
 import { usePageSwipe } from "./usePageSwipe";
 import { flushSync } from "react-dom";
 import { recordMovement, recordPayment, recordSaving } from "./pending";
@@ -1092,32 +1097,54 @@ export default function App() {
     const periodLabel = (key: string) =>
       period === "monthly"
         ? new Date(key + "-01T12:00:00").toLocaleDateString("es-MX", {
-            month: "long",
+            month: "short",
             year: "numeric",
           })
         : `${period === "weekly" ? "Semana del " : ""}${exportDate(key)}`;
+    const reportFields: {
+      key: string;
+      label: string;
+      value: (g: ReportGroup) => number;
+    }[] = reportColumns.map((column) => ({
+      key: column.key,
+      label: column.key === "expense" ? "Utilizado" : column.label,
+      value:
+        column.key === "expense"
+          ? reportUsed
+          : (g: ReportGroup) => g[column.key],
+    }));
+    if (hasSavingActivity && !reportFields.some((f) => f.key === "expense")) {
+      const index = reportFields.some((f) => f.key === "income") ? 1 : 0;
+      reportFields.splice(index, 0, {
+        key: "expense",
+        label: "Utilizado",
+        value: reportUsed,
+      });
+    }
+    if (showBalance)
+      reportFields.push({
+        key: "free",
+        label: "Disponible",
+        value: reportFree,
+      });
     const reportDocument: ExportTable = {
       title: `Reporte: ${exportTitles[typeFilter]}`,
       filters: [
         ...exportFilters,
         `Agrupado por: ${period === "monthly" ? "mes" : period === "weekly" ? "semana" : "día"}`,
       ],
-      totals: reportColumns.map((c) => [c.label, c.total]),
-      columns: [
-        "Periodo",
-        ...reportColumns.map((c) => c.label),
-        ...(showBalance ? ["Libre"] : []),
-      ],
+      totals: reportFields.map((f) => [
+        f.label,
+        [...groupTotals.values()].reduce((sum, g) => sum + f.value(g), 0),
+      ]),
+      columns: ["Periodo", ...reportFields.map((f) => f.label)],
       rows: [...groupTotals]
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([key, g]) => [
           periodLabel(key),
-          ...reportColumns.map((c) => g[c.key]),
-          ...(showBalance ? [reportFree(g)] : []),
+          ...reportFields.map((f) => f.value(g)),
         ]),
-      moneyColumns: reportColumns
-        .map((_, i) => i + 1)
-        .concat(showBalance ? [reportColumns.length + 1] : []),
+      moneyColumns: reportFields.map((_, i) => i + 1),
     };
     const filters = (
       <div className="filters">
@@ -1905,7 +1932,7 @@ export default function App() {
             />
             {filters}
             <ExportButtons
-              disabled={exporting || !filtered.length}
+              disabled={exporting || !groupTotals.size}
               onExport={(format) =>
                 void exportReadable(
                   reportDocument,
@@ -1914,68 +1941,40 @@ export default function App() {
                 )
               }
             />
-            {reportColumns.length > 0 && (
-              <div className="report-totals credit-report-totals">
-                {reportColumns.map((column) => (
-                  <div key={column.key}>
-                    <span>{column.summary}</span>
-                    <strong
-                      className={
-                        column.key === "income" ? "positive" : undefined
-                      }
-                    >
-                      {money(column.total)}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            )}
             {groupTotals.size ? (
-              <div
-                className="table-scroll report-table"
-                data-columns={reportColumns.length + (showBalance ? 1 : 0)}
-              >
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Periodo</th>
-                      {reportColumns.map((column) => (
-                        <th key={column.key}>{column.label}</th>
-                      ))}
-                      {showBalance && <th>Libre</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...groupTotals]
-                      .sort(([a], [b]) => b.localeCompare(a))
-                      .map(([key, g]) => (
-                        <tr key={key}>
-                          <td>
-                            {period === "weekly" ? "Semana del " : ""}
-                            {period === "monthly"
-                              ? new Date(
-                                  key + "-01T12:00:00",
-                                ).toLocaleDateString("es-MX", {
-                                  month: "long",
-                                  year: "numeric",
-                                })
-                              : dateLabel(key) + " " + key.slice(0, 4)}
-                          </td>
-                          {reportColumns.map((column) => (
-                            <td
-                              key={column.key}
+              <div className="report-periods">
+                {[...groupTotals]
+                  .sort(([a], [b]) => b.localeCompare(a))
+                  .map(([key, g]) => (
+                    <section
+                      className="report-period"
+                      key={key}
+                      aria-label={periodLabel(key)}
+                    >
+                      <h3>{periodLabel(key)}</h3>
+                      <dl className="report-totals credit-report-totals report-period-values">
+                        {reportFields.map((field) => (
+                          <div
+                            key={field.key}
+                            className={
+                              field.key === "free"
+                                ? "report-available"
+                                : undefined
+                            }
+                          >
+                            <dt>{field.label}</dt>
+                            <dd
                               className={
-                                column.key === "income" ? "positive" : undefined
+                                field.key === "income" ? "positive" : undefined
                               }
                             >
-                              {money(g[column.key])}
-                            </td>
-                          ))}
-                          {showBalance && <td>{money(reportFree(g))}</td>}
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                              {money(field.value(g))}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  ))}
               </div>
             ) : (
               <div className="empty">

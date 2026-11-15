@@ -59,8 +59,8 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   ).toContainText("$40.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(page.locator(".report-totals")).toContainText("$40.00");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody")).toContainText("$40.00");
+  await expect(page.locator(".report-period")).toHaveCount(1);
+  await expect(page.locator(".report-periods")).toContainText("$40.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
   await page

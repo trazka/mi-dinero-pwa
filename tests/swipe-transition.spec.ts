@@ -249,16 +249,15 @@ test("una tabla ancha conserva su desplazamiento y permite salir al llegar al bo
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await page.setViewportSize({ width: 320, height: 844 });
-  const table = page.locator(".page .table-scroll");
-  expect(
-    await table.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
-  ).toBe(true);
-  // Reportes cabe en móvil; una tabla ancha de prueba conserva la cobertura
-  // del arbitraje entre desplazamiento interno y navegación por gesto.
-  await table.evaluate((el) => {
-    (el as HTMLElement).style.overflow = "auto";
-    el.querySelector("table")!.style.minWidth = "800px";
+  await page.locator(".page .report-periods").evaluate((el) => {
+    const fixture = document.createElement("div");
+    fixture.className = "table-scroll gesture-table-fixture";
+    fixture.style.overflow = "auto";
+    fixture.innerHTML =
+      '<table style="min-width:800px"><tbody><tr><td>Tabla ancha de prueba</td></tr></tbody></table>';
+    el.append(fixture);
   });
+  const table = page.locator(".page .gesture-table-fixture");
   expect(
     await table.evaluate((el) => el.scrollWidth > el.clientWidth + 2),
   ).toBe(true);

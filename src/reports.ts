@@ -50,3 +50,6 @@ export const reportFree = (g: ReportGroup) =>
     Math.round(g.expense * 100) -
     Math.round(g.reserved * 100)) /
   100;
+
+export const reportUsed = (g: ReportGroup) =>
+  (Math.round(g.expense * 100) + Math.round(g.reserved * 100)) / 100;
