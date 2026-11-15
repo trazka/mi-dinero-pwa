@@ -122,9 +122,10 @@ test("Movimientos empieza sin seleccionar y solo muestra el listado al elegir un
   ]);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await expect(tabs.locator('[aria-selected="true"]')).toHaveCount(0);
   await expect(
-    tabs.getByRole("tab", { name: "Gastos", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+    results.locator(".movement,.movement-totals,.export-actions"),
+  ).toHaveCount(0);
   await page.reload();
   await page
     .getByRole("button", { name: "Consultar movimientos", exact: true })
@@ -165,5 +166,52 @@ test("la vista previa al deslizar tampoco muestra movimientos antes de elegir", 
     changedTouches: [{ identifier: 1, clientX: 120, clientY: 240 }],
   });
   await expect(content.locator("h1")).toHaveText("Movimientos");
+  await expect(content.locator(".movement")).toHaveCount(0);
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  const all = page.getByRole("tab", { name: "Todos", exact: true });
+  await all.click();
+  await expect(content.locator(".movement")).toHaveCount(2);
+  await content.dispatchEvent("touchstart", {
+    touches: [{ identifier: 1, clientX: 280, clientY: 240 }],
+  });
+  await content.dispatchEvent("touchmove", {
+    touches: [{ identifier: 1, clientX: 230, clientY: 240 }],
+  });
+  await expect(
+    nav.getByRole("button", { name: "Movimientos", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await content.dispatchEvent("touchend", {
+    changedTouches: [{ identifier: 1, clientX: 275, clientY: 240 }],
+  });
+  await expect(preview.locator("h1")).toHaveCount(0);
+  await expect(all).toHaveAttribute("aria-selected", "true");
+  await expect(content.locator(".movement")).toHaveCount(2);
+  await content.dispatchEvent("touchstart", {
+    touches: [{ identifier: 1, clientX: 280, clientY: 240 }],
+  });
+  await content.dispatchEvent("touchend", {
+    changedTouches: [{ identifier: 1, clientX: 120, clientY: 240 }],
+  });
+  await expect(content.locator("h1")).toHaveText("Deudas");
+  await content.dispatchEvent("touchstart", {
+    touches: [{ identifier: 1, clientX: 80, clientY: 240 }],
+  });
+  await content.dispatchEvent("touchmove", {
+    touches: [{ identifier: 1, clientX: 180, clientY: 240 }],
+  });
+  await expect(preview.locator("h1")).toHaveText("Movimientos");
+  await expect(preview.locator(".movement-selection-prompt")).toBeVisible();
+  await expect(
+    preview.locator(".movement,.movement-totals,.export-actions"),
+  ).toHaveCount(0);
+  await content.dispatchEvent("touchend", {
+    changedTouches: [{ identifier: 1, clientX: 180, clientY: 240 }],
+  });
+  await expect(content.locator("h1")).toHaveText("Movimientos");
+  await expect(
+    page
+      .getByRole("tablist", { name: "Mostrar movimientos" })
+      .locator('[aria-selected="true"]'),
+  ).toHaveCount(0);
   await expect(content.locator(".movement")).toHaveCount(0);
 });

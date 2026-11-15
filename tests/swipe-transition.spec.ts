@@ -33,10 +33,10 @@ test("la página sigue al dedo y muestra la vecina antes de soltar; un arrastre 
   await expect(content.locator("h1")).toHaveText("Tu espacio");
   await expect(preview.locator("h1")).toHaveText("Movimientos");
   await expect(
-    nav.getByRole("button", { name: "Movimientos", exact: true }),
+    nav.getByRole("button", { name: "Inicio", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect(
-    nav.getByRole("button", { name: "Inicio", exact: true }),
+    nav.getByRole("button", { name: "Movimientos", exact: true }),
   ).not.toHaveAttribute("aria-current");
   await expect(page.locator(".page-preview-frame")).toHaveAttribute(
     "aria-hidden",
@@ -361,4 +361,60 @@ test("el botón más permanece fijo y visible durante el arrastre y al cambiar s
   expect(await add.boundingBox()).toEqual(bounds);
   await add.click();
   await expect(page.getByLabel("Nombre del apartado")).toBeVisible();
+});
+
+test("invertir o cancelar el arrastre no adelanta el selector; confirmar lo cambia al soltar", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  const content = page.locator(".page"),
+    preview = page.locator(".page-preview-content");
+  await expect(content.locator("h1")).toHaveText("Deudas");
+  await touch(content, "touchstart", 200);
+  for (const [x, title] of [
+    [90, "Apartados"],
+    [245, "Movimientos"],
+    [150, "Apartados"],
+    [230, "Movimientos"],
+  ] as const) {
+    await touch(content, "touchmove", x);
+    await expect(preview.locator("h1")).toHaveText(title);
+    await expect(
+      nav.getByRole("button", { name: "Deudas", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      page.locator(".sidebar button").filter({ hasText: "Deudas" }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
+  }
+  await touch(content, "touchend", 202);
+  await expect(preview.locator("h1")).toHaveCount(0);
+  await expect(content.locator("h1")).toHaveText("Deudas");
+  await expect(
+    nav.getByRole("button", { name: "Deudas", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await touch(content, "touchstart", 280);
+  await touch(content, "touchmove", 120);
+  await expect(
+    nav.getByRole("button", { name: "Deudas", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.evaluate(() => {
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (frames, options) {
+      const a = animate.call(this, frames, options);
+      a.pause();
+      a.currentTime = 50;
+      return a;
+    };
+  });
+  await touch(content, "touchend", 120);
+  await expect(content.locator("h1")).toHaveText("Deudas");
+  await expect(
+    nav.getByRole("button", { name: "Apartados", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
+  await expect(content.locator("h1")).toHaveText("Apartados");
 });

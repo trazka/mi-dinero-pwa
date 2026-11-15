@@ -9,6 +9,7 @@ type Config<T extends string> = {
   tabs: readonly T[];
   blocked: boolean;
   prepare: (next: T) => void;
+  confirm: (next: T) => void;
   clear: () => void;
   commit: (next: T) => void;
 };
@@ -73,6 +74,7 @@ export function usePageSwipe<T extends string>(config: Config<T>) {
         return false;
       const direction =
         cfg.tabs.indexOf(next) > cfg.tabs.indexOf(cfg.tab) ? 1 : -1;
+      cfg.confirm(next);
       cfg.prepare(next);
       const frame = cfg.previewFrameRef.current,
         content = cfg.previewContentRef.current;
@@ -227,6 +229,7 @@ export function usePageSwipe<T extends string>(config: Config<T>) {
             velocity * dx > 0));
       gesture.settling = true;
       gesture.complete = complete;
+      if (complete) latest.current.confirm(gesture.next);
       if (gesture.drag) gesture.drag.settle(complete, () => finish(complete));
       else finish(complete);
     };
