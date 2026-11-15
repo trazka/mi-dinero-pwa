@@ -2986,3 +2986,45 @@ li {
   border: 0;
   color: inherit;
 }
+
+@media (max-width: 600px) {
+  .report-table {
+    overflow: visible;
+  }
+  .report-table table {
+    white-space: normal;
+  }
+  .report-table :is(thead, tbody) {
+    display: block;
+  }
+  .report-table tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid var(--native-line, #e2e8df);
+  }
+  .report-table :is(td, th) {
+    padding: 12px 3px;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .report-table thead th:first-child {
+    display: none;
+  }
+  .report-table tbody td:first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 0;
+    font-weight: 600;
+  }
+}
+@media (max-width: 600px) {
+  .report-table[data-columns="1"] tr {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .report-table[data-columns="2"] tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-table[data-columns="4"] tr {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    font-size: 10px;
+  }
+}
