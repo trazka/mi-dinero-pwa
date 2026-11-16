@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import { exportDate } from "./exports";
@@ -349,8 +350,13 @@ export function RecurringPanel({
           </button>
         </h2>
         {visible && (
-          <button className="text-button" onClick={() => edit(null)}>
-            Crear recurrente
+          <button
+            className="circle-action"
+            aria-label="Crear recurrente"
+            title="Crear recurrente"
+            onClick={() => edit(null)}
+          >
+            <Plus size={20} aria-hidden="true" />
           </button>
         )}
       </div>
