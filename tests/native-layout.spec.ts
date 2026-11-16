@@ -101,7 +101,7 @@ test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", a
     let panel = { x: 0, y: Infinity, width: 0, height: 0 };
     await expect
       .poll(async () => {
-        const bounds = await page.locator(".page .full-panel").boundingBox();
+        const bounds = await page.locator(".page .report-budget").boundingBox();
         if (bounds) panel = bounds;
         return panel.y;
       })
@@ -111,6 +111,9 @@ test("el espacio horizontal prioriza el panel y mantiene márgenes alineados", a
     expect(topbar!.x).toBe(sidebar!.width);
     expect(heading!.x).toBe(panel!.x);
     expect(panel!.y).toBeLessThan(180);
+    const results = await page.locator(".page .report-results").boundingBox();
+    expect(results!.x).toBe(panel.x);
+    expect(results!.y - (panel.y + panel.height)).toBeLessThanOrEqual(16);
     await expect(page.locator(".sidebar-note")).toBeHidden();
     for (const name of [
       "Inicio",
