@@ -3137,6 +3137,10 @@ li {
 /* La deuda comparte el contorno con sus detalles desplegados. */
 .debt-grid {
   align-items: start;
+  gap: 14px;
+}
+.debt-grid > .debt-detail {
+  margin-top: 0;
 }
 .debt-detail > .debt-toggle {
   display: flex;
