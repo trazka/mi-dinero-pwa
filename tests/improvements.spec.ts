@@ -157,7 +157,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await openReportFilters(page);
   await openBudget(page);
-  await page.getByText("Configurar presupuesto", { exact: true }).click();
+  await page.getByText("Agregar límite", { exact: true }).click();
   await page.getByLabel("Límite mensual (MXN)").fill("40");
   await page
     .getByRole("button", { name: "Guardar presupuesto", exact: true })

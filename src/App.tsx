@@ -1948,7 +1948,7 @@ export default function App() {
                 }
               }}
             >
-              <summary>Presupuesto mensual</summary>
+              <summary>Presupuesto</summary>
               <BudgetPanel
                 onEditing={setPlanningEditing}
                 data={data}

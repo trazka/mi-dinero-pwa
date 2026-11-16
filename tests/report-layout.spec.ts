@@ -20,7 +20,11 @@ test("Reportes muestra resultados antes de controles y presupuesto cerrado", asy
   await filters.locator(":scope > summary").click();
   await expect(page.getByLabel("Agrupar por")).toBeHidden();
   await budget.locator(":scope > summary").click();
-  await page.getByText("Configurar presupuesto", { exact: true }).click();
+  await expect(
+    budget.getByText("Sin presupuesto este mes", { exact: true }),
+  ).toBeVisible();
+  expect((await budget.boundingBox())!.height).toBeLessThan(200);
+  await page.getByText("Agregar límite", { exact: true }).click();
   await expect(page.getByLabel("Límite mensual (MXN)")).toBeVisible();
   await budget.locator(":scope > summary").click();
   await expect(page.getByLabel("Límite mensual (MXN)")).toBeHidden();

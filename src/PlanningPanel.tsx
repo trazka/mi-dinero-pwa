@@ -72,7 +72,6 @@ export function BudgetPanel({
           </button>
         </div>
       </div>
-      <p className="helper">Mes completo; no depende de los filtros.</p>
       {budgets.map((b) => {
         const spent = budgetSpent(data, b),
           left = Math.round((b.limit - spent) * 100) / 100;
@@ -104,11 +103,14 @@ export function BudgetPanel({
           </article>
         );
       })}
-      {!budgets.length && (
-        <p className="helper">Aún no has establecido límites para este mes.</p>
-      )}
-      <details onToggle={(event) => onEditing(event.currentTarget.open)}>
-        <summary>Configurar presupuesto</summary>
+      {!budgets.length && <p className="helper">Sin presupuesto este mes</p>}
+      <details
+        className="budget-config"
+        onToggle={(event) => onEditing(event.currentTarget.open)}
+      >
+        <summary>
+          <Plus size={16} aria-hidden="true" /> Agregar límite
+        </summary>
         <form onSubmit={save} className="planning-form">
           <label>
             Categoría del presupuesto
