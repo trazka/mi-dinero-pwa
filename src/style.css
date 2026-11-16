@@ -3116,16 +3116,12 @@ li {
 .recurring-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   min-height: 44px;
-  padding: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--native-line, #e2e8df);
+  border-radius: 15px;
   font: inherit;
   font-weight: inherit;
-  text-align: left;
-}
-.recurring-toggle svg {
-  flex-shrink: 0;
-}
-.recurring-toggle[aria-expanded="true"] svg {
-  transform: rotate(90deg);
+  text-align: center;
 }

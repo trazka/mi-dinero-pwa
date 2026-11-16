@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import { exportDate } from "./exports";
@@ -347,7 +346,6 @@ export function RecurringPanel({
             }}
           >
             <span>Gastos recurrentes</span>
-            <ChevronRight size={18} aria-hidden="true" />
           </button>
         </h2>
         {visible && (
