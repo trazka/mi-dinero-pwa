@@ -3141,6 +3141,7 @@ li {
 }
 .debt-grid > .debt-detail {
   margin-top: 0;
+  padding-top: 0;
 }
 .debt-detail > .debt-toggle {
   display: flex;
