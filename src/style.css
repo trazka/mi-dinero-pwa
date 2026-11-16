@@ -3261,3 +3261,33 @@ li {
 .report-results > .report-range {
   margin-top: 0;
 }
+
+.report-budget .planning-section {
+  padding-top: 0;
+  padding-bottom: 10px;
+}
+.report-budget .planning-heading {
+  justify-content: center;
+  margin: 0;
+}
+.report-budget .month-switch {
+  justify-content: center;
+}
+.report-budget .planning-section > .helper {
+  margin: 4px 0 8px;
+  text-align: center;
+}
+.report-budget .budget-config {
+  margin-top: 4px;
+}
+.budget-config > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  list-style: none;
+}
+.budget-config > summary::-webkit-details-marker {
+  display: none;
+}

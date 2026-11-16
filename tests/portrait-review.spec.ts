@@ -192,12 +192,12 @@ test("todas las vistas y formularios verticales conservan controles y textos den
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await openReportFilters(page);
   await openBudget(page);
-  await page.getByText("Configurar presupuesto", { exact: true }).click();
+  await page.getByText("Agregar límite", { exact: true }).click();
   await openBudget(page);
   await page.getByLabel("Límite mensual (MXN)", { exact: true }).fill("200000");
   await fits();
   await openBudget(page);
-  await page.getByText("Configurar presupuesto", { exact: true }).click();
+  await page.getByText("Agregar límite", { exact: true }).click();
   await page.setViewportSize({ width: 844, height: 390 });
   await openSidebar(page);
   await page
