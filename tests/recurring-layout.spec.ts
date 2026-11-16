@@ -66,7 +66,7 @@ test("recurrentes compactos, alta arriba y edición debajo del elemento elegido"
     items
       .nth(0)
       .getByRole("button", { name: "Editar recurrente Internet", exact: true }),
-  ).toHaveText("Editar");
+  ).toHaveAttribute("title", "Editar");
   await items.nth(1).locator("summary").click();
   await expect(items.nth(0).locator("details")).not.toHaveAttribute("open");
   await expect(items.locator("details[open]")).toHaveCount(1);
@@ -305,9 +305,9 @@ test("acciones cortas y Registrar solo para recurrentes activos vencidos", async
   ).toBeLessThanOrEqual(42);
   await expect(due.locator(".recurring-actions > button")).toHaveText([
     "Registrar",
-    "Editar",
-    "Pausar",
-    "Eliminar",
+    "",
+    "",
+    "",
   ]);
   expect(
     await due
