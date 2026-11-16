@@ -3113,14 +3113,22 @@ li {
   white-space: nowrap;
 }
 
+.recurring-section {
+  border: 1px solid var(--native-line, #e2e8df);
+  border-radius: 15px;
+  padding: 0 14px;
+}
+.recurring-section > .planning-heading h2 {
+  flex: 1;
+  min-width: 0;
+}
 .recurring-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-height: 44px;
-  padding: 8px 14px;
-  border: 1px solid var(--native-line, #e2e8df);
-  border-radius: 15px;
+  padding: 8px 0;
   font: inherit;
   font-weight: inherit;
   text-align: center;
