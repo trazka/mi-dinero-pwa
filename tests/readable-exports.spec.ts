@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { readFile } from "node:fs/promises";
@@ -138,6 +139,7 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(totals).toContain("Compras TDC");
   expect(totals).toContain("Abonos TDC");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await page
     .getByLabel("Tipo de movimiento", { exact: true })
     .selectOption("expense");

@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
@@ -44,6 +45,7 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   const table = page.locator(".page .report-periods");
   await expect(table.locator(".report-period").last().locator("dt")).toHaveText(
     ["Ingresos", "Utilizado", "Disponible"],

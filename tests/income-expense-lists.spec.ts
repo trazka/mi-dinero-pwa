@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
@@ -112,6 +113,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).not.toContain("Ingreso antiguo");
   expect(csv).not.toContain("Gasto reciente");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(page.locator(".report-period dt")).toHaveText(["Ingresos"]);
   await expect(page.locator(".credit-report-totals > div")).toHaveCount(1);
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
@@ -142,6 +144,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   expect(csv).not.toContain("Compra pendiente");
   expect(csv).not.toContain("Ingreso reciente");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(page.locator(".report-period")).toHaveCount(1);
   await expect(page.locator(".report-period dt")).toHaveText(["Gastos"]);
   await expect(page.locator(".report-period dd").nth(0)).toHaveText("$70.00");
@@ -154,6 +157,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
   ).toHaveAttribute("aria-selected", "true");
   await expect(names).toHaveCount(6);
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await openAdvancedFilters(page);
   await page
     .getByLabel("Buscar movimientos", { exact: true })

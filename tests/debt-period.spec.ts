@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
@@ -122,6 +123,7 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
   expect(csv).not.toContain("Compra anterior");
   expect(csv).toContain("Pago tarjeta");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(page.locator(".report-period dt")).toHaveText([
     "Deuda adquirida",
   ]);

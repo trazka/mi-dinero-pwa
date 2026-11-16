@@ -1,3 +1,4 @@
+import { openReportFilters, openBudget } from "./report-utils";
 import { openDebts } from "./debt-utils";
 import { openRecurrents } from "./recurring-utils";
 import { selectAllMovements } from "./movement-utils";
@@ -154,6 +155,8 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
     }),
   ).toBeVisible();
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
+  await openBudget(page);
   await page.getByText("Configurar presupuesto", { exact: true }).click();
   await page.getByLabel("Límite mensual (MXN)").fill("40");
   await page
@@ -191,6 +194,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await setBackupFile(page, path!);
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);

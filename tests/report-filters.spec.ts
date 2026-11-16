@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { exportText } from "./export-utils";
@@ -92,6 +93,7 @@ test("filtros visibles no mezclan reservas ni disponible y exportan los mismos r
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await chooseDate(page, "Desde", "2026-11-01");
   await chooseDate(page, "Hasta", "2026-11-30");
   const report = page.locator(".page .report-periods");

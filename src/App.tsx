@@ -1933,77 +1933,101 @@ export default function App() {
           </>
         )}
         {tab === "Reportes" && (
-          <section className="panel full-panel">
-            <BudgetPanel
-              onEditing={setPlanningEditing}
-              data={data}
-              mutate={mutate}
-              busy={busy}
-              categories={[
-                ...new Set([
-                  ...categories,
-                  "Pago de deuda",
-                  ...data.movements.map((m) => m.category),
-                ]),
-              ]}
-            />
-            {filters}
-            <ExportButtons
-              disabled={exporting || !groupTotals.size}
-              onExport={(format) =>
-                void exportReadable(
-                  reportDocument,
-                  `reporte-${exportNames[typeFilter]}`,
-                  format,
-                )
-              }
-            />
-            <p className="report-range">Periodo: {reportRange}</p>
-            {groupTotals.size ? (
-              <div className="report-periods">
-                {[...groupTotals]
-                  .sort(([a], [b]) => b.localeCompare(a))
-                  .map(([key, g]) => (
-                    <section
-                      className="report-period"
-                      key={key}
-                      aria-label={periodLabel(key)}
-                    >
-                      <h3>{periodLabel(key)}</h3>
-                      <dl className="report-totals credit-report-totals report-period-values">
-                        {reportFields.map((field) => (
-                          <div
-                            key={field.key}
-                            className={
-                              field.key === "free"
-                                ? "report-available"
-                                : undefined
-                            }
-                          >
-                            <dt>{field.label}</dt>
-                            <dd
+          <>
+            <details
+              className="panel report-budget"
+              onToggle={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  !event.currentTarget.open
+                ) {
+                  event.currentTarget
+                    .querySelectorAll("details[open]")
+                    .forEach((item) => item.removeAttribute("open"));
+                  setPlanningEditing(false);
+                }
+              }}
+            >
+              <summary>Presupuesto mensual</summary>
+              <BudgetPanel
+                onEditing={setPlanningEditing}
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                categories={[
+                  ...new Set([
+                    ...categories,
+                    "Pago de deuda",
+                    ...data.movements.map((m) => m.category),
+                  ]),
+                ]}
+              />
+            </details>
+            <section className="panel full-panel report-results">
+              <p className="report-range">Periodo: {reportRange}</p>
+              {groupTotals.size ? (
+                <div className="report-periods">
+                  {[...groupTotals]
+                    .sort(([a], [b]) => b.localeCompare(a))
+                    .map(([key, g]) => (
+                      <section
+                        className="report-period"
+                        key={key}
+                        aria-label={periodLabel(key)}
+                      >
+                        <h3>{periodLabel(key)}</h3>
+                        <dl className="report-totals credit-report-totals report-period-values">
+                          {reportFields.map((field) => (
+                            <div
+                              key={field.key}
                               className={
-                                field.key === "income" ? "positive" : undefined
+                                field.key === "free"
+                                  ? "report-available"
+                                  : undefined
                               }
                             >
-                              {money(field.value(g))}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </section>
-                  ))}
-              </div>
-            ) : (
-              <div className="empty">
-                <ChartNoAxesCombined size={32} />
-                <h3>Aún no hay datos para este periodo</h3>
-                <p>
-                  Agrega movimientos o ajusta los filtros para ver tus totales.
-                </p>
-              </div>
-            )}
-          </section>
+                              <dt>{field.label}</dt>
+                              <dd
+                                className={
+                                  field.key === "income"
+                                    ? "positive"
+                                    : undefined
+                                }
+                              >
+                                {money(field.value(g))}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </section>
+                    ))}
+                </div>
+              ) : (
+                <div className="empty">
+                  <ChartNoAxesCombined size={32} />
+                  <h3>Aún no hay datos para este periodo</h3>
+                  <p>
+                    Agrega movimientos o ajusta los filtros para ver tus
+                    totales.
+                  </p>
+                </div>
+              )}
+              <details className="report-filters">
+                <summary>Filtros</summary>
+                {filters}
+              </details>
+              <ExportButtons
+                disabled={exporting || !groupTotals.size}
+                onExport={(format) =>
+                  void exportReadable(
+                    reportDocument,
+                    `reporte-${exportNames[typeFilter]}`,
+                    format,
+                  )
+                }
+              />
+            </section>
+          </>
         )}
         {tab === "Respaldos" && (
           <div className="backup-grid">

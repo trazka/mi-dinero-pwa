@@ -49,7 +49,6 @@ export function BudgetPanel({
   return (
     <section className="planning-section">
       <div className="planning-heading">
-        <h2>Presupuesto mensual</h2>
         <div className="month-switch">
           <button
             type="button"
