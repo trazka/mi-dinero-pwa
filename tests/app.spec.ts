@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
@@ -72,9 +73,11 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
   await dialog.getByLabel("Importe original (MXN)").fill("1000");
   await dialog.getByLabel("Saldo pendiente actual (MXN)").fill("800");
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await openDebts(page);
   await page.getByRole("button", { name: "Registrar abono" }).click();
   await page.getByLabel("Importe del abono (MXN)").fill("200");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$600.00");
   await page.reload();
   await revealHomeSummary(page);

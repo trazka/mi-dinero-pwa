@@ -1759,9 +1759,11 @@ export default function App() {
                     : cycle.nextDue
                   : d.due;
                 return (
-                  <section className="panel debt-detail" key={d.id}>
-                    <div className="panel-heading">
+                  <details className="panel debt-detail" key={d.id}>
+                    <summary className="debt-toggle">
                       <h2>{d.creditor}</h2>
+                    </summary>
+                    <div className="panel-heading">
                       <button
                         className="text-button"
                         aria-label={`Editar deuda ${d.creditor}`}
@@ -1874,7 +1876,7 @@ export default function App() {
                         <p>Aún no hay abonos registrados.</p>
                       )}
                     </details>
-                  </section>
+                  </details>
                 );
               })}
             </div>

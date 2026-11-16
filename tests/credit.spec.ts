@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { setBackupFile } from "./backup-utils";
@@ -19,6 +20,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await page.getByLabel("Saldo pendiente actual (MXN)").fill("0");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$0.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);
@@ -35,6 +37,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.getByRole("dialog")).toBeHidden();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
@@ -44,12 +47,14 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   ).toContainText("$0.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
   await page.getByLabel("Importe del abono (MXN)").fill("40");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await page.reload();
   await revealHomeSummary(page);
@@ -72,6 +77,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);
@@ -92,12 +98,14 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.getByRole("dialog")).toBeHidden();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$80.00");
-  await page.locator("summary").click();
+  await page.locator(".debt-detail > details > summary").click();
   page.once("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Revertir abono de Tarjeta ficticia" })
     .click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$120.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
@@ -109,5 +117,6 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.locator(".movement")).toHaveCount(0);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$0.00");
 });

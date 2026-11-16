@@ -3133,3 +3133,35 @@ li {
   font-weight: inherit;
   text-align: center;
 }
+
+/* La deuda comparte el contorno con sus detalles desplegados. */
+.debt-grid {
+  align-items: start;
+}
+.debt-detail > .debt-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  list-style: none;
+  text-align: center;
+  cursor: pointer;
+}
+.debt-toggle::-webkit-details-marker {
+  display: none;
+}
+.debt-toggle h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.debt-detail:not([open]) {
+  padding-block: 0;
+}
+.debt-detail[open] > .debt-toggle {
+  margin-bottom: 16px;
+}
+.debt-toggle:focus-visible {
+  outline: 2px solid var(--native-primary, #6e9456);
+  outline-offset: 4px;
+  border-radius: 12px;
+}

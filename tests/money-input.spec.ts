@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 
@@ -31,10 +32,13 @@ test("importes en pesos conservan centavos, validación y persistencia", async (
   await balance.fill("118097.70");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$118,097.70");
   await page.reload();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$118,097.70");
+  await openDebts(page);
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
@@ -50,6 +54,7 @@ test("importes en pesos conservan centavos, validación y persistencia", async (
   await expect(payment).toHaveValue("$1,000.25");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$117,097.45");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);

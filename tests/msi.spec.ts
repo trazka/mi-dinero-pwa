@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { chooseDate } from "./date-utils";
@@ -110,6 +111,7 @@ test("compra MSI calcula mensualidad, conserva corte editado, deuda total y resp
   expect(exported).toContain("Meses sin intereses");
   expect(exported).toContain("21-dic-2026");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$6,000.00");
   await page.locator(".msi-projection > summary").click();
   await page.locator(".msi-projection details > summary").click();
@@ -209,5 +211,6 @@ test("editar una compra antigua sin vínculo no la carga automáticamente a una 
   await edit.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(edit).toHaveCount(0);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
 });
