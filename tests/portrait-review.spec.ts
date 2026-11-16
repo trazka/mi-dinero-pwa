@@ -1,3 +1,4 @@
+import { openReportFilters, openBudget } from "./report-utils";
 import { openRecurrents } from "./recurring-utils";
 import { openSidebar } from "./layout-utils";
 import { test, expect } from "@playwright/test";
@@ -113,6 +114,7 @@ test("todas las vistas y formularios verticales conservan controles y textos den
             .click();
         await fits();
         if (name === "Reportes") {
+          await openReportFilters(page);
           const clear = page.getByRole("button", {
             name: "Limpiar filtros",
             exact: true,
@@ -120,7 +122,9 @@ test("todas las vistas y formularios verticales conservan controles y textos den
           await expect(clear).toHaveCSS("min-height", "48px");
           const button = await clear.boundingBox(),
             filters = await page.locator(".filters").boundingBox();
-          expect(Math.abs(button!.width - filters!.width)).toBeLessThan(2);
+          expect(Math.abs(button!.width - (filters!.width - 24))).toBeLessThan(
+            2,
+          );
           await page
             .getByLabel("Tipo de movimiento", { exact: true })
             .selectOption("credit");
@@ -186,9 +190,13 @@ test("todas las vistas y formularios verticales conservan controles y textos den
     .getByRole("button", { name: "Cancelar recurrente", exact: true })
     .click();
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
+  await openBudget(page);
   await page.getByText("Configurar presupuesto", { exact: true }).click();
+  await openBudget(page);
   await page.getByLabel("Límite mensual (MXN)", { exact: true }).fill("200000");
   await fits();
+  await openBudget(page);
   await page.getByText("Configurar presupuesto", { exact: true }).click();
   await page.setViewportSize({ width: 844, height: 390 });
   await openSidebar(page);

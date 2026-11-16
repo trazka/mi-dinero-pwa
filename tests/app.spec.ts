@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -101,6 +102,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
+  await openReportFilters(page);
   await expect(page.locator(".page h1")).toHaveText("Reportes");
   await page.getByLabel("Agrupar por").focus();
   await page.getByLabel("Agrupar por").selectOption("daily");
@@ -272,6 +274,7 @@ test("reportes diarios, semanales, mensuales y filtros inclusivos", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Reportes", exact: true })
     .click();
+  await openReportFilters(page);
   await expect(page.locator(".report-period")).toHaveCount(2);
   await page.getByLabel("Agrupar por").selectOption("weekly");
   await expect(page.locator(".report-period")).toHaveCount(2);

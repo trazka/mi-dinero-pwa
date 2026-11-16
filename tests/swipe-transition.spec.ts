@@ -1,3 +1,4 @@
+import { openBudget } from "./report-utils";
 import { test, expect, type Locator } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 
@@ -114,6 +115,7 @@ test("un arrastre cancelado conserva filtros y el mes de presupuesto; girar o ca
   await page.goto("./");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openBudget(page);
   await page
     .getByRole("button", { name: "Presupuesto del mes anterior" })
     .click();

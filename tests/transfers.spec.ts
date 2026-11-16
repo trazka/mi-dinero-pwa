@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -138,6 +139,7 @@ test("retiro y depósito conservan el total, se editan y persisten sin duplicar 
   await expect(wallets).toContainText("$1,100.00");
   await page.getByRole("tab", { name: "Traspasos", exact: true }).click();
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(
     page.getByLabel("Tipo de movimiento", { exact: true }),
   ).toHaveValue("all");

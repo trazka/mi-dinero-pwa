@@ -1,3 +1,4 @@
+import { openReportFilters } from "./report-utils";
 import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
@@ -138,6 +139,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
   await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("$1,000.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   const transport = page
     .locator(".planning-item")
     .filter({ hasText: "Transporte" });
@@ -166,6 +168,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
   await openDebts(page);
   await expect(page.locator(".debt-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
+  await openReportFilters(page);
   await expect(transport).toContainText("$800.00 de $2,000.00");
   await expect(
     page.locator(".planning-item").filter({ hasText: "General" }),

@@ -3213,3 +3213,51 @@ li {
 :root[data-theme="dark"] .edit-icon {
   color: #ace0b6;
 }
+
+.report-budget {
+  margin: 0 0 14px;
+  padding: 0 16px;
+  color: inherit;
+}
+.report-budget > summary,
+.report-filters > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  list-style: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+.report-budget > summary::-webkit-details-marker,
+.report-filters > summary::-webkit-details-marker {
+  display: none;
+}
+.report-budget .planning-section {
+  border: 0;
+  margin: 0;
+  padding: 12px 0 16px;
+}
+.report-results {
+  display: flex;
+  flex-direction: column;
+}
+.report-filters {
+  order: 2;
+  margin: 14px 0;
+  border: 1px solid var(--native-line, #e2e8df);
+  border-radius: 15px;
+  color: inherit;
+}
+.report-filters .filters {
+  padding: 12px;
+  margin: 0;
+  border: 0;
+}
+.report-results > .export-actions {
+  order: 3;
+  margin-top: 0;
+}
+.report-results > .report-range {
+  margin-top: 0;
+}
