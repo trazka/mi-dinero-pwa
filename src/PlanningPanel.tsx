@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import { exportDate } from "./exports";
@@ -162,6 +163,8 @@ export function RecurringPanel({
     [method, setMethod] = useState("Efectivo");
   const [category, setCategory] = useState(categories[0]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const contentId = useId();
   const dateId = useId();
   useEffect(() => {
     onEditing(draft !== undefined);
@@ -327,115 +330,144 @@ export function RecurringPanel({
     </form>
   );
   return (
-    <section className="planning-section">
+    <section className="planning-section recurring-section">
       <div className="planning-heading">
-        <h2>Gastos recurrentes</h2>
-        <button className="text-button" onClick={() => edit(null)}>
-          Crear recurrente
-        </button>
+        <h2>
+          <button
+            type="button"
+            className="recurring-toggle"
+            aria-expanded={visible}
+            aria-controls={contentId}
+            onClick={() => {
+              if (visible) {
+                setDraft(undefined);
+                setExpandedId(null);
+              }
+              setVisible(!visible);
+            }}
+          >
+            <span>Gastos recurrentes</span>
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </h2>
+        {visible && (
+          <button className="text-button" onClick={() => edit(null)}>
+            Crear recurrente
+          </button>
+        )}
       </div>
-      <p className="helper">Confirma cada pago para registrarlo.</p>
-      {draft === null && form}
-      {(data.recurrents ?? []).map((r) => (
-        <article className="planning-item recurring-item" key={r.id}>
-          <details open={expandedId === r.id}>
-            <summary
-              onClick={(event) => {
-                event.preventDefault();
-                if (draft) setDraft(undefined);
-                setExpandedId((current) => (current === r.id ? null : r.id));
-              }}
-            >
-              {r.merchant}
-            </summary>
-            <div className="recurring-meta">
-              <p>
-                {money(r.amount)} ·{" "}
-                {r.frequency === "monthly"
-                  ? "Mensual"
-                  : r.frequency === "weekly"
-                    ? "Semanal"
-                    : "Anual"}
-              </p>
-              <p>
-                {!r.active
-                  ? "Pausado · Fecha: "
-                  : r.nextDate <= today()
-                    ? "Pendiente: "
-                    : "Próximo pago: "}
-                <time dateTime={r.nextDate}>{exportDate(r.nextDate)}</time>
-              </p>
-            </div>
-            <div className="planning-actions recurring-actions">
-              {r.active && r.nextDate <= today() && (
-                <button
-                  className="button secondary"
-                  aria-label={`Registrar ${r.merchant}`}
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${exportDate(r.nextDate)}?`,
-                      )
-                    )
-                      void mutate((d) =>
-                        registerRecurring(d, r.id, r.nextDate),
+      <div id={contentId} hidden={!visible}>
+        {visible && (
+          <>
+            <p className="helper">Confirma cada pago para registrarlo.</p>
+            {draft === null && form}
+            {(data.recurrents ?? []).map((r) => (
+              <article className="planning-item recurring-item" key={r.id}>
+                <details open={expandedId === r.id}>
+                  <summary
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (draft) setDraft(undefined);
+                      setExpandedId((current) =>
+                        current === r.id ? null : r.id,
                       );
-                  }}
-                >
-                  Registrar
-                </button>
-              )}
-              <button
-                className="text-button"
-                aria-label={`Editar recurrente ${r.merchant}`}
-                disabled={busy}
-                onClick={() => edit(r)}
-              >
-                Editar
-              </button>
-              <button
-                className="text-button"
-                disabled={busy}
-                aria-label={`${r.active ? "Pausar" : "Reactivar"} ${r.merchant}`}
-                onClick={() =>
-                  void mutate((d) => ({
-                    ...d,
-                    recurrents: d.recurrents?.map((item) =>
-                      item.id === r.id
-                        ? { ...item, active: !item.active }
-                        : item,
-                    ),
-                  }))
-                }
-              >
-                {r.active ? "Pausar" : "Reactivar"}
-              </button>
-              <button
-                className="text-button"
-                disabled={busy || draft?.id === r.id}
-                aria-label={`Eliminar recurrente ${r.merchant}`}
-                onClick={() => {
-                  if (
-                    confirm(
-                      "¿Eliminar esta programación? Los movimientos ya registrados se conservan.",
-                    )
-                  )
-                    void mutate((d) => ({
-                      ...d,
-                      recurrents: d.recurrents?.filter(
-                        (item) => item.id !== r.id,
-                      ),
-                    }));
-                }}
-              >
-                Eliminar
-              </button>
-            </div>
-            {draft?.id === r.id && form}
-          </details>
-        </article>
-      ))}
+                    }}
+                  >
+                    {r.merchant}
+                  </summary>
+                  <div className="recurring-meta">
+                    <p>
+                      {money(r.amount)} ·{" "}
+                      {r.frequency === "monthly"
+                        ? "Mensual"
+                        : r.frequency === "weekly"
+                          ? "Semanal"
+                          : "Anual"}
+                    </p>
+                    <p>
+                      {!r.active
+                        ? "Pausado · Fecha: "
+                        : r.nextDate <= today()
+                          ? "Pendiente: "
+                          : "Próximo pago: "}
+                      <time dateTime={r.nextDate}>
+                        {exportDate(r.nextDate)}
+                      </time>
+                    </p>
+                  </div>
+                  <div className="planning-actions recurring-actions">
+                    {r.active && r.nextDate <= today() && (
+                      <button
+                        className="button secondary"
+                        aria-label={`Registrar ${r.merchant}`}
+                        disabled={busy}
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `¿Registrar ${r.merchant} por ${money(r.amount)} con fecha ${exportDate(r.nextDate)}?`,
+                            )
+                          )
+                            void mutate((d) =>
+                              registerRecurring(d, r.id, r.nextDate),
+                            );
+                        }}
+                      >
+                        Registrar
+                      </button>
+                    )}
+                    <button
+                      className="text-button"
+                      aria-label={`Editar recurrente ${r.merchant}`}
+                      disabled={busy}
+                      onClick={() => edit(r)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="text-button"
+                      disabled={busy}
+                      aria-label={`${r.active ? "Pausar" : "Reactivar"} ${r.merchant}`}
+                      onClick={() =>
+                        void mutate((d) => ({
+                          ...d,
+                          recurrents: d.recurrents?.map((item) =>
+                            item.id === r.id
+                              ? { ...item, active: !item.active }
+                              : item,
+                          ),
+                        }))
+                      }
+                    >
+                      {r.active ? "Pausar" : "Reactivar"}
+                    </button>
+                    <button
+                      className="text-button"
+                      disabled={busy || draft?.id === r.id}
+                      aria-label={`Eliminar recurrente ${r.merchant}`}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            "¿Eliminar esta programación? Los movimientos ya registrados se conservan.",
+                          )
+                        )
+                          void mutate((d) => ({
+                            ...d,
+                            recurrents: d.recurrents?.filter(
+                              (item) => item.id !== r.id,
+                            ),
+                          }));
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                  {draft?.id === r.id && form}
+                </details>
+              </article>
+            ))}
+          </>
+        )}
+      </div>
     </section>
   );
 }

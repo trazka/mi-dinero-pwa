@@ -85,9 +85,10 @@ test("Movimientos empieza sin seleccionar y solo muestra el listado al elegir un
   await expect(
     page.getByRole("region", { name: "Movimientos pendientes" }),
   ).toContainText("Pago pendiente");
-  await expect(page.locator(".page .recurring-item summary")).toHaveText(
-    "Servicio recurrente",
-  );
+  await expect(page.locator(".page .recurring-item")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Gastos recurrentes", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();
