@@ -1759,7 +1759,11 @@ export default function App() {
                     : cycle.nextDue
                   : d.due;
                 return (
-                  <details className="panel debt-detail" key={d.id}>
+                  <details
+                    className="panel debt-detail"
+                    name="debts"
+                    key={d.id}
+                  >
                     <summary className="debt-toggle">
                       <h2>{d.creditor}</h2>
                     </summary>

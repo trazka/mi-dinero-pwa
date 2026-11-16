@@ -54,6 +54,12 @@ test("deudas empiezan contraídas, se despliegan con teclado y se ocultan al reg
     cards.first().getByRole("button", { name: "Registrar abono" }),
   ).toBeVisible();
   await expect(cards.last().locator(".debt-number")).toBeHidden();
+  await cards.last().locator(":scope > summary").click();
+  await expect(cards.first().locator(".debt-number")).toBeHidden();
+  await expect(cards.last().locator(".debt-number")).toBeVisible();
+  await toggle.click();
+  await expect(cards.last().locator(".debt-number")).toBeHidden();
+  await expect(cards.first().locator(".debt-number")).toBeVisible();
   await toggle.click();
   await expect(cards.first().locator(".debt-number")).toBeHidden();
   await toggle.click();
