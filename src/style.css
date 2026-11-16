@@ -3163,7 +3163,7 @@ li {
   padding-block: 0;
 }
 .debt-detail[open] > .debt-toggle {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 .debt-toggle:focus-visible {
   outline: 2px solid var(--native-primary, #6e9456);
@@ -3202,4 +3202,14 @@ li {
 .icon-action:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.edit-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #94a18f;
+}
+:root[data-theme="dark"] .edit-icon {
+  color: #ace0b6;
 }
