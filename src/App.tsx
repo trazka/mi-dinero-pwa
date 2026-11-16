@@ -1,3 +1,4 @@
+import { useRevealExpanded } from "./useRevealExpanded";
 import EditIcon from "./EditIcon";
 import MsiFields from "./MsiFields";
 import MsiProjection from "./MsiProjection";
@@ -319,6 +320,7 @@ export default function App() {
   }, [modal]);
   const modalRef = useRef<HTMLElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  useRevealExpanded(pageRef, loaded);
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewTab, setPreviewTab] = useState<Tab | null>(null);
