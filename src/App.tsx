@@ -1936,35 +1936,6 @@ export default function App() {
         )}
         {tab === "Reportes" && (
           <>
-            <details
-              className="panel report-budget"
-              onToggle={(event) => {
-                if (
-                  event.target === event.currentTarget &&
-                  !event.currentTarget.open
-                ) {
-                  event.currentTarget
-                    .querySelectorAll("details[open]")
-                    .forEach((item) => item.removeAttribute("open"));
-                  setPlanningEditing(false);
-                }
-              }}
-            >
-              <summary>Presupuesto</summary>
-              <BudgetPanel
-                onEditing={setPlanningEditing}
-                data={data}
-                mutate={mutate}
-                busy={busy}
-                categories={[
-                  ...new Set([
-                    ...categories,
-                    "Pago de deuda",
-                    ...data.movements.map((m) => m.category),
-                  ]),
-                ]}
-              />
-            </details>
             <section className="panel full-panel report-results">
               <p className="report-range">Periodo: {reportRange}</p>
               {groupTotals.size ? (
@@ -2029,6 +2000,35 @@ export default function App() {
                 }
               />
             </section>
+            <details
+              className="panel report-budget"
+              onToggle={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  !event.currentTarget.open
+                ) {
+                  event.currentTarget
+                    .querySelectorAll("details[open]")
+                    .forEach((item) => item.removeAttribute("open"));
+                  setPlanningEditing(false);
+                }
+              }}
+            >
+              <summary>Presupuesto</summary>
+              <BudgetPanel
+                onEditing={setPlanningEditing}
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                categories={[
+                  ...new Set([
+                    ...categories,
+                    "Pago de deuda",
+                    ...data.movements.map((m) => m.category),
+                  ]),
+                ]}
+              />
+            </details>
           </>
         )}
         {tab === "Respaldos" && (

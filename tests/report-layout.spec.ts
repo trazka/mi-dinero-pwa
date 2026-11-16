@@ -10,6 +10,16 @@ test("Reportes muestra resultados antes de controles y presupuesto cerrado", asy
   const budget = page.locator(".page .report-budget");
   const filters = page.locator(".page .report-filters");
   await expect(budget).not.toHaveAttribute("open");
+  expect(
+    await budget.evaluate(
+      (el) =>
+        !!(
+          document
+            .querySelector(".page .report-results")!
+            .compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+    ),
+  ).toBe(true);
   await expect(filters).not.toHaveAttribute("open");
   await expect(page.getByLabel("Agrupar por")).toBeHidden();
   await expect(page.locator(".report-range")).toBeVisible();
