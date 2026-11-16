@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { chooseDate } from "./date-utils";
@@ -142,6 +143,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
     .filter({ hasText: "Transporte" });
   await expect(transport).toContainText("$800.00 de $2,000.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
@@ -152,6 +154,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
   );
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toContainText("$800.00");
   await page.clock.setFixedTime(new Date(2026, 10, 19, 12));
   await page.reload();
@@ -160,6 +163,7 @@ test("gasolina TDC consume Transporte una vez y el abono solo reduce dinero y de
     .getByRole("button", { name: "Confirmar realizado Abono · Mi TDC" })
     .click();
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toContainText("$0.00");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(transport).toContainText("$800.00 de $2,000.00");

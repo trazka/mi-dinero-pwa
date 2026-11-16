@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
@@ -46,7 +47,9 @@ test("fechas de deuda y abono se seleccionan sin confirmación y filtros respeta
   await chooseDate(page, "Fecha de vencimiento", "2027-03-15");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-meta")).toContainText("15 mar");
+  await openDebts(page);
   await page
     .getByRole("button", { name: "Registrar abono", exact: true })
     .click();
@@ -54,8 +57,9 @@ test("fechas de deuda y abono se seleccionan sin confirmación y filtros respeta
   await chooseDate(page, "Fecha del abono", "2027-02-01");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toContainText("$75.00");
-  await page.locator("summary").click();
+  await page.locator(".debt-detail > details > summary").click();
   await expect(page.locator(".payment")).toContainText("1 feb");
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);

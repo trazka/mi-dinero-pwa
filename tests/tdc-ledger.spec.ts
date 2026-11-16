@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
@@ -170,5 +171,6 @@ test("TDC reúne compras y abonos sin duplicar gastos ni incluir pagos de otros 
   await page.getByRole("tab", { name: "Todos", exact: true }).click();
   await expect(names).toHaveCount(7);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText(["$180.00", "$470.00"]);
 });

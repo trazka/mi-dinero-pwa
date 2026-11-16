@@ -1,3 +1,4 @@
+import { openDebts } from "./debt-utils";
 import { openRecurrents } from "./recurring-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -44,6 +45,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await page
     .getByRole("button", {
       name: "Editar deuda Tarjeta de prueba",
@@ -60,7 +62,9 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   );
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDebts(page);
   await expect(page.locator(".cycle-info")).toContainText("Pendiente al corte");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$100.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page
@@ -75,8 +79,9 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
-  await page.locator("summary").click();
+  await page.locator(".debt-detail > details > summary").click();
   await expect(page.locator(".payment")).toHaveCount(1);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);
@@ -97,6 +102,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await expect(
     page.getByRole("heading", { name: "Tarjeta renombrada", exact: true }),
   ).toBeVisible();
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$60.00");
 });
 test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo suma el pago", async ({
@@ -239,6 +245,7 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await expect(page.locator(".movement")).toHaveCount(2);
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText("$130.00");
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await revealHomeSummary(page);
@@ -301,6 +308,7 @@ test("compras solo ofrecen tarjetas y los abonos conservan tarjeta y coche", asy
   await expect(page.locator(".balance-number")).toContainText("-$40.00");
   await nav.getByRole("button", { name: "Deudas", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Deudas");
+  await openDebts(page);
   await expect(page.locator(".debt-number")).toHaveText(["$125.00", "$460.00"]);
 });
 
