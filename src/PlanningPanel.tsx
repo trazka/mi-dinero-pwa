@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Pause, Play, Trash2 } from "lucide-react";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import { exportDate } from "./exports";
@@ -351,12 +351,12 @@ export function RecurringPanel({
         </h2>
         {visible && (
           <button
-            className="circle-action"
+            className="circle-action compact-circle"
             aria-label="Crear recurrente"
             title="Crear recurrente"
             onClick={() => edit(null)}
           >
-            <Plus size={20} aria-hidden="true" />
+            <Plus size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -420,16 +420,18 @@ export function RecurringPanel({
                       </button>
                     )}
                     <button
-                      className="text-button"
+                      className="circle-action compact-circle"
+                      title="Editar"
                       aria-label={`Editar recurrente ${r.merchant}`}
                       disabled={busy}
                       onClick={() => edit(r)}
                     >
-                      Editar
+                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
-                      className="text-button"
+                      className="circle-action compact-circle"
                       disabled={busy}
+                      title={r.active ? "Pausar" : "Reactivar"}
                       aria-label={`${r.active ? "Pausar" : "Reactivar"} ${r.merchant}`}
                       onClick={() =>
                         void mutate((d) => ({
@@ -442,11 +444,16 @@ export function RecurringPanel({
                         }))
                       }
                     >
-                      {r.active ? "Pausar" : "Reactivar"}
+                      {r.active ? (
+                        <Pause size={16} aria-hidden="true" />
+                      ) : (
+                        <Play size={16} aria-hidden="true" />
+                      )}
                     </button>
                     <button
-                      className="text-button"
+                      className="circle-action compact-circle"
                       disabled={busy || draft?.id === r.id}
+                      title="Eliminar"
                       aria-label={`Eliminar recurrente ${r.merchant}`}
                       onClick={() => {
                         if (
@@ -462,7 +469,7 @@ export function RecurringPanel({
                           }));
                       }}
                     >
-                      Eliminar
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                   {draft?.id === r.id && form}

@@ -3192,3 +3192,29 @@ li {
   outline: 2px solid currentColor;
   outline-offset: 3px;
 }
+
+.compact-circle {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  background: transparent;
+}
+.compact-circle::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--native-line, #d9e3d5);
+  border-radius: 50%;
+  z-index: -1;
+}
+.recurring-actions > .compact-circle {
+  flex: 0 0 44px;
+  min-width: 44px;
+}
+.recurring-actions {
+  justify-content: space-evenly;
+}
+.compact-circle:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
