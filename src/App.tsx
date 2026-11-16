@@ -1769,14 +1769,15 @@ export default function App() {
                     </summary>
                     <div className="panel-heading">
                       <button
-                        className="text-button"
+                        className="circle-action"
+                        title="Editar deuda"
                         aria-label={`Editar deuda ${d.creditor}`}
                         onClick={() => {
                           setError("");
                           setModal({ kind: "debt", debt: d });
                         }}
                       >
-                        Editar
+                        <Pencil size={18} aria-hidden="true" />
                       </button>
                       <span
                         className={"pill " + (balance(d) === 0 ? "paid" : "")}
