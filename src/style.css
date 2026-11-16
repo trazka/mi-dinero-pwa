@@ -3171,7 +3171,7 @@ li {
   border-radius: 12px;
 }
 
-.circle-action {
+.icon-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3179,42 +3179,27 @@ li {
   width: 44px;
   height: 44px;
   padding: 0;
-  border: 1px solid var(--native-line, #d9e3d5);
-  border-radius: 50%;
-  background: var(--native-active, #e8eee2);
-  color: inherit;
-  cursor: pointer;
-}
-.circle-action:hover {
-  filter: brightness(1.1);
-}
-.circle-action:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 3px;
-}
-
-.compact-circle {
-  position: relative;
-  isolation: isolate;
   border: 0;
   background: transparent;
+  color: #6d895f;
+  cursor: pointer;
 }
-.compact-circle::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px solid var(--native-line, #d9e3d5);
-  border-radius: 50%;
-  z-index: -1;
+[data-theme="dark"] .icon-action {
+  color: #a7d8b1;
 }
-.recurring-actions > .compact-circle {
+.icon-action:hover {
+  filter: brightness(1.1);
+}
+.icon-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.recurring-actions > .icon-action {
   flex: 0 0 44px;
   min-width: 44px;
 }
-.recurring-actions {
-  justify-content: space-evenly;
-}
-.compact-circle:disabled {
+.icon-action:disabled {
   opacity: 0.45;
   cursor: default;
 }
