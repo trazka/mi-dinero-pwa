@@ -1,3 +1,4 @@
+import EditIcon from "./EditIcon";
 import MsiFields from "./MsiFields";
 import MsiProjection from "./MsiProjection";
 import {
@@ -58,7 +59,6 @@ import {
   Download,
   Upload,
   X,
-  Pencil,
   Trash2,
   Wallet,
   ChevronRight,
@@ -1020,7 +1020,7 @@ export default function App() {
                         setModal({ kind: "movement", movement: m });
                       }}
                     >
-                      <Pencil size={14} />
+                      <EditIcon />
                     </button>
                   )}
                   <button
@@ -1777,7 +1777,7 @@ export default function App() {
                           setModal({ kind: "debt", debt: d });
                         }}
                       >
-                        <Pencil size={18} aria-hidden="true" />
+                        <EditIcon />
                       </button>
                       <span
                         className={"pill " + (balance(d) === 0 ? "paid" : "")}

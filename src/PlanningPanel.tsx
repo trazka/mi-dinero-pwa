@@ -1,4 +1,5 @@
-import { Plus, Pencil, Pause, Play, Trash2 } from "lucide-react";
+import EditIcon from "./EditIcon";
+import { Plus, Pause, Play, Trash2 } from "lucide-react";
 import { categoryForConcept } from "./concepts";
 import ConceptInput from "./ConceptInput";
 import { exportDate } from "./exports";
@@ -426,7 +427,7 @@ export function RecurringPanel({
                       disabled={busy}
                       onClick={() => edit(r)}
                     >
-                      <Pencil size={16} aria-hidden="true" />
+                      <EditIcon />
                     </button>
                     <button
                       className="icon-action"
