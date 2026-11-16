@@ -1,3 +1,4 @@
+import { openRecurrents } from "./recurring-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
@@ -105,6 +106,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);
+  await openRecurrents(page);
   await page
     .getByRole("button", { name: "Crear recurrente", exact: true })
     .click();
@@ -186,6 +188,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   await expect(page.locator(".planning-item")).toHaveCount(2);
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
   await selectAllMovements(page);
+  await openRecurrents(page);
   await page
     .locator(".page .recurring-item summary")
     .filter({ hasText: "Servicio de prueba" })
@@ -214,6 +217,7 @@ test("selección directa de compra TDC y recurrente TDC solo aumentan deuda", as
   await page.getByLabel("Establecimiento o concepto").fill("Compra directa");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openRecurrents(page);
   await page
     .getByRole("button", { name: "Crear recurrente", exact: true })
     .click();

@@ -1,3 +1,4 @@
+import { openRecurrents } from "./recurring-utils";
 import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -79,6 +80,7 @@ test("elegir concepto carga la última categoría, admite cambiarla y sirve en r
     .click();
   await expect(category).toHaveValue("Hogar");
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await openRecurrents(page);
   await page
     .getByRole("button", { name: "Crear recurrente", exact: true })
     .click();

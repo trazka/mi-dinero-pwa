@@ -1,3 +1,4 @@
+import { openRecurrents } from "./recurring-utils";
 import { openSidebar } from "./layout-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -173,6 +174,7 @@ test("todas las vistas y formularios verticales conservan controles y textos den
     .getByRole("button", { name: "Cancelar apartado", exact: true })
     .click();
   await nav.getByRole("button", { name: "Movimientos", exact: true }).click();
+  await openRecurrents(page);
   await page
     .getByRole("button", { name: "Crear recurrente", exact: true })
     .click();
