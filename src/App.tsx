@@ -1769,7 +1769,7 @@ export default function App() {
                     </summary>
                     <div className="panel-heading">
                       <button
-                        className="circle-action"
+                        className="icon-action"
                         title="Editar deuda"
                         aria-label={`Editar deuda ${d.creditor}`}
                         onClick={() => {

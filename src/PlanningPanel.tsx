@@ -351,7 +351,7 @@ export function RecurringPanel({
         </h2>
         {visible && (
           <button
-            className="circle-action compact-circle"
+            className="icon-action"
             aria-label="Crear recurrente"
             title="Crear recurrente"
             onClick={() => edit(null)}
@@ -420,7 +420,7 @@ export function RecurringPanel({
                       </button>
                     )}
                     <button
-                      className="circle-action compact-circle"
+                      className="icon-action"
                       title="Editar"
                       aria-label={`Editar recurrente ${r.merchant}`}
                       disabled={busy}
@@ -429,7 +429,7 @@ export function RecurringPanel({
                       <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
-                      className="circle-action compact-circle"
+                      className="icon-action"
                       disabled={busy}
                       title={r.active ? "Pausar" : "Reactivar"}
                       aria-label={`${r.active ? "Pausar" : "Reactivar"} ${r.merchant}`}
@@ -451,7 +451,7 @@ export function RecurringPanel({
                       )}
                     </button>
                     <button
-                      className="circle-action compact-circle"
+                      className="icon-action"
                       disabled={busy || draft?.id === r.id}
                       title="Eliminar"
                       aria-label={`Eliminar recurrente ${r.merchant}`}
