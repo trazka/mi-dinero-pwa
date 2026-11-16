@@ -3291,3 +3291,49 @@ li {
 .budget-config > summary::-webkit-details-marker {
   display: none;
 }
+
+.backup-tools {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+}
+.backup-save {
+  padding: 18px 16px;
+}
+.backup-save h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.backup-save p {
+  margin: 8px 0;
+}
+.backup-save > .button {
+  margin-top: 6px;
+}
+.backup-fold {
+  margin: 0;
+  padding: 0 16px;
+  color: inherit;
+}
+.backup-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  list-style: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+.backup-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.backup-fold-content {
+  padding-bottom: 16px;
+}
+.backup-fold-content > p {
+  margin: 8px 0 12px;
+  font-size: 12px;
+}
+.backup-fold-content > .export-actions {
+  margin: 0 0 12px;
+}

@@ -1,3 +1,4 @@
+import { openBackupExports } from "./backup-utils";
 import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import ExcelJS from "exceljs";
@@ -152,6 +153,7 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   expect(report.getWorksheet("Datos")!.getCell("B2").value).toBe(35.5);
   expect(report.getWorksheet("Datos")!.columnCount).toBe(2);
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openBackupExports(page);
   const all = await xlsx();
   expect(all.getWorksheet("Datos")!.rowCount).toBe(6);
   await expect(

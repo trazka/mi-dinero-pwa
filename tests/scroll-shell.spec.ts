@@ -1,3 +1,4 @@
+import { openBackupExports } from "./backup-utils";
 import { selectAllMovements } from "./movement-utils";
 import { openSidebar } from "./layout-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -30,6 +31,7 @@ test("en iPhone solo desplaza contenido y conserva encabezado, pestañas y acces
   ).toBe(true);
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBe(0);
+  await openBackupExports(page);
   await page
     .getByRole("button", { name: "Exportar movimientos CSV", exact: true })
     .scrollIntoViewIfNeeded();
