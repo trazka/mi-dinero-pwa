@@ -3411,38 +3411,6 @@ li {
   border-radius: 22px;
 }
 
-/* Acento azul aislado: navegación seleccionada y botón flotante. */
-:root {
-  --navigation-blue: #1646a0;
-  --navigation-blue-surface: #e7edff;
-}
-:root[data-theme="dark"] {
-  --navigation-blue: #80a9f4;
-  --navigation-blue-surface: #1a2e58;
-}
-:root[data-theme] .sidebar nav button.active {
-  color: var(--navigation-blue);
-  background: var(--navigation-blue-surface);
-}
-:root[data-theme] .mobile-nav button.active {
-  color: var(--navigation-blue);
-}
-:root[data-theme] .mobile-nav button.active::before {
-  background: var(--navigation-blue-surface);
-}
-.sidebar nav button.active i {
-  background: var(--navigation-blue);
-}
-:root[data-theme] .app > .section-add {
-  color: #fff;
-  background: #1646a0;
-  border-color: #1646a0;
-}
-:root[data-theme] .app > .section-add:hover {
-  background: #10367e;
-  border-color: #10367e;
-}
-
 .backup .app-version {
   margin: 16px 0 0;
   font-size: 12px;
