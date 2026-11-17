@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -68,6 +69,7 @@ test("compra a crédito solo aumenta deuda; el abono registra el gasto y persist
   await expect(page.locator(".report-periods")).toContainText("$40.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

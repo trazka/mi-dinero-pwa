@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { openReportFilters, openBudget } from "./report-utils";
 import { openDebts } from "./debt-utils";
 import { openRecurrents } from "./recurring-utils";
@@ -178,6 +179,7 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
   ).toBeVisible();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const event = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

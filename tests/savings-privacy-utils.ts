@@ -1,3 +1,4 @@
+import { openSecurity } from "./backup-utils";
 import { expect, type Page, type BrowserContext } from "@playwright/test";
 export async function enableSavingsPrivacy(
   page: Page,
@@ -22,6 +23,7 @@ export async function enableSavingsPrivacy(
   });
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openSecurity(page);
   await page
     .getByRole("button", {
       name: "Activar bloqueo del dispositivo",

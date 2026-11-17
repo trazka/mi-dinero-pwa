@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { enableSavingsPrivacy } from "./savings-privacy-utils";
@@ -70,6 +71,7 @@ test("el ojo muestra y oculta sin bloqueo y conserva los importes en el respaldo
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Respaldos");
   const download = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();
@@ -181,6 +183,7 @@ test("aportar muestra nombres sin desbloquear ni revelar los saldos", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

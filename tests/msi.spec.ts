@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { openDebts } from "./debt-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -124,6 +125,7 @@ test("compra MSI calcula mensualidad, conserva corte editado, deuda total y resp
   );
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const backupDownload = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

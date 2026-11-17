@@ -2034,27 +2034,29 @@ export default function App() {
         {tab === "Respaldos" && (
           <div className="backup-grid">
             <div className="backup-tools">
-              <section className="panel backup backup-save">
-                <h2>Guardar respaldo</h2>
-                <p className="backup-last">
-                  {data.lastBackupAt
-                    ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
-                    : "Todavía no has exportado un respaldo."}
-                </p>
-                <p className="helper">
-                  {backupOverdue(data.lastBackupAt)
-                    ? "Guarda un JSON cada semana para poder restaurar tus datos."
-                    : "Comprueba que guardaste el JSON para poder restaurar tus datos."}
-                </p>
-                <button
-                  className="button"
-                  aria-label="Exportar respaldo JSON"
-                  disabled={!loaded || busy}
-                  onClick={() => void exportBackup()}
-                >
-                  <Download size={18} /> Descargar JSON
-                </button>
-              </section>
+              <details className="panel backup-fold backup-save">
+                <summary>Guardar respaldo</summary>
+                <div className="backup-fold-content">
+                  <p className="backup-last">
+                    {data.lastBackupAt
+                      ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
+                      : "Todavía no has exportado un respaldo."}
+                  </p>
+                  <p className="helper">
+                    {backupOverdue(data.lastBackupAt)
+                      ? "Guarda un JSON cada semana para poder restaurar tus datos."
+                      : "Comprueba que guardaste el JSON para poder restaurar tus datos."}
+                  </p>
+                  <button
+                    className="button"
+                    aria-label="Exportar respaldo JSON"
+                    disabled={!loaded || busy}
+                    onClick={() => void exportBackup()}
+                  >
+                    <Download size={18} /> Descargar JSON
+                  </button>
+                </div>
+              </details>
               <details className="panel backup-fold backup-restore">
                 <summary>Restaurar respaldo</summary>
                 <div className="backup-fold-content">

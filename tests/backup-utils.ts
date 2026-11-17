@@ -24,3 +24,18 @@ export async function openBackupExports(page: Page) {
     await section.locator(":scope > summary").click();
   }
 }
+
+export async function openSaveBackup(page: Page) {
+  await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
+  const section = page.locator(".page .backup-save");
+  if (!(await section.evaluate((el) => el.hasAttribute("open")))) {
+    await section.locator(":scope > summary").click();
+  }
+}
+export async function openSecurity(page: Page) {
+  await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
+  const section = page.locator(".page .security-panel");
+  if (!(await section.evaluate((el) => el.hasAttribute("open")))) {
+    await section.locator(":scope > summary").click();
+  }
+}

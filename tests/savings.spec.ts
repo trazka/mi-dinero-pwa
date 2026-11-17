@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { selectAllMovements } from "./movement-utils";
 import { revealHomeSummary } from "./home-utils";
 import { enableSavingsPrivacy } from "./savings-privacy-utils";
@@ -95,6 +96,7 @@ test("apartados ahorran sin gastos, conservan historial y viajan en respaldos of
   await expect(page.locator(".balance-number")).toContainText("$800.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   const downloadEvent = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

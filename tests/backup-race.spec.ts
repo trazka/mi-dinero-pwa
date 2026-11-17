@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -64,6 +65,7 @@ test("espera la exportación pendiente y restaura datos distintos aun con Indexe
       }),
   );
   const downloaded = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

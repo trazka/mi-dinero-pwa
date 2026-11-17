@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { openBackupExports } from "./backup-utils";
+import {
+  openBackupExports,
+  openSaveBackup,
+  openSecurity,
+} from "./backup-utils";
 
 test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   page,
@@ -9,9 +13,11 @@ test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   const tools = page.locator(".page .backup-tools");
-  await expect(
-    tools.getByRole("heading", { name: "Guardar respaldo", exact: true }),
-  ).toBeVisible();
+  await expect(tools.locator(".backup-save")).not.toHaveAttribute("open");
+  await expect(page.locator(".page .security-panel")).not.toHaveAttribute(
+    "open",
+  );
+  await openSaveBackup(page);
   await expect(
     tools.getByRole("button", { name: "Exportar respaldo JSON", exact: true }),
   ).toBeVisible();
@@ -23,6 +29,10 @@ test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   await tools.locator(".backup-restore > summary").click();
   await expect(tools.getByText(/Importar reemplaza los datos/)).toBeVisible();
   await expect(tools.locator("input[type=file]")).toBeEnabled();
+  await openSecurity(page);
+  await expect(
+    page.getByRole("button", { name: "Activar bloqueo del dispositivo" }),
+  ).toBeVisible();
   await openBackupExports(page);
   await expect(
     tools.getByRole("button", { name: "Excel", exact: true }),
@@ -47,6 +57,10 @@ test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
+  await expect(tools.locator(".backup-save")).not.toHaveAttribute("open");
+  await expect(page.locator(".page .security-panel")).not.toHaveAttribute(
+    "open",
+  );
   await expect(tools.locator(".backup-restore")).not.toHaveAttribute("open");
   await expect(tools.locator(".backup-exports")).not.toHaveAttribute("open");
 });
