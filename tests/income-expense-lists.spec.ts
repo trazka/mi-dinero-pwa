@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openReportFilters } from "./report-utils";
 import { revealHomeSummary } from "./home-utils";
 import { openAdvancedFilters } from "./filter-utils";
@@ -170,6 +171,7 @@ test("tarjetas de Inicio separan ingresos y egresos, filtran fechas y exportan s
       exact: true,
     }),
   ).toBeVisible();
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

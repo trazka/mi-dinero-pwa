@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openDebts } from "./debt-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
@@ -157,6 +158,7 @@ test("TDC reúne compras y abonos sin duplicar gastos ni incluir pagos de otros 
   await expect(names).toHaveText(["Abono · Abono reciente", "Compra reciente"]);
   await expect(page.locator(".tdc-totals")).toContainText("$200.00");
   await expect(page.locator(".tdc-totals")).toContainText("$70.00");
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

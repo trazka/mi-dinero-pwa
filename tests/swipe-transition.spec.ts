@@ -1,3 +1,4 @@
+import { openAdvancedFilters } from "./filter-utils";
 import { openBudget } from "./report-utils";
 import { test, expect, type Locator } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -165,7 +166,7 @@ test("deslizar sobre botones y campos inactivos no ejecuta su toque y escribir c
   });
   await expect(page.locator(".page h1")).toHaveText("Movimientos");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.locator(".page .advanced-filters > summary").click();
+  await openAdvancedFilters(page);
   await page.getByRole("tab", { name: "Todos", exact: true }).click();
   const input = page.getByLabel("Buscar movimientos", { exact: true });
   await input.fill("Concepto de prueba");

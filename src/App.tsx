@@ -1328,15 +1328,17 @@ export default function App() {
         {from && to && from > to && (
           <p role="alert">La fecha inicial debe ser anterior a la final.</p>
         )}
-        <div className="filter-actions">
-          <button
-            type="button"
-            className="button secondary clear-filters"
-            onClick={clearFilters}
-          >
-            Limpiar filtros
-          </button>
-        </div>
+        {(tab !== "Movimientos" || from || to || activeFilters.length > 0) && (
+          <div className="filter-actions">
+            <button
+              type="button"
+              className="button secondary clear-filters"
+              onClick={clearFilters}
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        )}
       </div>
     );
     return (
@@ -1562,179 +1564,189 @@ export default function App() {
           </>
         )}
         {tab === "Movimientos" && (
-          <section className="panel full-panel">
-            <PendingPanel
-              data={data}
-              mutate={mutate}
-              busy={busy}
-              currentDay={currentDay}
-            />
-            <div className="wallet-balances" aria-label="Banco y efectivo">
-              <div>
-                <span>Banco disponible</span>
-                <strong>{money(wallets.bank)}</strong>
-              </div>
-              <div>
-                <span>Efectivo disponible</span>
-                <strong>{money(wallets.cash)}</strong>
+          <div className="movements-layout">
+            <section className="panel full-panel wallet-panel">
+              <div className="wallet-balances" aria-label="Banco y efectivo">
+                <div>
+                  <span>Banco disponible</span>
+                  <strong>{money(wallets.bank)}</strong>
+                </div>
+                <div>
+                  <span>Efectivo disponible</span>
+                  <strong>{money(wallets.cash)}</strong>
+                </div>
+                {wallets.unassigned !== 0 && (
+                  <div>
+                    <span>Sin clasificar</span>
+                    <strong>{money(wallets.unassigned)}</strong>
+                  </div>
+                )}
               </div>
               {wallets.unassigned !== 0 && (
-                <div>
-                  <span>Sin clasificar</span>
-                  <strong>{money(wallets.unassigned)}</strong>
-                </div>
-              )}
-            </div>
-            {wallets.unassigned !== 0 && (
-              <p className="helper wallet-help">
-                Revisa los movimientos con método Otro o no reconocido para
-                asignarlos.
-              </p>
-            )}
-            {filters}
-            <div
-              className="movement-type-tabs"
-              role="tablist"
-              aria-label="Mostrar movimientos"
-            >
-              {(
-                [
-                  ["all", "Todos"],
-                  ["income", "Ingresos"],
-                  ["expense", "Gastos"],
-                  ["credit", "TDC"],
-                  ["transfer", "Traspasos"],
-                ] as const
-              ).map(([type, label], index, options) => (
-                <button
-                  key={type}
-                  id={`movement-tab-${type}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={movementListVisible && typeFilter === type}
-                  aria-controls="movement-results"
-                  tabIndex={
-                    (movementListVisible ? typeFilter === type : index === 0)
-                      ? 0
-                      : -1
-                  }
-                  onClick={() => selectMovementType(type)}
-                  onKeyDown={(e) => {
-                    let next = index;
-                    if (e.key === "ArrowRight")
-                      next = (index + 1) % options.length;
-                    else if (e.key === "ArrowLeft")
-                      next = (index + options.length - 1) % options.length;
-                    else if (e.key === "Home") next = 0;
-                    else if (e.key === "End") next = options.length - 1;
-                    else return;
-                    e.preventDefault();
-                    selectMovementType(options[next][0]);
-                    e.currentTarget.parentElement
-                      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                      [next]?.focus();
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div
-              id="movement-results"
-              className="movement-results"
-              role={movementListVisible ? "tabpanel" : undefined}
-              aria-labelledby={
-                movementListVisible ? `movement-tab-${typeFilter}` : undefined
-              }
-            >
-              {movementListVisible ? (
-                <>
-                  <div className="movement-search">
-                    <input
-                      type="search"
-                      aria-label="Buscar movimientos"
-                      placeholder="Buscar movimientos…"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                    {search && (
-                      <button
-                        type="button"
-                        className="movement-search-clear"
-                        aria-label="Borrar búsqueda"
-                        onClick={() => setSearch("")}
-                      >
-                        <X size={18} aria-hidden="true" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="panel-heading">
-                    <h2>
-                      {filtered.length} {filteredLabel}
-                    </h2>
-                    <ExportButtons
-                      disabled={exporting || !filtered.length}
-                      onExport={(format) =>
-                        void exportReadable(
-                          movementDocument,
-                          exportNames[typeFilter],
-                          format,
-                        )
-                      }
-                    />
-                  </div>
-                  {typeFilter === "all" && filtered.length > 0 && (
-                    <div className="movement-totals">
-                      {reportColumns.map((column) => (
-                        <span
-                          key={column.key}
-                          className={
-                            column.key === "acquired" ? "total-wide" : undefined
-                          }
-                        >
-                          {column.key === "expense"
-                            ? "Gastos"
-                            : column.key === "acquired"
-                              ? "Compras TDC"
-                              : "Ingresos"}
-                          : <strong>{money(column.total)}</strong>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {typeFilter !== "all" &&
-                    typeFilter !== "credit" &&
-                    filtered.length > 0 && (
-                      <p className="filtered-total">
-                        {typeFilter === "transfer"
-                          ? "Total trasladado"
-                          : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
-                        : <strong>{money(filteredTotal)}</strong>
-                      </p>
-                    )}
-                  {tdcView && filtered.length > 0 && (
-                    <div className="filtered-total movement-totals tdc-totals">
-                      {filteredTotal > 0 && (
-                        <span>
-                          Compras: <strong>{money(filteredTotal)}</strong>
-                        </span>
-                      )}
-                      {filteredCardPayments > 0 && (
-                        <span>
-                          Abonos: <strong>{money(filteredCardPayments)}</strong>
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {movementList(filtered)}
-                </>
-              ) : (
-                <p className="helper movement-selection-prompt">
-                  Elige una opción para ver tus movimientos.
+                <p className="helper wallet-help">
+                  Revisa los movimientos con método Otro o no reconocido para
+                  asignarlos.
                 </p>
               )}
-            </div>
+            </section>
+            <section className="panel full-panel movement-main">
+              <PendingPanel
+                data={data}
+                mutate={mutate}
+                busy={busy}
+                currentDay={currentDay}
+              />
+              <div
+                className="movement-type-tabs"
+                role="tablist"
+                aria-label="Mostrar movimientos"
+              >
+                {(
+                  [
+                    ["all", "Todos"],
+                    ["income", "Ingresos"],
+                    ["expense", "Gastos"],
+                    ["credit", "TDC"],
+                    ["transfer", "Traspasos"],
+                  ] as const
+                ).map(([type, label], index, options) => (
+                  <button
+                    key={type}
+                    id={`movement-tab-${type}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={movementListVisible && typeFilter === type}
+                    aria-controls="movement-results"
+                    tabIndex={
+                      (movementListVisible ? typeFilter === type : index === 0)
+                        ? 0
+                        : -1
+                    }
+                    onClick={() => selectMovementType(type)}
+                    onKeyDown={(e) => {
+                      let next = index;
+                      if (e.key === "ArrowRight")
+                        next = (index + 1) % options.length;
+                      else if (e.key === "ArrowLeft")
+                        next = (index + options.length - 1) % options.length;
+                      else if (e.key === "Home") next = 0;
+                      else if (e.key === "End") next = options.length - 1;
+                      else return;
+                      e.preventDefault();
+                      selectMovementType(options[next][0]);
+                      e.currentTarget.parentElement
+                        ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                        [next]?.focus();
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <details className="movement-filters">
+                <summary>Filtros</summary>
+                {filters}
+              </details>
+              <div
+                id="movement-results"
+                className="movement-results"
+                role={movementListVisible ? "tabpanel" : undefined}
+                aria-labelledby={
+                  movementListVisible ? `movement-tab-${typeFilter}` : undefined
+                }
+              >
+                {movementListVisible ? (
+                  <>
+                    <div className="movement-search">
+                      <input
+                        type="search"
+                        aria-label="Buscar movimientos"
+                        placeholder="Buscar movimientos…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                      {search && (
+                        <button
+                          type="button"
+                          className="movement-search-clear"
+                          aria-label="Borrar búsqueda"
+                          onClick={() => setSearch("")}
+                        >
+                          <X size={18} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="panel-heading">
+                      <h2>
+                        {filtered.length} {filteredLabel}
+                      </h2>
+                      <ExportButtons
+                        disabled={exporting || !filtered.length}
+                        onExport={(format) =>
+                          void exportReadable(
+                            movementDocument,
+                            exportNames[typeFilter],
+                            format,
+                          )
+                        }
+                      />
+                    </div>
+                    {typeFilter === "all" && filtered.length > 0 && (
+                      <div className="movement-totals">
+                        {reportColumns.map((column) => (
+                          <span
+                            key={column.key}
+                            className={
+                              column.key === "acquired"
+                                ? "total-wide"
+                                : undefined
+                            }
+                          >
+                            {column.key === "expense"
+                              ? "Gastos"
+                              : column.key === "acquired"
+                                ? "Compras TDC"
+                                : "Ingresos"}
+                            : <strong>{money(column.total)}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {typeFilter !== "all" &&
+                      typeFilter !== "credit" &&
+                      filtered.length > 0 && (
+                        <p className="filtered-total">
+                          {typeFilter === "transfer"
+                            ? "Total trasladado"
+                            : `Total de ${typeFilter === "income" ? "ingresos" : "gastos"}`}
+                          : <strong>{money(filteredTotal)}</strong>
+                        </p>
+                      )}
+                    {tdcView && filtered.length > 0 && (
+                      <div className="filtered-total movement-totals tdc-totals">
+                        {filteredTotal > 0 && (
+                          <span>
+                            Compras: <strong>{money(filteredTotal)}</strong>
+                          </span>
+                        )}
+                        {filteredCardPayments > 0 && (
+                          <span>
+                            Abonos:{" "}
+                            <strong>{money(filteredCardPayments)}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {movementList(filtered)}
+                  </>
+                ) : (
+                  <p className="helper movement-selection-prompt">
+                    Elige una opción para ver tus movimientos.
+                  </p>
+                )}
+              </div>
+            </section>
             <RecurringPanel
               onEditing={setPlanningEditing}
               data={data}
@@ -1743,7 +1755,7 @@ export default function App() {
               busy={busy}
               categories={[...categories, "Pago de deuda"]}
             />
-          </section>
+          </div>
         )}
         {tab === "Deudas" && (
           <>

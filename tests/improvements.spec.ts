@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openSaveBackup } from "./backup-utils";
 import { openReportFilters, openBudget } from "./report-utils";
 import { openDebts } from "./debt-utils";
@@ -94,6 +95,7 @@ test("abono desde movimiento, edición de deuda/corte y búsqueda por importe, m
   await expect(page.locator(".movement")).toHaveCount(1);
   await page.getByLabel("Buscar movimientos").fill("inexistente");
   await expect(page.locator(".movement")).toHaveCount(0);
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openReportFilters } from "./report-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
@@ -147,6 +148,7 @@ test("deuda adquirida por periodo separa compras TDC de pagos y deja limpiar al 
     .boundingBox();
   const actions = await page.locator(".filter-actions").boundingBox();
   expect(actions!.y).toBeGreaterThanOrEqual(lastField!.y + lastField!.height);
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();
