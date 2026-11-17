@@ -44,7 +44,7 @@ try {
     await page
       .getByRole("heading", {
         level: 1,
-        name: "Tu resumen",
+        name: "Tu espacio",
       })
       .waitFor({ state: "visible", timeout: 20000 });
     await page

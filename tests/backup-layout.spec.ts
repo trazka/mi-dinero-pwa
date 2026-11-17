@@ -63,4 +63,31 @@ test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   );
   await expect(tools.locator(".backup-restore")).not.toHaveAttribute("open");
   await expect(tools.locator(".backup-exports")).not.toHaveAttribute("open");
+  await expect(page.locator(".page .app-version")).toHaveText(
+    /Versión en uso: \d+\.\d+\.\d+ · (?:[a-f0-9]{7}|local)/,
+  );
+  for (const width of [390, 844, 1280]) {
+    await page.setViewportSize({ width, height: width === 844 ? 390 : 844 });
+    const boxes = await page
+      .locator(
+        ".page .backup-save, .page .backup-restore, .page .backup-exports, .page .security-panel, .page .backup-grid > .install",
+      )
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const { x, y, width, height } = node.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      );
+    expect(boxes).toHaveLength(5);
+    for (const [index, box] of boxes.entries()) {
+      expect(Math.abs(box.x - boxes[0].x)).toBeLessThan(1);
+      expect(Math.abs(box.width - boxes[0].width)).toBeLessThan(1);
+      if (index > 0) {
+        const previous = boxes[index - 1];
+        expect(
+          Math.abs(box.y - previous.y - previous.height - 14),
+        ).toBeLessThan(1);
+      }
+    }
+  }
 });
