@@ -2181,6 +2181,7 @@ export default function App() {
                   tus datos sin cifrar.
                 </p>
               </div>
+              <p className="app-version">Versión en uso: {__APP_VERSION__}</p>
             </section>
           </div>
         )}

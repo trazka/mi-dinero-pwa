@@ -720,8 +720,8 @@ th {
 }
 .backup-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 25px;
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 .backup {
   padding: 30px;
@@ -3430,4 +3430,11 @@ li {
 :root[data-theme] .app > .section-add:hover {
   background: #006bc2;
   border-color: #006bc2;
+}
+
+.backup .app-version {
+  margin: 16px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
 }
