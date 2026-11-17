@@ -3399,3 +3399,35 @@ li {
   background: var(--native-surface, #fff);
   border-radius: 22px;
 }
+
+/* Acento azul aislado: navegación seleccionada y botón flotante. */
+:root {
+  --navigation-blue: #075fa9;
+  --navigation-blue-surface: #e0f0ff;
+}
+:root[data-theme="dark"] {
+  --navigation-blue: #72c5ff;
+  --navigation-blue-surface: #123b57;
+}
+:root[data-theme] .sidebar nav button.active {
+  color: var(--navigation-blue);
+  background: var(--navigation-blue-surface);
+}
+:root[data-theme] .mobile-nav button.active {
+  color: var(--navigation-blue);
+}
+:root[data-theme] .mobile-nav button.active::before {
+  background: var(--navigation-blue-surface);
+}
+.sidebar nav button.active i {
+  background: var(--navigation-blue);
+}
+:root[data-theme] .app > .section-add {
+  color: #fff;
+  background: #0078d4;
+  border-color: #0078d4;
+}
+:root[data-theme] .app > .section-add:hover {
+  background: #006bc2;
+  border-color: #006bc2;
+}
