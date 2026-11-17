@@ -16,7 +16,7 @@ export function useRevealExpanded(
       if (
         !target?.isConnected ||
         !target.getClientRects().length ||
-        target.closest("[hidden]")
+        target.closest("[hidden], details:not([open])")
       )
         return;
       const pageBox = page!.getBoundingClientRect();
