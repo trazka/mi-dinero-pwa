@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { test, expect } from "@playwright/test";
 import { exportText } from "./export-utils";
 import { setBackupFile } from "./backup-utils";
@@ -110,6 +111,8 @@ test("pestañas filtran listado, total y exportación, conservan fechas y adapta
   await expect(
     page.getByLabel("Tipo de movimiento", { exact: true }),
   ).toHaveCount(0);
+  await expect(page.getByLabel("Desde", { exact: true })).toBeHidden();
+  await openMovementFilters(page);
   await expect(page.getByLabel("Desde", { exact: true })).toBeVisible();
   await expect(
     page.getByLabel("Buscar movimientos", { exact: true }),
@@ -148,6 +151,7 @@ test("pestañas filtran listado, total y exportación, conservan fechas y adapta
   ).toBeVisible();
   await expect(page.getByLabel("Categoría", { exact: true })).toHaveValue("");
   await expect(page.locator(".filtered-total")).toContainText("$40.00");
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

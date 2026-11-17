@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -145,6 +146,7 @@ test("filtros visibles no mezclan reservas ni disponible y exportan los mismos r
   expect(
     await active.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
   ).toBe(true);
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

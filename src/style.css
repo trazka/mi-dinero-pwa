@@ -3356,3 +3356,46 @@ li {
   width: 14px;
   height: 14px;
 }
+
+.movements-layout {
+  display: grid;
+  gap: 14px;
+}
+.wallet-panel .wallet-balances {
+  margin: 0;
+}
+.wallet-panel .wallet-help {
+  margin-bottom: 0;
+}
+.movement-main > .movement-type-tabs {
+  margin-top: 0;
+}
+.movement-filters {
+  margin: 14px 0;
+  border: 1px solid var(--native-line, #e2e8df);
+  border-radius: 15px;
+  color: inherit;
+}
+.movement-filters > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  list-style: none;
+}
+.movement-filters > summary::-webkit-details-marker {
+  display: none;
+}
+.movement-filters .filters {
+  padding: 12px;
+  margin: 0;
+  border: 0;
+}
+.movements-layout > .recurring-section {
+  margin: 0;
+  padding: 0 16px;
+  background: var(--native-surface, #fff);
+  border-radius: 22px;
+}

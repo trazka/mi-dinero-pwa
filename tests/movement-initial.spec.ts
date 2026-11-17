@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { test, expect, type Page } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
 import { revealHomeSummary } from "./home-utils";
@@ -89,9 +90,27 @@ test("Movimientos empieza sin seleccionar y solo muestra el listado al elegir un
   await expect(
     page.getByRole("button", { name: "Gastos recurrentes", exact: true }),
   ).toHaveAttribute("aria-expanded", "false");
-  await page
-    .getByRole("button", { name: "Limpiar filtros", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Limpiar filtros", exact: true }),
+  ).toBeHidden();
+  await expect(page.locator(".movement-filters")).not.toHaveAttribute("open");
+  expect(
+    await tabs.evaluate((el) => {
+      const wallet = document.querySelector(".page .wallet-panel")!;
+      const recurring = document.querySelector(".page .recurring-section")!;
+      return (
+        !!(
+          wallet.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING
+        ) &&
+        !!(
+          el.compareDocumentPosition(recurring) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        ) &&
+        wallet !== el.closest("section")
+      );
+    }),
+  ).toBe(true);
+
   await expect(tabs.locator('[aria-selected="true"]')).toHaveCount(0);
   await page
     .getByRole("button", { name: "Nuevo movimiento", exact: true })
@@ -250,6 +269,7 @@ test("búsqueda visible filtra la opción elegida, totales y exportación", asyn
   await search.fill("Gasto");
   await expect(results.locator(".movement-list > article")).toHaveCount(1);
   await expect(results).toContainText("$50.00");
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();

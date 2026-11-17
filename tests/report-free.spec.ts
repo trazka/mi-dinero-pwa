@@ -1,3 +1,4 @@
+import { openMovementFilters } from "./filter-utils";
 import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
 import { setBackupFile } from "./backup-utils";
@@ -94,6 +95,7 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   await expect(range).toHaveText("Periodo: 21 oct – 14 nov 2026");
   await expect(table.locator("h3").first()).toContainText("Semana del");
   await page.getByLabel("Agrupar por").selectOption("monthly");
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();
@@ -101,6 +103,7 @@ test("Reportes descuenta reservas, libera retiros y cabe en el teléfono", async
   await expect(range).toHaveText("Periodo: Hasta el 14 nov 2026");
   await chooseDate(page, "Desde", "2025-10-21");
   await expect(range).toHaveText("Periodo: 21 oct 2025 – 14 nov 2026");
+  await openMovementFilters(page);
   await page
     .getByRole("button", { name: "Limpiar filtros", exact: true })
     .click();
