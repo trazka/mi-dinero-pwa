@@ -182,11 +182,11 @@ test("recurrente requiere confirmación, avanza sin duplicar y presupuesto solo 
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();
   const path = await (await event).path();
-  await expect(page.locator(".backup-history")).toContainText(
+  await expect(page.locator(".backup-save")).toContainText(
     "Exportación iniciada:",
   );
-  await expect(page.locator(".backup-history")).toContainText(
-    "Tu respaldo está al día",
+  await expect(page.locator(".backup-save")).toContainText(
+    "Comprueba que guardaste el JSON",
   );
   await page.reload();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();

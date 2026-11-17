@@ -2033,106 +2033,107 @@ export default function App() {
         )}
         {tab === "Respaldos" && (
           <div className="backup-grid">
-            <SecurityPanel />
-            <div className="panel backup backup-history">
-              <h2>Tu último respaldo</h2>
-              <p>
-                {data.lastBackupAt
-                  ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
-                  : "Todavía no has exportado un respaldo."}
-              </p>
-              <p>
-                {backupOverdue(data.lastBackupAt)
-                  ? "Te recomendamos exportar un respaldo cada semana."
-                  : "Tu respaldo está al día. Comprueba que guardaste el archivo."}
-              </p>
-            </div>
-            <section className="panel backup">
-              <ShieldCheck size={30} />
-              <h2>Un respaldo, más tranquilidad</h2>
-              <p>
-                Exporta todos tus movimientos, deudas y abonos a un archivo
-                JSON. Guárdalo en Archivos o en un lugar de confianza.
-              </p>
-              <button
-                className="button"
-                disabled={!loaded || busy}
-                onClick={() => void exportBackup()}
-              >
-                <Download size={18} /> Exportar respaldo JSON
-              </button>
-              <div className="divider" />
-              <h3>Restaurar tus datos</h3>
-              <p>
-                La importación reemplaza los datos de este dispositivo. Exporta
-                primero tu respaldo actual. El archivo se valida antes de
-                guardar.
-              </p>
-              <label className="button secondary file-button">
-                <Upload size={18} /> Importar respaldo JSON
-                <input
-                  type="file"
-                  accept=".json,application/json"
+            <div className="backup-tools">
+              <section className="panel backup backup-save">
+                <h2>Guardar respaldo</h2>
+                <p className="backup-last">
+                  {data.lastBackupAt
+                    ? `Exportación iniciada: ${new Date(data.lastBackupAt).toLocaleString("es-MX")}`
+                    : "Todavía no has exportado un respaldo."}
+                </p>
+                <p className="helper">
+                  {backupOverdue(data.lastBackupAt)
+                    ? "Guarda un JSON cada semana para poder restaurar tus datos."
+                    : "Comprueba que guardaste el JSON para poder restaurar tus datos."}
+                </p>
+                <button
+                  className="button"
+                  aria-label="Exportar respaldo JSON"
                   disabled={!loaded || busy}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!file) return;
-                    try {
-                      if (file.size > 10 * 1024 * 1024)
-                        throw Error("El archivo supera el límite de 10 MB.");
-                      const backup = validateBackup(
-                        JSON.parse(await file.text()),
-                      );
-                      if (
-                        confirm(
-                          `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
-                        )
+                  onClick={() => void exportBackup()}
+                >
+                  <Download size={18} /> Descargar JSON
+                </button>
+              </section>
+              <details className="panel backup-fold backup-restore">
+                <summary>Restaurar respaldo</summary>
+                <div className="backup-fold-content">
+                  <p>
+                    Importar reemplaza los datos de este dispositivo. Guarda
+                    primero tu respaldo actual.
+                  </p>
+                  <label className="button secondary file-button">
+                    <Upload size={18} /> Importar respaldo JSON
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      disabled={!loaded || busy}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        try {
+                          if (file.size > 10 * 1024 * 1024)
+                            throw Error(
+                              "El archivo supera el límite de 10 MB.",
+                            );
+                          const backup = validateBackup(
+                            JSON.parse(await file.text()),
+                          );
+                          if (
+                            confirm(
+                              `¿Reemplazar todos los datos por ${backup.movements.length} movimientos, ${backup.debts.length} deudas, ${backup.budgets?.length ?? 0} presupuestos y ${backup.recurrents?.length ?? 0} recurrentes y ${backup.pendingMovements?.length ?? 0} pendientes?`,
+                            )
+                          )
+                            await mutate(() => backup);
+                        } catch (err) {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "No se pudo importar el respaldo.",
+                          );
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </details>
+              <details className="panel backup-fold backup-exports">
+                <summary>Exportar movimientos</summary>
+                <div className="backup-fold-content">
+                  <p>
+                    Para consultar o compartir. Para restaurar la app, usa JSON.
+                  </p>
+                  <ExportButtons
+                    disabled={exporting || !data.movements.length}
+                    onExport={(format) =>
+                      void exportReadable(
+                        movementExport(
+                          normalizeExports(newestFirst),
+                          "Todos los movimientos",
+                          ["Todos los registros"],
+                        ),
+                        "movimientos",
+                        format,
                       )
-                        await mutate(() => backup);
-                    } catch (err) {
-                      setError(
-                        err instanceof Error
-                          ? err.message
-                          : "No se pudo importar el respaldo.",
-                      );
                     }
-                  }}
-                />
-              </label>
-              <div className="divider" />
-              <h3>Para consultar y compartir</h3>
-              <p>
-                Descarga tus movimientos en Excel, PDF o CSV. Estos archivos son
-                para consultar; usa JSON para restaurar tus datos.
-              </p>
-              <ExportButtons
-                disabled={exporting || !data.movements.length}
-                onExport={(format) =>
-                  void exportReadable(
-                    movementExport(
-                      normalizeExports(newestFirst),
-                      "Todos los movimientos",
-                      ["Todos los registros"],
-                    ),
-                    "movimientos",
-                    format,
-                  )
-                }
-              />
-              <button
-                className="button secondary"
-                onClick={() =>
-                  download(
-                    csv(data.movements),
-                    `movimientos-${today()}.csv`,
-                    "text/csv;charset=utf-8",
-                  )
-                }
-              >
-                <Download size={18} /> Exportar movimientos CSV
-              </button>
-            </section>
+                  />
+                  <button
+                    className="button secondary"
+                    onClick={() =>
+                      download(
+                        csv(data.movements),
+                        `movimientos-${today()}.csv`,
+                        "text/csv;charset=utf-8",
+                      )
+                    }
+                  >
+                    <Download size={18} /> Exportar movimientos CSV
+                  </button>
+                </div>
+              </details>
+            </div>
+            <SecurityPanel />
             <section className="panel backup install">
               <span className="install-icon">
                 <Wallet size={28} />
