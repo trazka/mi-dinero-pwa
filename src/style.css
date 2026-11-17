@@ -3297,17 +3297,11 @@ li {
   display: grid;
   gap: 14px;
 }
-.backup-save {
-  padding: 18px 16px;
-}
-.backup-save h2 {
-  margin: 0;
-  font-size: 16px;
-}
+
 .backup-save p {
   margin: 8px 0;
 }
-.backup-save > .button {
+.backup-save .button {
   margin-top: 6px;
 }
 .backup-fold {

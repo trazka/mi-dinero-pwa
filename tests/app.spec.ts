@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { openReportFilters } from "./report-utils";
 import { openDebts } from "./debt-utils";
 import { selectAllMovements } from "./movement-utils";
@@ -114,6 +115,7 @@ test("flujos de movimientos, deudas, filtros, respaldos y persistencia en iPhone
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
   const promise = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page.getByRole("button", { name: "Exportar respaldo JSON" }).click();
   const download = await promise;
   const path = await download.path();

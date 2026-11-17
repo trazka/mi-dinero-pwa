@@ -223,108 +223,109 @@ export function SecurityPanel() {
     }
   }
   return (
-    <section className="panel backup security-panel">
-      <ShieldCheck size={24} />
-      <h2>Seguridad</h2>
-      <p>
-        Bloqueo opcional al abrir y al dejar la app. El iPhone decide si utiliza
-        Face ID o el código del dispositivo.
-      </p>
-      <p className="helper">
-        Protege el acceso a la interfaz. Los datos locales y los respaldos JSON
-        no se cifran con este bloqueo.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {security.config ? (
-        <>
-          <p>Bloqueo activado</p>
-          <button className="button secondary" onClick={security.lock}>
-            Bloquear ahora
-          </button>
-          <button
-            className="text-button"
-            onClick={() => {
-              if (
-                confirm(
-                  "¿Desactivar el bloqueo de Mi dinero en este dispositivo?",
-                )
-              ) {
+    <details className="panel backup-fold security-panel">
+      <summary>Seguridad</summary>
+      <div className="backup-fold-content">
+        <p>
+          Bloqueo opcional al abrir y al dejar la app. El iPhone decide si
+          utiliza Face ID o el código del dispositivo.
+        </p>
+        <p className="helper">
+          Protege el acceso a la interfaz. Los datos locales y los respaldos
+          JSON no se cifran con este bloqueo.
+        </p>
+        {error && <p role="alert">{error}</p>}
+        {security.config ? (
+          <>
+            <p>Bloqueo activado</p>
+            <button className="button secondary" onClick={security.lock}>
+              Bloquear ahora
+            </button>
+            <button
+              className="text-button"
+              onClick={() => {
+                if (
+                  confirm(
+                    "¿Desactivar el bloqueo de Mi dinero en este dispositivo?",
+                  )
+                ) {
+                  try {
+                    void security
+                      .save(null)
+                      .catch(() =>
+                        setError(
+                          "No se pudo guardar el cambio. El bloqueo sigue activo.",
+                        ),
+                      );
+                  } catch {
+                    setError(
+                      "No se pudo guardar el cambio. El bloqueo sigue activo.",
+                    );
+                  }
+                }
+              }}
+            >
+              Desactivar bloqueo
+            </button>
+          </>
+        ) : pending ? (
+          <>
+            <p>
+              Guarda este código fuera de la app. Permite entrar si pierdes
+              acceso a tu llave.
+            </p>
+            <code className="recovery-code">{pending.code}</code>
+            <label className="recovery-confirm">
+              <input
+                type="checkbox"
+                checked={saved}
+                onChange={(e) => setSaved(e.target.checked)}
+              />
+              Ya guardé mi código de recuperación
+            </label>
+            <button
+              className="button"
+              disabled={!saved}
+              onClick={() => {
                 try {
                   void security
-                    .save(null)
+                    .save(pending.config)
+                    .then(() => setPending(null))
                     .catch(() =>
                       setError(
-                        "No se pudo guardar el cambio. El bloqueo sigue activo.",
+                        "No se pudo guardar el bloqueo. No se ha activado.",
                       ),
                     );
                 } catch {
-                  setError(
-                    "No se pudo guardar el cambio. El bloqueo sigue activo.",
-                  );
+                  setError("No se pudo guardar el bloqueo. No se ha activado.");
                 }
-              }
-            }}
-          >
-            Desactivar bloqueo
-          </button>
-        </>
-      ) : pending ? (
-        <>
-          <p>
-            Guarda este código fuera de la app. Permite entrar si pierdes acceso
-            a tu llave.
-          </p>
-          <code className="recovery-code">{pending.code}</code>
-          <label className="recovery-confirm">
-            <input
-              type="checkbox"
-              checked={saved}
-              onChange={(e) => setSaved(e.target.checked)}
-            />
-            Ya guardé mi código de recuperación
-          </label>
-          <button
-            className="button"
-            disabled={!saved}
-            onClick={() => {
-              try {
-                void security
-                  .save(pending.config)
-                  .then(() => setPending(null))
-                  .catch(() =>
-                    setError(
-                      "No se pudo guardar el bloqueo. No se ha activado.",
-                    ),
-                  );
-              } catch {
-                setError("No se pudo guardar el bloqueo. No se ha activado.");
-              }
-            }}
-          >
-            Confirmar activación
-          </button>
-          <button className="text-button" onClick={() => setPending(null)}>
-            Cancelar activación
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            className="button secondary"
-            disabled={!available || busy}
-            onClick={() => void setup()}
-          >
-            {busy ? "Configurando…" : "Activar bloqueo del dispositivo"}
-          </button>
-          {available === false && (
-            <p>
-              Este navegador no ofrece autenticación compatible. Prueba desde la
-              app instalada con Safari en un iPhone con bloqueo de pantalla y
-              llaves de acceso configurados.
-            </p>
-          )}
-        </>
-      )}
-    </section>
+              }}
+            >
+              Confirmar activación
+            </button>
+            <button className="text-button" onClick={() => setPending(null)}>
+              Cancelar activación
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="button secondary"
+              disabled={!available || busy}
+              onClick={() => void setup()}
+            >
+              {busy ? "Configurando…" : "Activar bloqueo del dispositivo"}
+            </button>
+            {available === false && (
+              <p>
+                Este navegador no ofrece autenticación compatible. Prueba desde
+                la app instalada con Safari en un iPhone con bloqueo de pantalla
+                y llaves de acceso configurados.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </details>
   );
 }

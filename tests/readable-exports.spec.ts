@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { openBackupExports } from "./backup-utils";
 import { openReportFilters } from "./report-utils";
 import { test, expect } from "@playwright/test";
@@ -156,6 +157,7 @@ test("Excel y PDF respetan tipo y fechas; Reportes exporta agrupación y funcion
   await openBackupExports(page);
   const all = await xlsx();
   expect(all.getWorksheet("Datos")!.rowCount).toBe(6);
+  await openSaveBackup(page);
   await expect(
     page.getByRole("button", { name: "Exportar respaldo JSON", exact: true }),
   ).toBeVisible();

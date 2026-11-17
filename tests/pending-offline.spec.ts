@@ -1,3 +1,4 @@
+import { openSaveBackup } from "./backup-utils";
 import { selectAllMovements } from "./movement-utils";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -54,6 +55,7 @@ test("JSON y modo offline conservan pendientes, cancelar no descuenta y confirma
   });
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   const download = page.waitForEvent("download");
+  await openSaveBackup(page);
   await page
     .getByRole("button", { name: "Exportar respaldo JSON", exact: true })
     .click();

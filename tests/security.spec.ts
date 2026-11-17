@@ -1,3 +1,4 @@
+import { openSecurity } from "./backup-utils";
 import { revealHomeSummary } from "./home-utils";
 import { test, expect } from "@playwright/test";
 
@@ -37,6 +38,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openSecurity(page);
   await page
     .getByRole("button", { name: "Activar bloqueo del dispositivo" })
     .click();
@@ -66,6 +68,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   await context.setOffline(false);
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openSecurity(page);
   // Backgrounding must hide a draft without discarding it.
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await page
@@ -97,6 +100,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
   );
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openSecurity(page);
   await page
     .getByRole("button", { name: "Bloquear ahora", exact: true })
     .click();
@@ -153,6 +157,7 @@ test("bloqueo con llave verificada, recuperación y acceso offline conservan dat
   await revealHomeSummary(page);
   await expect(page.locator(".balance-number")).toContainText("-$50.00");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
+  await openSecurity(page);
   page.once("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Desactivar bloqueo", exact: true })
@@ -177,6 +182,7 @@ test("sin autenticador compatible la activación queda deshabilitada", async ({
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("button", { name: "Respaldos", exact: true })
     .click();
+  await openSecurity(page);
   await expect(
     page.getByRole("button", { name: "Activar bloqueo del dispositivo" }),
   ).toBeDisabled();
