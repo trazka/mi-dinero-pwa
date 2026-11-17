@@ -3337,3 +3337,28 @@ li {
 .backup-fold-content > .export-actions {
   margin: 0 0 12px;
 }
+
+.backup-exports .backup-fold-content {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.backup-exports .backup-fold-content > p {
+  grid-column: 1 / -1;
+}
+.backup-exports .export-actions {
+  display: contents;
+}
+.backup-exports .button {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 6px;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.backup-exports .button svg {
+  width: 14px;
+  height: 14px;
+}

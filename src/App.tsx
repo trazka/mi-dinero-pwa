@@ -2120,6 +2120,7 @@ export default function App() {
                   />
                   <button
                     className="button secondary"
+                    aria-label="Exportar movimientos CSV"
                     onClick={() =>
                       download(
                         csv(data.movements),
@@ -2128,7 +2129,7 @@ export default function App() {
                       )
                     }
                   >
-                    <Download size={18} /> Exportar movimientos CSV
+                    <Download size={18} /> CSV
                   </button>
                 </div>
               </details>

@@ -27,6 +27,22 @@ test("Respaldos prioriza guardar y pliega restauración y documentos", async ({
   await expect(
     tools.getByRole("button", { name: "Excel", exact: true }),
   ).toBeVisible();
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const buttons = tools.locator(".backup-exports .button");
+    const boxes = await buttons.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const { x, y, width, height } = node.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    );
+    expect(boxes).toHaveLength(3);
+    expect(
+      Math.max(...boxes.map((b) => b.y)) - Math.min(...boxes.map((b) => b.y)),
+    ).toBeLessThan(1);
+    expect(boxes[2].x + boxes[2].width).toBeLessThanOrEqual(width);
+    expect(boxes.every((b) => b.height >= 44)).toBe(true);
+  }
   await nav.getByRole("button", { name: "Inicio", exact: true }).click();
   await expect(page.locator(".page h1")).toHaveText("Tu espacio");
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
