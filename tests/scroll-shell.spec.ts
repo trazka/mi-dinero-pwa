@@ -60,6 +60,12 @@ test("en iPhone solo desplaza contenido y conserva encabezado, pestañas y acces
   await expect(
     page.getByRole("button", { name: "Cerrar formulario", exact: true }),
   ).toBeInViewport();
+  const closeBox = await page
+    .getByRole("button", { name: "Cerrar formulario", exact: true })
+    .boundingBox();
+  expect(closeBox).not.toBeNull();
+  expect(closeBox!.width).toBe(44);
+  expect(closeBox!.height).toBe(44);
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   await page
     .getByRole("button", { name: "Cerrar formulario", exact: true })

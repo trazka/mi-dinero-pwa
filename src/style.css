@@ -832,7 +832,20 @@ li {
   padding: 0 0 24px;
 }
 .modal .panel-heading button {
-  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+.modal .panel-heading button svg {
+  display: block;
+  flex-shrink: 0;
 }
 .form-grid {
   display: grid;
@@ -1790,8 +1803,6 @@ li {
     font-size: 20px;
   }
   .modal .panel-heading button {
-    min-width: 38px;
-    min-height: 38px;
     border-radius: 50%;
     background: var(--native-active);
   }
@@ -3402,12 +3413,12 @@ li {
 
 /* Acento azul aislado: navegación seleccionada y botón flotante. */
 :root {
-  --navigation-blue: #075fa9;
-  --navigation-blue-surface: #e0f0ff;
+  --navigation-blue: #1646a0;
+  --navigation-blue-surface: #e7edff;
 }
 :root[data-theme="dark"] {
-  --navigation-blue: #72c5ff;
-  --navigation-blue-surface: #123b57;
+  --navigation-blue: #80a9f4;
+  --navigation-blue-surface: #1a2e58;
 }
 :root[data-theme] .sidebar nav button.active {
   color: var(--navigation-blue);
@@ -3424,12 +3435,12 @@ li {
 }
 :root[data-theme] .app > .section-add {
   color: #fff;
-  background: #0078d4;
-  border-color: #0078d4;
+  background: #1646a0;
+  border-color: #1646a0;
 }
 :root[data-theme] .app > .section-add:hover {
-  background: #006bc2;
-  border-color: #006bc2;
+  background: #10367e;
+  border-color: #10367e;
 }
 
 .backup .app-version {
