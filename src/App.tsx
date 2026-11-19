@@ -1,4 +1,5 @@
 import { useRevealExpanded } from "./useRevealExpanded";
+import RecurringReport from "./RecurringReport";
 import EditIcon from "./EditIcon";
 import MsiFields from "./MsiFields";
 import MsiProjection from "./MsiProjection";
@@ -2041,6 +2042,7 @@ export default function App() {
                 ]}
               />
             </details>
+            <RecurringReport recurrents={data.recurrents} />
           </>
         )}
         {tab === "Respaldos" && (

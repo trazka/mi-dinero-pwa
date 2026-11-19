@@ -3417,3 +3417,57 @@ li {
   opacity: 0.8;
   overflow-wrap: anywhere;
 }
+
+.report-recurring {
+  margin: 14px 0 0;
+  padding: 0 16px;
+  color: inherit;
+}
+.report-recurring > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  list-style: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+.report-recurring > summary::-webkit-details-marker {
+  display: none;
+}
+.report-recurring small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.recurring-monthly-total {
+  white-space: nowrap;
+}
+.recurring-report-content {
+  padding-bottom: 12px;
+}
+.recurring-report-content > p {
+  margin: 8px 0;
+}
+.recurring-report-items {
+  margin: 12px 0;
+}
+.recurring-report-items > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--native-line, #dce4da);
+}
+.recurring-report-items dt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.recurring-report-items dt small {
+  display: block;
+  margin-top: 4px;
+}
+.recurring-report-items dd {
+  margin: 0;
+  white-space: nowrap;
+}

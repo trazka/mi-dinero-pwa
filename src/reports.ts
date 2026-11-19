@@ -1,4 +1,31 @@
-import { expenseAmount, type Movement, type Saving } from "./data";
+import {
+  expenseAmount,
+  type Movement,
+  type Saving,
+  type Recurring,
+} from "./data";
+
+export function recurringMonthlyReport(recurrents: Recurring[] = []) {
+  const items = recurrents
+    .filter((r) => r.active)
+    .map((rule) => {
+      const amount = Math.round(rule.amount * 100);
+      const monthlyCents =
+        rule.frequency === "weekly"
+          ? Math.round((amount * 52) / 12)
+          : rule.frequency === "yearly"
+            ? Math.round(amount / 12)
+            : amount;
+      return { rule, monthly: monthlyCents / 100 };
+    });
+  return {
+    items,
+    total:
+      items.reduce((sum, item) => sum + Math.round(item.monthly * 100), 0) /
+      100,
+    paused: recurrents.length - items.length,
+  };
+}
 
 export type ReportGroup = {
   income: number;

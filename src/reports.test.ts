@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { groupReport, reportFree, reportUsed } from "./reports";
-import type { Movement, Saving } from "./data";
+import {
+  groupReport,
+  reportFree,
+  reportUsed,
+  recurringMonthlyReport,
+} from "./reports";
+import type { Movement, Saving, Recurring } from "./data";
 const income: Movement = {
   id: "i",
   type: "income",
@@ -62,5 +67,49 @@ describe("dinero libre en reportes", () => {
     );
     expect([...groups.keys()]).toEqual(["2026-10-26"]);
     expect(reportFree(groups.get("2026-10-26")!)).toBe(100.01);
+  });
+});
+
+describe("estimación mensual de recurrentes", () => {
+  const rule = (
+    id: string,
+    amount: number,
+    frequency: Recurring["frequency"],
+    active = true,
+  ): Recurring => ({
+    id,
+    merchant: id,
+    amount,
+    frequency,
+    active,
+    category: "Hogar",
+    method: "Efectivo",
+    nextDate: "2099-11-19",
+    anchorDay: 19,
+  });
+  it("suma activos mensuales, semanales y anuales sin incluir los pausados", () => {
+    const result = recurringMonthlyReport([
+      rule("Internet", 500, "monthly"),
+      rule("Transporte", 120, "weekly"),
+      rule("Suscripción", 1200, "yearly"),
+      rule("Pausado", 9000, "monthly", false),
+    ]);
+    expect(result.items.map((item) => item.monthly)).toEqual([500, 520, 100]);
+    expect(result.total).toBe(1120);
+    expect(result.paused).toBe(1);
+  });
+  it("redondea cada equivalente a centavos y hace coincidir el total con el desglose", () => {
+    const result = recurringMonthlyReport([
+      rule("Semanal", 10, "weekly"),
+      rule("Anual", 100, "yearly"),
+    ]);
+    expect(result.items.map((item) => item.monthly)).toEqual([43.33, 8.33]);
+    expect(result.total).toBe(51.66);
+  });
+  it("devuelve cero sin reglas o con todas pausadas", () => {
+    expect(recurringMonthlyReport().total).toBe(0);
+    expect(
+      recurringMonthlyReport([rule("Pausado", 10, "weekly", false)]),
+    ).toEqual({ items: [], total: 0, paused: 1 });
   });
 });
