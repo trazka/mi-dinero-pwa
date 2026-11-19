@@ -10,7 +10,7 @@ export default function RecurringReport({
 }) {
   const { items, total, paused } = recurringMonthlyReport(recurrents);
   return (
-    <details className="panel report-recurring">
+    <details className="panel report-recurring" name="report-sections">
       <summary>Recurrentes</summary>
       <div className="recurring-report-content">
         {items.length ? (
