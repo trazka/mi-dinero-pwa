@@ -3426,7 +3426,7 @@ li {
 .report-recurring > summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   min-height: 44px;
   list-style: none;
@@ -3440,11 +3440,8 @@ li {
   font-size: 12px;
   font-weight: 400;
 }
-.recurring-monthly-total {
-  white-space: nowrap;
-}
 .recurring-report-content {
-  padding-bottom: 12px;
+  padding-bottom: 64px;
 }
 .recurring-report-content > p {
   margin: 8px 0;
@@ -3468,6 +3465,24 @@ li {
   margin-top: 4px;
 }
 .recurring-report-items dd {
+  margin: 0;
+  white-space: nowrap;
+}
+.recurring-report-items > div:last-child {
+  border-bottom: 0;
+}
+.recurring-report-total {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--native-line, #dce4da);
+  font-weight: 600;
+}
+.recurring-report-total > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.recurring-report-total dd {
   margin: 0;
   white-space: nowrap;
 }

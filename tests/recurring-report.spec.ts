@@ -8,9 +8,12 @@ test("Reportes muestra el promedio mensual activo y su desglose sin registrar mo
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   const report = page.locator(".page .report-recurring");
-  await expect(report.locator("summary")).toContainText("$0.00");
+  await expect(report.locator("summary")).toHaveText("Recurrentes");
   await report.locator("summary").click();
   await expect(report).toContainText("No tienes recurrentes activos.");
+  await expect(report.locator(".recurring-report-total dd")).toHaveText(
+    "$0.00",
+  );
   await nav.getByRole("button", { name: "Respaldos", exact: true }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await setBackupFile(page, {
@@ -63,14 +66,26 @@ test("Reportes muestra el promedio mensual activo y su desglose sin registrar mo
   await expect(page.getByRole("status")).toContainText("Datos guardados");
   await nav.getByRole("button", { name: "Reportes", exact: true }).click();
   await expect(report).not.toHaveAttribute("open");
-  await expect(report.locator("summary")).toContainText("$1,120.00");
+  await expect(report.locator("summary")).toHaveText("Recurrentes");
   await report.locator("summary").click();
-  await expect(report.locator("dl > div")).toHaveCount(3);
-  await expect(report.locator("dd")).toHaveText([
+  await expect(report.locator(".recurring-report-items > div")).toHaveCount(3);
+  await expect(report.locator(".recurring-report-items dd")).toHaveText([
     "$500.00 /mes",
     "$520.00 /mes",
     "$100.00 /mes",
   ]);
+  await expect(report.locator(".recurring-report-items dt").first()).toHaveText(
+    "Internet",
+  );
+  await expect(
+    report.locator(".recurring-report-items dt").nth(1),
+  ).toContainText("Semanal · $120.00");
+  await expect(
+    report.locator(".recurring-report-items dt").nth(2),
+  ).toContainText("Anual · $1,200.00");
+  await expect(report.locator(".recurring-report-total")).toHaveText(
+    "Total mensual$1,120.00",
+  );
   await expect(report).toContainText("1 pausado no incluido");
   await expect(page.locator(".page .report-results")).toContainText(
     "Aún no hay datos para este periodo",

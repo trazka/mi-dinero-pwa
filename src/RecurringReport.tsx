@@ -11,12 +11,7 @@ export default function RecurringReport({
   const { items, total, paused } = recurringMonthlyReport(recurrents);
   return (
     <details className="panel report-recurring">
-      <summary>
-        <span>Recurrentes</span>
-        <span className="recurring-monthly-total">
-          {money(total)} <small>/mes</small>
-        </span>
-      </summary>
+      <summary>Recurrentes</summary>
       <div className="recurring-report-content">
         {items.length ? (
           <>
@@ -34,9 +29,11 @@ export default function RecurringReport({
                 <div key={rule.id}>
                   <dt>
                     {rule.merchant}
-                    <small>
-                      {frequencies[rule.frequency]} · {money(rule.amount)}
-                    </small>
+                    {rule.frequency !== "monthly" && (
+                      <small>
+                        {frequencies[rule.frequency]} · {money(rule.amount)}
+                      </small>
+                    )}
                   </dt>
                   <dd>
                     {money(monthly)} <small>/mes</small>
@@ -48,6 +45,12 @@ export default function RecurringReport({
         ) : (
           <p className="helper">No tienes recurrentes activos.</p>
         )}
+        <dl className="recurring-report-total">
+          <div>
+            <dt>Total mensual</dt>
+            <dd>{money(total)}</dd>
+          </div>
+        </dl>
         {paused > 0 && (
           <p className="helper">
             {paused}{" "}
