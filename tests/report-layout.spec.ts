@@ -9,6 +9,7 @@ test("Reportes muestra resultados antes de controles y presupuesto cerrado", asy
   await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   const budget = page.locator(".page .report-budget");
   const filters = page.locator(".page .report-filters");
+  const recurrents = page.locator(".page .report-recurring");
   await expect(budget).not.toHaveAttribute("open");
   expect(
     await budget.evaluate(
@@ -36,6 +37,18 @@ test("Reportes muestra resultados antes de controles y presupuesto cerrado", asy
   expect((await budget.boundingBox())!.height).toBeLessThan(200);
   await page.getByText("Agregar límite", { exact: true }).click();
   await expect(page.getByLabel("Límite mensual (MXN)")).toBeVisible();
+  await expect(budget).toHaveAttribute("open");
+  await recurrents.locator(":scope > summary").click();
+  await expect(recurrents).toHaveAttribute("open");
+  await expect(budget).not.toHaveAttribute("open");
+  await expect(page.getByLabel("Límite mensual (MXN)")).toBeHidden();
+  await filters.locator(":scope > summary").click();
+  await expect(filters).toHaveAttribute("open");
+  await expect(recurrents).not.toHaveAttribute("open");
+  await budget.locator(":scope > summary").click();
+  await expect(budget).toHaveAttribute("open");
+  await expect(filters).not.toHaveAttribute("open");
+  await expect(page.getByLabel("Límite mensual (MXN)")).toBeHidden();
   await budget.locator(":scope > summary").click();
   await expect(page.getByLabel("Límite mensual (MXN)")).toBeHidden();
   await expect(
@@ -47,4 +60,5 @@ test("Reportes muestra resultados antes de controles y presupuesto cerrado", asy
   await expect(page.locator(".page-preview-content h1")).toHaveCount(0);
   await expect(budget).not.toHaveAttribute("open");
   await expect(filters).not.toHaveAttribute("open");
+  await expect(recurrents).not.toHaveAttribute("open");
 });

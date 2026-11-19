@@ -1998,7 +1998,7 @@ export default function App() {
                   </p>
                 </div>
               )}
-              <details className="report-filters">
+              <details className="report-filters" name="report-sections">
                 <summary>Filtros</summary>
                 {filters}
               </details>
@@ -2015,6 +2015,7 @@ export default function App() {
             </section>
             <details
               className="panel report-budget"
+              name="report-sections"
               onToggle={(event) => {
                 if (
                   event.target === event.currentTarget &&
